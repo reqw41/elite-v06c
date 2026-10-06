@@ -134,6 +134,30 @@ class BBC {
     do { this.step(); } while (this.cpu.pc !== a && this.frames < end);
     return this.cpu.pc === a;
   }
+  // Вызвать одну процедуру игры: регистры и память на входе → регистры, флаги и такты на выходе.
+  // Прерывания на время вызова закрыты, память после вызова остаётся изменённой.
+  call(label, { a = 0, x = 0, y = 0, c = 0, mem = {} } = {}, maxCycles = 2e6) {
+    const cpu = this.cpu, RET = 0xffa0;
+    for (const [k, v] of Object.entries(mem)) {
+      const at = k in this.lab ? this.lab[k] : Number(k);
+      (Array.isArray(v) ? v : [v]).forEach((b, i) => { this.mem[at + i] = b & 0xff; });
+    }
+    const save = { pc: cpu.pc, s: cpu.s, p: cpu.p };
+    cpu.a = a & 0xff; cpu.x = x & 0xff; cpu.y = y & 0xff; cpu.p = FLAGS.U | FLAGS.I | (c ? FLAGS.C : 0);
+    cpu.s = 0xfd; this.mem[0x1fe] = (RET - 1) & 0xff; this.mem[0x1ff] = (RET - 1) >> 8;
+    cpu.pc = typeof label === 'number' ? label : this.lab[label];
+    const start = cpu.cycles;
+    while (cpu.pc !== RET) {
+      const h = this.hooks.get(cpu.pc);
+      if (h) { if (h(this)) cpu.rts(); } else cpu.step();
+      if (cpu.cycles - start > maxCycles) throw new Error(`call ${label}: не вернулась за ${maxCycles} тактов`);
+    }
+    const r = { a: cpu.a, x: cpu.x, y: cpu.y, c: cpu.p & 1, z: (cpu.p >> 1) & 1, n: cpu.p >> 7, v: (cpu.p >> 6) & 1, cycles: cpu.cycles - start };
+    this.nextVsync += cpu.cycles - start;                 // время вызова в кадры не идёт
+    Object.assign(cpu, save);
+    return r;
+  }
+  peek(label, n = 1) { const at = typeof label === 'number' ? label : this.lab[label]; return n === 1 ? this.mem[at] : Array.from(this.mem.subarray(at, at + n)); }
   press(code, frames = 6) { this.keys.add(code); this.runFrames(frames); this.keys.delete(code); }
 
   // Экран 256×248: сверху режим 4 (1 бит), снизу 56 строк режима 5 (2 бита, точки двойной ширины).
