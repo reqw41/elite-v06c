@@ -39,6 +39,7 @@ BBC, исполняемым под Node.
   `v06c/tools/v06c.mjs` (кадры, вызов одной процедуры, снимок). `TT26` сверен с эталоном.
 - T05: `PIXEL`, `LOIN`, `HLOIN` (`v06c/src/line.asm`) — экран равен эталону на 12 000 случаях.
 - Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
+- T09: корабль (`v06c/src/ship.asm`, `clip.asm`) — `LL9`, `LL145`, `SHPPT` равны эталону; тест `t09.mjs`.
 - T08: движение и сканер (`v06c/src/move.asm`, `scan.asm`), `MVEIT` целиком равна эталону; тест `t08.mjs`.
 - T07 и Q5: геометрия и арифметика заставки (`v06c/src/geom.asm`, `arith3.asm`) — 15 процедур, тесты
   `v06c/test/t07.mjs`, `q5.mjs`.
@@ -51,7 +52,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06 t07 t08 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # семь «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # восемь «всё совпало»
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
@@ -61,7 +62,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 нужно 40 процедур; арифметика и геометрия перенесены, остались движение, корабль и сама заставка.
 
 1. **T07** — сделано.
-2. **T08** — сделано. **T09** — корабль (`LL9`, `LL145`, `SHPPT`).
+2. **T08, T09** — сделано.
 3. **T10 — М1**: заставка кадр в кадр, профиль Вектора, кадры в секунду.
 4. **T11** — быстрая сборка с логарифмами, повторный замер.
 5. При сверке состояния рабочие ячейки процедур рисования (`P, Q, R, S, SWAP, T, T1, YSAV, SC, SCH`) надо
@@ -71,7 +72,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 
 ## Локальная модель (Qwen)
 
-Worktree `../elite-v06c-q1` (ветка `q1`; перед задачей `git merge main`). Запуск только фоновой задачей:
+Worktree `../elite-v06c-q1` (ветка `q1`; перед задачей `git merge main`). С 07.10 владелец просил локальную модель пока не трогать. Запуск только фоновой задачей:
 
 ```sh
 cd ../elite-v06c-q1 && /Users/boris/local-llm-agent/bin/pi-flash -p "…" > work/Qn/pi.log 2>&1

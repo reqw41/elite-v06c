@@ -27,16 +27,19 @@ export function makePair(rom = 'elite') {
   // spec: { name, entry (метка BBC или адрес; по умолчанию name), ventry (метка Вектора), n, gen(rnd, byte, i) →
   //   {a, x, y, c, mem: {меткаBBC: байт | [байты]}}, skip: [метки BBC или [метка, длина]] — ячейки вне сравнения,
   //   noreg: 'axyc' — регистры вне сравнения, screen: 'dash' | 'view' — сравнивать ещё и экран;
+  //   areas: [[от, до]] — ещё области BBC для сравнения (например куча вершин XX3);
   //   gen может вернуть bmem / vmem — память только для BBC / только для Вектора (адреса и метки своей машины) }
   function run(spec) {
     const { name, n = 2000, skip = [], noreg = '' } = spec, entry = spec.entry ?? name, ventry = spec.ventry ?? vname(name);
     const st = { name, n: 0, b: 0, v: 0, fail: null };
     stats.push(st);
     if (!(ventry in m.L)) { st.fail = `на Векторе нет метки ${ventry}`; return report(st); }
+    const areas = [...AREAS, ...(spec.areas || [])];
     const off = new Set();
     for (const s of skip) { const [lab, len] = Array.isArray(s) ? s : [s, 1]; for (let k = 0; k < len; k++) off.add(B[lab] + k); }
     for (let a = 0; a < 0x100; a++) { const v = rnd(256); bbc.mem[a] = v; }   // мусор в нулевой странице: чтение лишнего всплывёт
-    for (const [lo, hi] of AREAS) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
+    for (const [lo, hi] of areas) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
+    if (spec.screen === 'view') { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) m.wr(0xC000 + c * 256 + 64, new Uint8Array(192)); }
     for (let i = 0; i < n && !st.fail; i++) {
       const inp = spec.gen(rnd, byte, i), mem = inp.mem || {};
       const vmem = {};
@@ -50,7 +53,7 @@ export function makePair(rom = 'elite') {
       if (!noreg.includes('x') && rb.x !== rv.b) diff.push(`X: BBC ${rb.x}, Вектор B=${rv.b}`);
       if (!noreg.includes('y') && rb.y !== rv.c) diff.push(`Y: BBC ${rb.y}, Вектор C=${rv.c}`);
       if (!noreg.includes('c') && rb.c !== rv.cf) diff.push(`перенос: BBC ${rb.c}, Вектор ${rv.cf}`);
-      for (const [lo, hi] of AREAS) for (let a = lo; a < hi && diff.length < 6; a++) {
+      for (const [lo, hi] of areas) for (let a = lo; a < hi && diff.length < 6; a++) {
         const v = m.rd(WS + a);
         if (v !== bbc.mem[a] && !off.has(a)) diff.push(`${cell(a)}: BBC ${bbc.mem[a]}, Вектор ${v}`);
       }
@@ -60,7 +63,7 @@ export function makePair(rom = 'elite') {
       }
       if (diff.length) {
         st.fail = `случай ${i}, вход ${JSON.stringify(inp)}: ${diff.join('; ')}`;
-        for (const [lo, hi] of AREAS) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
+        for (const [lo, hi] of areas) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
       }
     }
     return report(st);

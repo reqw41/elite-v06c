@@ -52,6 +52,8 @@ main:
 	include	"geom.asm"
 	include	"move.asm"
 	include	"scan.asm"
+	include	"clip.asm"
+	include	"ship.asm"
 	include	"stubs.asm"
 	include	"demo.asm"
 
