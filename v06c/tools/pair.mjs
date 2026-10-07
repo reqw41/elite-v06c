@@ -27,6 +27,7 @@ export function makePair(rom = 'elite') {
   // spec: { name, entry (метка BBC или адрес; по умолчанию name), ventry (метка Вектора), n, gen(rnd, byte, i) →
   //   {a, x, y, c, mem: {меткаBBC: байт | [байты]}}, skip: [метки BBC или [метка, длина]] — ячейки вне сравнения,
   //   noreg: 'axyc' — регистры вне сравнения, screen: 'dash' | 'view' — сравнивать ещё и экран;
+  //   long: true — долгая процедура (запас по тактам);
   //   areas: [[от, до]] — ещё области BBC для сравнения (например куча вершин XX3);
   //   gen может вернуть bmem / vmem — память только для BBC / только для Вектора (адреса и метки своей машины) }
   function run(spec) {
@@ -51,8 +52,8 @@ export function makePair(rom = 'elite') {
       const vmem = {};
       for (const [k, v] of Object.entries(mem)) vmem[WS + (k in B ? B[k] : Number(k))] = v;
       for (const [k, v] of Object.entries(inp.vmem || {})) vmem[k in m.L ? m.L[k] : Number(k)] = v;
-      const rb = bbc.call(entry, { a: inp.a, x: inp.x, y: inp.y, c: inp.c, mem: { ...mem, ...(inp.bmem || {}) } });
-      const rv = m.call(ventry, { a: inp.a, b: inp.x, c: inp.y, cf: inp.c, mem: vmem });
+      const rb = bbc.call(entry, { a: inp.a, x: inp.x, y: inp.y, c: inp.c, mem: { ...mem, ...(inp.bmem || {}) } }, spec.long ? 4e8 : 2e6);
+      const rv = m.call(ventry, { a: inp.a, b: inp.x, c: inp.y, cf: inp.c, mem: vmem }, spec.long ? 4e8 : 5e6);
       st.n++; st.b += rb.cycles; st.v += rv.cycles;
       const diff = [];
       if (!noreg.includes('a') && rb.a !== rv.a) diff.push(`A: BBC ${rb.a}, Вектор ${rv.a}`);

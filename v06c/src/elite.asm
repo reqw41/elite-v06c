@@ -51,6 +51,7 @@ ws_clr:
 	include	"reset.asm"
 	include	"universe.asm"
 	include	"stars.asm"
+	include	"circle.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"
