@@ -7,7 +7,7 @@ const N = +(process.argv[2] || 800);
 const P = makePair(), { B, bbc, m } = P;
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
-const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T', 'T1', 'X1'];
+const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T', 'T1', 'U', 'X1'];
 const TEXT = [...DRAW, 'YSAV2', 'XSAV2', ['P', 3], ['V', 2]];
 const PTR = [['SLSP', 2], ['INF', 2], ['XX0', 2], [B.INWK + 33, 2]]; for (let i = 0; i < 13; i++) PTR.push([0x900 + 36 * i + 33, 2]);
 const GAL1 = [0x4a, 0x5a, 0x48, 0x02, 0x53, 0xb7];

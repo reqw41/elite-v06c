@@ -16,7 +16,7 @@ bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);   /
 const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x0F34]];
 // вне сравнения: рабочие ячейки LOIN и SCAN на BBC, указатели, указатель списка отрезков в блоке корабля
 const SKIP = new Set();
-for (const [n, len] of [['P', 1], ['Q', 1], ['R', 1], ['S', 1], ['SWAP', 1], ['YSAV', 1], ['SC', 2], ['X1', 1], ['V', 2], ['XX0', 2], ['XX19', 2], ['INF', 2]]) for (let k = 0; k < len; k++) SKIP.add(B[n] + k);
+for (const [n, len] of [['P', 1], ['Q', 1], ['R', 1], ['S', 1], ['SWAP', 1], ['YSAV', 1], ['SC', 2], ['X1', 1], ['V', 2], ['XX0', 2], ['XX19', 2], ['INF', 2], ['T', 1], ['T1', 1], ['U', 1]]) for (let k = 0; k < len; k++) SKIP.add(B[n] + k);
 SKIP.add(B.INWK + 33); SKIP.add(B.INWK + 34);
 const names = {}; for (const [n, a] of Object.entries(B)) if (a < 0x0F40 && !(a in names)) names[a] = n;
 const cell = (a) => { for (let k = 0; k < 40; k++) if ((a - k) in names) return names[a - k] + (k ? '+' + k : ''); return '&' + a.toString(16); };

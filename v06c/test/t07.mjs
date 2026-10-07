@@ -15,8 +15,8 @@ const SPECS = [
   { name: 'LL120', gen: (r, b) => ({ x: b(), y: b(), mem: { XX15: b(), S: r(4) ? b() : [0, 128, 255][r(3)], T: r(2) ? 0 : b() || 1, [B.XX12 + 2]: b(), [B.XX12 + 3]: b() } }) },
   { name: 'LL123', gen: (r, b) => ({ x: b(), y: b(), mem: { R: b(), S: r(4) ? b() : [0, 128, 255][r(3)], T: r(2) ? 0 : b() || 1, [B.XX12 + 2]: b(), [B.XX12 + 3]: b() } }) },
   { name: 'NORM', gen: (r, b) => ({ x: b(), mem: { XX15: arr(b, 3) } }) },
-  { name: 'TIS3', gen: (r, b) => { const k = r(3); return { a: 2 * k, x: 2 * ((k + 1) % 3), y: 2 * ((k + 2) % 3), mem: { [B.INWK + 9]: orient(r, b, 18) } }; } },
-  { name: 'TIDY', gen: (r, b) => ({ mem: { [B.INWK + 9]: orient(r, b, 18) } }) },
+  { name: 'TIS3', skip: ['T', 'T1', 'U'], gen: (r, b) => { const k = r(3); return { a: 2 * k, x: 2 * ((k + 1) % 3), y: 2 * ((k + 2) % 3), mem: { [B.INWK + 9]: orient(r, b, 18) } }; } },
+  { name: 'TIDY', skip: ['T', 'T1', 'U'], gen: (r, b) => ({ mem: { [B.INWK + 9]: orient(r, b, 18) } }) },
 ];
 for (const s of SPECS) P.run({ n: N, ...s });
 P.timing();

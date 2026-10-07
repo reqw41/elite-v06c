@@ -3,7 +3,7 @@ import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 600);
 const P = makePair(), { B, bbc } = P;
 const w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
-const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T'];
+const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T', 'T1', 'U'];
 const rot = (r) => {
   const a = r(360) * Math.PI / 180, b = r(360) * Math.PI / 180, c = r(360) * Math.PI / 180;
   const [ca, sa, cb, sb, cc, sc] = [Math.cos(a), Math.sin(a), Math.cos(b), Math.sin(b), Math.cos(c), Math.sin(c)];

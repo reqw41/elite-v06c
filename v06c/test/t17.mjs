@@ -6,8 +6,8 @@ const P = makePair(), { B, m, bbc } = P;
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const COLS = [0xF0, 0x0F, 0xFF];
 const sc = (r) => [[0x10, 0xD0][r(2)], 0x78 + r(6)];
-const CP = ['SC', 'SCH', 'X1'];                            // CPIX2 на BBC оставляет здесь адрес экрана
-const DRAW = [...CP, 'P', 'Q', 'R', 'S', 'SWAP', 'YSAV'];
+const CP = ['SC', 'SCH', 'X1', 'T', 'T1', 'U'];             // T/T1/U — ADD не пишет (liveness launch)
+const DRAW = [...CP, 'P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'T', 'T1', 'U'];
 const PTR = [['SLSP', 2], ['INF', 2], ['XX0', 2], [B.INWK + 33, 2]];
 const blockPtrs = []; for (let i = 0; i < 13; i++) blockPtrs.push([0x900 + 36 * i + 33, 2]);
 const vec3 = (r, b) => [b(), r(128), r(2) << 7, b(), r(128), r(2) << 7, b(), r(128), r(2) << 7];

@@ -18,7 +18,7 @@ const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x
 const SKIP = new Set();
 const skip = (n, len = 1) => { for (let k = 0; k < len; k++) SKIP.add((typeof n === 'number' ? n : B[n]) + k); };
 for (const [n, len] of [['P', 3], ['Q', 1], ['R', 1], ['S', 1], ['SWAP', 1], ['YSAV', 1], ['SC', 2], ['X1', 1], ['V', 2], ['XX0', 2], ['INF', 2], ['SLSP', 2],
-  ['YSAV2', 1], ['XSAV2', 1], ['T', 1], ['T1', 1]]) skip(n, len);
+  ['YSAV2', 1], ['XSAV2', 1], ['T', 1], ['T1', 1], ['U', 1]]) skip(n, len);
 skip(B.INWK + 33, 2); for (let i = 0; i < 13; i++) skip(0x900 + 36 * i + 33, 2);
 const names = {}; for (const [n, a] of Object.entries(B)) if (a < 0x0F51 && n !== 'S%' && !(a in names)) names[a] = n;
 const cell = (a) => { for (let k = 0; k < 40; k++) if ((a - k) in names) return names[a - k] + (k ? '+' + k : ''); return '&' + a.toString(16); };

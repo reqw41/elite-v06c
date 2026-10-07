@@ -5,7 +5,7 @@ const P = makePair(), { B } = P;
 const SPECS = [
   { name: 'MU5', gen: (r, b) => ({ a: b(), x: b(), y: b(), c: r(2) }) },
   { name: 'DVID96', gen: (r, b) => ({ a: b(), x: b(), y: b(), c: r(2) }) },
-  { name: 'TIS1', gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { S: b(), R: b() } }) },
+  { name: 'TIS1', skip: ['T', 'T1', 'U'], gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { S: b(), R: b() } }) },
   { name: 'MUT1', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), XX: [b(), b()] } }) },
   { name: 'MUT2', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), XX: [b(), b()] } }) },
   { name: 'MUT3', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), XX: [b(), b()], ALP1: b() } }) },

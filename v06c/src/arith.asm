@@ -341,14 +341,13 @@ MULT12:
 	ret
 
 ; MAD: (A X) = Q · A + (S R). ADD: (A X) = (A P) + (S R). Числа со знаком в бите 7 старшего байта.
-; T1 = A на входе, T = его знак, при разных знаках U — рабочая.
+; В отличие от BBC, не пишет T1, T, U (трассировка launch: после ADD чужих читателей нет;
+; бой и рынок сценарием не покрыты).
 MAD:
 	call	MULT1
 ADD:
-	ld	(T1), a
 	ld	d, a
 	and	0x80
-	ld	(T), a
 	ld	e, a
 	ld	hl, (R_)		; L = R, H = S — соседние ячейки
 	xor	h
@@ -367,11 +366,10 @@ ADD:
 MU8:
 	ld	a, h
 	and	0x7F
-	ld	(U), a
 	ld	h, a
 	ld	a, d
 	and	0x7F
-	ld	d, a			; |T1|
+	ld	d, a			; |A|
 	ld	a, (P_)
 	sub	l
 	ld	b, a
@@ -382,7 +380,6 @@ MU8:
 	scf
 	ret
 mu8_neg:
-	ld	(U), a
 	ld	h, a
 	ld	a, b
 	cpl

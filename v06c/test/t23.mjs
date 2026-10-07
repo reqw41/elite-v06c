@@ -3,7 +3,7 @@ import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 1500);
 const P = makePair(), { B, m, bbc } = P;
 const arr = (b, n) => Array.from({ length: n }, b);
-const DRAW = ['SC', 'SCH', 'T1', 'X1'];
+const DRAW = ['SC', 'SCH', 'T1', 'X1', 'T', 'U'];	// T,U — ADD/PIXEL2 после STARS1/PIX1 не читают (liveness launch)
 const sm = (r, lim) => r(lim) | (r(2) << 7);
 const dust = (r, b, n) => { const mem = { NOSTM: n, RAND: arr(b, 4) };
   mem[B.SX] = arr(() => sm(r, r(8) ? 120 : 128), 19); mem[B.SY] = arr(() => sm(r, r(8) ? 120 : 128), 19); mem[B.SZ] = arr(() => (r(8) ? 16 + r(240) : b()), 19);

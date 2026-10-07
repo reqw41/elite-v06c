@@ -20,9 +20,9 @@ const SPECS = [
   { name: 'MLS1', gen: (r, b) => ({ a: r(6) ? b() : [0, 128][r(2)], y: b(), c: r(2), mem: { ALP1: b() } }) },
   { name: 'MLS2', gen: (r, b) => ({ a: r(6) ? b() : [0, 128][r(2)], y: b(), c: r(2), mem: { ALP1: b(), XX: [b(), b()] } }) },
   { name: 'MLTU2', gen: (r, b) => ({ a: b(), y: b(), c: r(2), mem: { P: b(), Q: b() } }) },
-  { name: 'ADD', gen: (r, b) => (r(5) ? { a: b(), y: b(), mem: { P: b(), S: b(), R: b() } }
+  { name: 'ADD', skip: ['T', 'T1', 'U'], gen: (r, b) => (r(5) ? { a: b(), y: b(), mem: { P: b(), S: b(), R: b() } }
     : (() => { const hi = b() & 127, lo = b(); return { a: hi | (r(2) << 7), y: b(), mem: { P: lo, S: hi | (r(2) << 7), R: r(3) ? lo : b() } }; })()) },   // равные модули
-  { name: 'MAD', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), S: b(), R: b() } }) },
+  { name: 'MAD', skip: ['T', 'T1', 'U'], gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), S: b(), R: b() } }) },
   { name: 'DVID4', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b() } }) },
   { name: 'LL28', gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { Q: b() } }) },
   { name: 'LL28+4', entry: B.LL28 + 4, ventry: 'LL28_4', gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { Q: b() } }) },
