@@ -1,7 +1,7 @@
 ; Сохранение и загрузка командира: SVE, LOD, GTNME, TRNME, TR1, QUS1, ввод строки rline; пауза с настройками
 ; FREEZE, DKS3 — в mainloop.asm. Перенесено близко к тексту BBC; сверка — сценарий save (v06c/test/t27.mjs save).
-; Носитель пока не выбран (решение владельца): файл командира — 256 байт по адресу BBC &0B00 — QUS1 кладёт
-; в память (save_slot) и берёт оттуда же. Запись на ленту заменит только QUS1.
+; Носитель — магнитофон (решение владельца 08.10.2026) и память: файл командира — 256 байт по адресу BBC
+; &0B00 — QUS1 кладёт в save_slot и пишет на ленту (tape.asm).
 
 ; TRNME: имя из INWK — в командира. TR1: имя командира — в INWK.
 TRNME:
@@ -153,7 +153,9 @@ LOD:
 	jp	ll9_cp
 
 ; QUS1: файл командира: A = 0 — записать 256 байт с &0B00, A = FFh — прочитать их туда. Имя файла — в INWK.
-; Сейчас «носитель» — память save_slot; пустой носитель при чтении ничего не меняет.
+; Файл хранится в памяти (save_slot) и на ленте (tape.asm): запись — в память и на ленту; чтение — с ленты,
+; а если блок не прочитан — из памяти (последнее сохранение этого сеанса). Пусто и там — &0B00 не меняется.
+; В сборке стенда (SCHED) ленты нет: только память.
 QUS1:
 	ld	c, a
 	ld	a, low (INWK - WS)
@@ -163,16 +165,35 @@ QUS1:
 	jp	nz, qus_load
 	ld	hl, WS + 0x0B00
 	ld	de, save_slot
-	jp	qus_cp
+	ld	b, NT + 2
+	call	ll9_cp
+	ld	a, 1
+	ld	(save_used), a
+	ifndef	SCHED
+	ld	hl, save_slot
+	ld	b, NT + 2
+	call	tp_save
+	endif
+	ret
 qus_load:
+	ifndef	SCHED
+	ld	hl, tp_buf
+	ld	b, NT + 2
+	call	tp_load
+	jp	c, qus_mem
+	ld	hl, tp_buf
+	ld	de, save_slot
+	ld	b, NT + 2
+	call	ll9_cp
+	ld	a, 1
+	ld	(save_used), a
+qus_mem:
+	endif
 	ld	a, (save_used)
 	or	a
 	ret	z
 	ld	hl, save_slot
 	ld	de, WS + 0x0B00
-qus_cp:
-	ld	a, 1
-	ld	(save_used), a
 	ld	b, NT + 2
 	jp	ll9_cp
 save_used:

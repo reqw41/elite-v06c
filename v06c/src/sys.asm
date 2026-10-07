@@ -33,6 +33,15 @@ isr_row:
 	xor	a
 	out	(2), a			; бордюр — цвет 0
 	out	(1), a
+	ld	hl, flash_cnt		; вспышка кончилась — фон снова чёрный
+	ld	a, (hl)
+	or	a
+	jp	z, isr_nf
+	dec	(hl)
+	jp	nz, isr_nf
+	xor	a
+	call	pal_bg
+isr_nf:
 	ld	a, (pal_dirty)
 	or	a
 	jp	z, isr_cnt
@@ -144,6 +153,23 @@ ps_one:
 	ld	a, 1
 	ld	(pal_dirty), a
 	ret
+
+; flash: вспышка энергетической бомбы — фон обзора и панели на два кадра жёлтый (на BBC — запись в палитру
+; до следующего кадра). pal_bg: цвет фона A — в регистры палитры с номером цвета 0.
+flash:
+	ld	a, 2
+	ld	(flash_cnt), a
+	ld	a, 0x3F
+pal_bg:
+	ld	(pal_regs), a
+	ld	(pal_regs + 4), a
+	ld	(pal_regs + 8), a
+	ld	(pal_regs + 12), a
+	ld	a, 1
+	ld	(pal_dirty), a
+	ret
+flash_cnt:
+	db	0
 
 ; Запись 16 регистров палитры. Регистр выбирается цветом под лучом; в гашении это номер бордюра (порт 02h).
 pal_write:

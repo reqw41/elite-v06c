@@ -756,7 +756,8 @@ ma18:
 	jp	p, ma77
 	add	a, a
 	ld	(BOMB), a
-	call	WSCAN			; вспышка — этап P6
+	call	WSCAN
+	call	flash			; вспышка: фон на два кадра — жёлтый
 ma77:
 	ld	a, (MCNT)
 	and	7
