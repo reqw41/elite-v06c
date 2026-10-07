@@ -303,13 +303,18 @@ PLS22:
 	dec	a
 	ld	(FLAG), a
 pll4:
-	ld	a, (CNT2)
-	call	pl_sne
+	ld	a, (CNT2)		; sin/cos · полуоси через mul8 (без FMLTU/Q)
+	call	pl_sin
+	ld	e, a
 	ld	a, (K2 + 2)
-	call	FMLTU
+	call	mul8
+	ld	a, h
 	ld	(R_), a
 	ld	a, (K2 + 3)
-	call	FMLTU
+	ld	e, a
+	ld	a, (Q)
+	call	mul8
+	ld	a, h
 	ld	(K), a
 	ld	a, (CNT2)
 	cp	33
@@ -319,12 +324,17 @@ pll4:
 	ld	(XX16 + 5), a
 	ld	a, (CNT2)
 	add	a, 16
-	call	pl_sne
+	call	pl_sin
+	ld	e, a
 	ld	a, (K2 + 1)
-	call	FMLTU
+	call	mul8
+	ld	a, h
 	ld	(K + 2), a
 	ld	a, (K2)
-	call	FMLTU
+	ld	e, a
+	ld	a, (Q)
+	call	mul8
+	ld	a, h
 	ld	(P_), a
 	ld	a, (CNT2)
 	add	a, 16
@@ -413,7 +423,7 @@ pl43_c:
 	and	63
 	ld	(CNT2), a
 	jp	pll4
-pl_sne:					; Q = синус угла A
+pl_sin:					; A = Q = синус угла A
 	and	0x1F
 	ld	e, a
 	ld	d, 0
