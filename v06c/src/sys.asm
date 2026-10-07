@@ -40,6 +40,7 @@ isr_row:
 	ld	(pal_dirty), a
 	call	pal_write
 isr_cnt:
+	call	snd_tick		; звук ВИ53
 	ld	hl, (v_frames)
 	inc	hl
 	ld	(v_frames), hl

@@ -688,13 +688,14 @@ LASLI:
 	call	DENGY
 	jp	LASLI2
 
-; NOISE: звук номер A (0, 8, 16 … 72): блок звука — в XX16 (как на BBC); само звучание — этап P6.
+; NOISE: звук номер A (0, 8, 16 … 72): блок звука — в XX16 (как на BBC) и в звуковой движок ВИ53 (snd.asm).
 NOISE:
 	or	a
 	rra
 	add	a, low sfx_tab
 	ld	l, a
 	ld	h, high sfx_tab
+	push	hl
 	ld	de, XX16
 	ld	b, 4
 nol1:
@@ -707,6 +708,13 @@ nol1:
 	inc	de
 	dec	b
 	jp	nz, nol1
+	pop	hl
+	ld	a, (DNOIZ)		; звук выключен настройкой
+	or	a
+	ret	nz
+	push	bc
+	call	snd_start
+	pop	bc
 	ret
 	align	64
 sfx_tab:
