@@ -225,30 +225,42 @@ st_x1:
 	ld	a, (X1)
 	adc	a, (hl)
 	ld	(hl), a
-	ld	hl, ALP2 + 1		; y -= alpha · x
+	ld	hl, ALP2 + 1		; y += alpha · x / 256 (mul8 вместо MLS1)
 	xor	(hl)
-	call	MLS1
+	ld	d, a
+	ld	a, (ALP1)
+	ld	(P_), a
+	ld	a, d
+	call	st_mults
 	call	ADD
 	ld	(YY + 1), a
 	ld	d, a
 	ld	a, b
 	ld	(YY), a
 	ld	a, d
-	ld	hl, ALP2		; x += alpha · y
+	ld	hl, ALP2		; x += alpha · y / 256 (mul8 вместо MLS2)
 	xor	(hl)
-	call	MLS2
+	ld	hl, (XX)
+	ld	(R_), hl
+	ld	d, a
+	ld	a, (ALP1)
+	ld	(P_), a
+	ld	a, d
+	call	st_mults
 	call	ADD
 	ld	(XX + 1), a
 	ld	a, b
 	ld	(XX), a
-	ld	a, (BET1)		; x += 2 · (beta · y)^2
-	ld	b, a
+	ld	a, (BET1)		; x += 2 · (beta · y / 256)^2
+	ld	(P_), a
 	ld	a, (YY + 1)
 	ld	hl, BET2 + 1
 	xor	(hl)
-	call	MULTS_2
+	call	st_mults
 	ld	(Q), a
-	call	MUT2
+	ld	hl, (XX)
+	ld	(R_), hl
+	call	MULT1
 	ld	d, a
 	ld	a, (P_)
 	add	a, a
@@ -340,3 +352,32 @@ kill1:
 	ld	(hl), a
 	ld	(ZZ), a
 	jp	stc1
+
+; Как MULTS: (A P) = |A| · (P & 31) со знаком A. При |A| = 0: P(1 0) = 0, перенос как на входе.
+st_mults:
+	ld	b, a
+	push	af
+	and	0x80
+	ld	(T), a
+	ld	a, b
+	and	0x7F
+	jp	z, st_ms0
+	pop	de
+	ld	e, a
+	dec	a
+	ld	(T1), a
+	ld	b, a
+	ld	a, (P_)
+	and	31
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, (T)
+	or	h
+	ret
+st_ms0:
+	pop	af
+	ld	a, 0
+	ld	(P_ + 1), a
+	ld	(P_), a
+	ret
