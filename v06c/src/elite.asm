@@ -43,6 +43,7 @@ main:
 	include	"sys.asm"
 	include	"text.asm"
 	include	"dash.asm"
+	include	"line.asm"
 	include	"demo.asm"
 
 font:
