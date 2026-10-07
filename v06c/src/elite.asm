@@ -36,10 +36,23 @@ ws_clr:
 	call	pal_set
 	call	dash_show
 	call	demo_text
+	ld	a, 7			; Кобра Mk III
+	call	title_demo
 	ei
-main:
+main_wait:				; до первой клавиши — неподвижный экран (на нём идут проверки каркаса)
 	call	wait_frame
-	call	demo_keys
+	ld	hl, kb_rows
+	ld	b, 8
+	xor	a
+mw_or:
+	or	(hl)
+	inc	hl
+	dec	b
+	jp	nz, mw_or
+	or	a
+	jp	z, main_wait
+main:
+	call	title_pass
 	jp	main
 
 	include	"sys.asm"
@@ -56,6 +69,7 @@ main:
 	include	"ship.asm"
 	include	"stubs.asm"
 	include	"demo.asm"
+	include	"title.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
@@ -72,7 +86,6 @@ kb_rows:	ds	8		; матрица клавиатуры, 1 — нажата; стр
 kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ
 pal_dirty:	ds	1		; <> 0: прерывание запишет pal_regs в палитру
 pal_regs:	ds	16
-demo_old:	ds	9
 vars_end:
 	assert	vars_end <= WS + 0x0300
 	assert	rom_end <= WS

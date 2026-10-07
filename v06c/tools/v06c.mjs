@@ -58,7 +58,7 @@ export function createVector(name = 'elite') {
     frame(n = 1) { for (let i = 0; i < n; i++) { v06c.oneInterrupt(true); m.frames++; } },
     key(row, bit, down) { if (down) keyboard.matrix[row] |= bit; else keyboard.matrix[row] &= ~bit; },
     // Вызвать одну процедуру: регистры и память на входе → регистры, флаги, такты на выходе. Прерываний нет.
-    call(label, { a = 0, b = 0, c = 0, d = 0, e = 0, h = 0, l = 0, cf = 0, mem = {} } = {}, maxInsns = 5e6) {
+    call(label, { a = 0, b = 0, c = 0, d = 0, e = 0, h = 0, l = 0, cf = 0, mem = {}, prof = null } = {}, maxInsns = 5e6) {
       for (const [k, v] of Object.entries(mem)) m.wr(k in m.L ? m.L[k] : Number(k), Array.isArray(v) ? v : [v]);
       const save = { pc: cpu.pc, sp: cpu.sp, iff: cpu.iff, regs: [...cpu.regs] };
       const inp = { a, b, c, d, e, h, l };
@@ -69,7 +69,9 @@ export function createVector(name = 'elite') {
       cpu.sp = sp; cpu.pc = m.at(label);
       let cycles = 0, n = 0;
       while ((cpu.pc & 0xffff) !== RET) {
+        const at = cpu.pc & 0xffff;
         cpu.instruction(); cycles += cpu.vcycles | 0;
+        if (prof) prof[at] += cpu.vcycles | 0;             // профиль: такты по адресам команд
         if (cpu.last_opcode === 0xd3) io.commit();
         if (++n > maxInsns) throw new Error(`call ${label}: не вернулась за ${maxInsns} команд, PC=${(cpu.pc & 0xffff).toString(16)}`);
       }
