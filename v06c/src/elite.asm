@@ -49,6 +49,7 @@ main:
 	include	"arith.asm"
 	include	"arith2.asm"
 	include	"arith3.asm"
+	include	"geom.asm"
 	include	"demo.asm"
 
 font:

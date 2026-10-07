@@ -334,6 +334,9 @@ LL28:
 	cp	(hl)
 	jp	nc, LL2
 LL28_4:
+	ld	b, 0xFE
+; LL31: вход с готовым R (его ставит вызывающий), X не меняется.
+LL31:
 	ld	h, a
 	ld	l, 0
 	ld	a, (Q)
@@ -356,7 +359,6 @@ ll30:
 	ld	a, l
 	ld	(R_), a
 	ld	a, h
-	ld	b, 0xFE
 	or	a
 	ret
 LL2:
