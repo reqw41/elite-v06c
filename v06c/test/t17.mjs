@@ -6,8 +6,8 @@ const P = makePair(), { B, m, bbc } = P;
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const COLS = [0xF0, 0x0F, 0xFF];
 const sc = (r) => [[0x10, 0xD0][r(2)], 0x78 + r(6)];
-const CP = ['SC', 'SCH', 'X1', 'T', 'T1', 'U'];             // T/T1/U — ADD не пишет (liveness launch)
-const DRAW = [...CP, 'P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'T', 'T1', 'U'];
+const CP = ['SC', 'SCH', 'X1'];
+const DRAW = [...CP, 'P', 'Q', 'R', 'S', 'SWAP', 'YSAV'];
 const PTR = [['SLSP', 2], ['INF', 2], ['XX0', 2], [B.INWK + 33, 2]];
 const blockPtrs = []; for (let i = 0; i < 13; i++) blockPtrs.push([0x900 + 36 * i + 33, 2]);
 const vec3 = (r, b) => [b(), r(128), r(2) << 7, b(), r(128), r(2) << 7, b(), r(128), r(2) << 7];
@@ -30,7 +30,7 @@ const SPECS = [
   { name: 'DOT', noreg: 'axyc', skip: CP, screen: 'dash', gen: (r, b) => ({ mem: { COMX: 186 + r(19), COMY: 195 + r(17), COMC: [0xF0, 0xFF][r(2)] } }) },
   { name: 'SP2', noreg: 'axyc', skip: CP, screen: 'dash', gen: (r, b) => ({ mem: { XX15: [r(97) | (r(2) << 7), r(97) | (r(2) << 7), r(97) | (r(2) << 7)] } }) },
   { name: 'COMPAS', noreg: 'axyc', skip: CP, screen: 'dash', gen: (r, b) => ({ mem: { SSPR: 0, COMX: 186 + r(19), COMY: 195 + r(17), COMC: [0xF0, 0xFF][r(2)], ...planet(r, b) } }) },
-  { name: 'DIALS', noreg: 'axyc', skip: CP, screen: 'dash', gen: (r, b) => ({ mem: flight(r, b) }) },
+  { name: 'DIALS', noreg: 'axyc', skip: [...CP, 'T', 'T1', 'U'], screen: 'dash', gen: (r, b) => ({ mem: flight(r, b) }) },
   { name: 'ZERO', gen: (r, b) => ({ mem: { [0x9F0 + r(0x400)]: arr(b, 16) } }) },
   { name: 'ZINF', noreg: 'x', gen: (r, b) => ({ mem: { INWK: arr(b, 36) } }) },
   { name: 'GINF', noreg: 'ay', skip: PTR, gen: (r, b) => ({ x: r(13), y: b() }) },
@@ -41,7 +41,7 @@ const SPECS = [
     f.forEach((t, i) => { if (t) { const w = arr(b, 36); if (r(2)) for (const k of [1, 4, 7]) w[k] = r(64); mem[0x900 + 36 * i] = w; } }); return { mem }; } },
   { name: 'RESET', n: Math.min(N, 300), noreg: 'axyc', skip: [...CP, ...PTR, ...blockPtrs], screen: 'dash', gen: (r, b) => { const f = slots(r), mem = { FRIN: f, ...flight(r, b), ECMA: 0 };
     f.forEach((t, i) => { if (t) { const w = arr(b, 36); for (const k of [1, 4, 7]) w[k] = r(64); mem[0x900 + 36 * i] = w; } }); return { mem }; } },
-  { name: 'RES2', n: Math.min(N, 300), noreg: 'axyc', skip: [...CP, ...PTR, ...blockPtrs], screen: 'dash', gen: (r, b) => ({ mem: { FRIN: new Array(13).fill(0), ...flight(r, b), ECMA: 0 } }) },
+  { name: 'RES2', n: Math.min(N, 300), noreg: 'axyc', skip: [...CP, 'T', 'T1', 'U', ...PTR, ...blockPtrs], screen: 'dash', gen: (r, b) => ({ mem: { FRIN: new Array(13).fill(0), ...flight(r, b), ECMA: 0 } }) },
 ];
 for (const s of SPECS) P.run({ n: N, ...s });
 P.timing();
