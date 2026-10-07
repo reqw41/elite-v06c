@@ -72,6 +72,7 @@ ws_clr:
 	include	"status.asm"
 	include	"charts.asm"
 	include	"market.asm"
+	include	"equip.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"

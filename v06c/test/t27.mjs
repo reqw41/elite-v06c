@@ -39,7 +39,8 @@ const VLABEL = { t: 'tt217_t', t2: 'tt217_t2' };            // метки эта
 const prof = new Float64Array(0x10000), profAll = new Float64Array(0x10000);   // prof — только проходы полёта
 let idx = 0, fail = null, tv = 0, tb = 0, flightV = 0, flightB = 0, flightN = 0;
 const t0 = Date.now();
-outer: for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
+outer: for (const [label, n, down = [], up = [], k = 2, poke] of SCN[name]) {
+  if (poke) for (const [a, v] of Object.entries(poke)) { bbc.mem.set(v, B[a]); m.wr(WS + B[a], v); }
   down.forEach((c) => { bbc.keys.add(c); setKey(c, true); }); up.forEach((c) => { bbc.keys.delete(c); setKey(c, false); });
   for (let i = 0; i < n; i++, idx++) {
     if (idx >= LIMIT) break outer;
