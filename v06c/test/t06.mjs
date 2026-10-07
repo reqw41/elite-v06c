@@ -33,6 +33,7 @@ P.timing();
 const BBC_SIZE = [['SQUA', B.FMLTU2 - B.SQUA, 'SQUA…MU6'], ['FMLTU', 24, 'FMLTU'], ['MULT1', B.TAS3 - B.MULT1, 'MULT1, MULT12'], ['MAD', B.TIS1 - B.MAD, 'MAD, ADD'],
   ['DVID4', B.DVID3B2 - B.DVID4, 'DVID4'], ['LL5', B.LL28 - B.LL5, 'LL5'], ['LL28', B.LL38 - B.LL28, 'LL28'], ['DORND2', 21, 'DORND']];
 const b = BBC_SIZE.reduce((s, r) => s + r[1], 0), v = m.L.arith_end - m.L.arith_start, core = m.L.SQUA - m.L.mul8;
-console.log(`\nразмер кода: BBC ${b} Б (${BBC_SIZE.map((r) => `${r[2]} ${r[1]}`).join(', ')}) → Вектор ${v} Б (из них развёрнутое ядро умножения mul8 — ${core}): ×${(v / b).toFixed(2)}`);
+{ let badsq = 0; for (let x = 0; x < 512; x++) if ((m.rd(m.L.SQLO + x) | (m.rd(m.L.SQLO + 512 + x) << 8)) !== Math.floor(x * x / 4)) badsq++; console.log(`${badsq ? 'FAIL' : 'OK  '} таблица четвертей квадратов: 512 значений`); if (badsq) process.exitCode = 1; }
+console.log(`\nразмер кода: BBC ${b} Б (${BBC_SIZE.map((r) => `${r[2]} ${r[1]}`).join(', ')}) → Вектор ${v} Б (из них ядро умножения mul8 с построением таблицы — ${core}): ×${(v / b).toFixed(2)}`);
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T06: всё совпало');
 process.exit(P.failed() ? 1 : 0);

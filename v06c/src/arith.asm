@@ -3,21 +3,69 @@
 ; перенос равны эталону (v06c/test/t06.mjs); отступления названы в заголовке процедуры.
 arith_start:
 
-; mul8: HL = E · A, без знака. Общее ядро умножений. Портит A, D. Сохраняет BC, E.
+; mul8: HL = E · A, без знака. Общее ядро умножений: a·b = f(a + b) - f(|a - b|), f(x) = x·x / 4 нацело.
+; Таблица f — SQLO (младшие байты, 512 значений) и на две страницы выше старшие; строит sq_init при запуске.
+; Портит A, DE. Сохраняет BC.
 mul8:
-	ld	d, 0
-	ld	h, d
-	ld	l, d
-	add	a, a
-	jp	nc, m8_6
+	ld	d, a
+	add	a, e
+	ld	l, a
+	ld	a, high SQLO
+	adc	a, 0
+	ld	h, a			; HL -> f(a + b), младший байт
+	ld	a, d
+	sub	e
+	jp	nc, m8_p
+	cpl
+	inc	a
+m8_p:
+	ld	e, (hl)
+	inc	h
+	inc	h
+	ld	d, (hl)			; DE = f(a + b)
+	ld	l, a
+	ld	h, high SQLO		; HL -> f(|a - b|)
+	ld	a, e
+	sub	(hl)
+	ld	e, a
+	inc	h
+	inc	h
+	ld	a, d
+	sbc	a, (hl)
+	ld	h, a
 	ld	l, e
-m8_6:
-	dup	7
-	add	hl, hl
-	add	a, a
-	jp	nc, $ + 4
-	add	hl, de
-	edup
+	ret
+
+; Построить таблицу четвертей квадратов: f(x + 1) = f(x) + (x + 1) / 2 нацело, x = 0..511.
+sq_init:
+	ld	hl, 0
+	ld	de, SQLO
+	ld	b, h
+	ld	c, l
+sq_lp:
+	ld	a, l
+	ld	(de), a
+	inc	d
+	inc	d
+	ld	a, h
+	ld	(de), a
+	dec	d
+	dec	d
+	inc	de
+	inc	bc
+	push	bc
+	ld	a, b
+	or	a
+	rra
+	ld	b, a
+	ld	a, c
+	rra
+	ld	c, a
+	add	hl, bc
+	pop	bc
+	ld	a, b
+	cp	2
+	jp	nz, sq_lp
 	ret
 
 ; SQUA: (A P) = A·A, бит 7 у A отбрасывается. SQUA2: то же без отбрасывания.
