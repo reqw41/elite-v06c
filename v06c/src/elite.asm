@@ -45,6 +45,7 @@ ws_clr:
 	include	"sys.asm"
 	include	"text.asm"
 	include	"tokens.asm"
+	include	"numbers.asm"
 	include	"screen.asm"
 	include	"dials.asm"
 	include	"reset.asm"
