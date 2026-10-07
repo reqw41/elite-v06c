@@ -273,6 +273,25 @@ DKS4:
 	dec	a
 	jp	m, dks4_mod
 	ld	e, a
+	and	0x40
+	jp	nz, dks4_ss
+	ld	a, e			; F1..F5 без СС — f0..f4; с СС они уже другие клавиши
+	sub	11
+	cp	5
+	jp	nc, dks4_key
+	ld	a, (kb_mod)
+	and	0x20
+	jp	nz, dks4_no
+	jp	dks4_key
+dks4_ss:
+	ld	a, (kb_mod)		; клавиша, которая считается только вместе с СС
+	and	0x20
+	jp	z, dks4_no
+	ld	a, e
+	and	0x3F
+	ld	e, a
+dks4_key:
+	ld	a, e
 	rrca
 	rrca
 	rrca

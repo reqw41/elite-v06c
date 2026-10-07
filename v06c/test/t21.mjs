@@ -10,9 +10,13 @@ const TEXT = ['YSAV2', 'XSAV2', ['P', 3], 'SC', 'SCH', ['V', 2], 'Q', 'R', 'S', 
 const arr = (b, n) => Array.from({ length: n }, b);
 const GAL1 = [0x4a, 0x5a, 0x48, 0x02, 0x53, 0xb7];
 // клавиши: эталону — множество номеров BBC, Вектору — матрица kb_rows (обратный перевод по таблице образа)
-const KB = []; for (let i = 0; i < 64; i++) { const c = m.rd(m.L.kb_bbc + i); if (c && c !== 0x69) KB.push([c, i]); }   // COPY — пауза: на BBC цикл ожидания, на i8080 ещё не сделана
-const press = (list) => { bbc.keys.clear(); const rows = new Array(8).fill(0); for (const [c, i] of list) { bbc.keys.add(c); rows[i >> 3] |= 1 << (i & 7); } m.wr(m.L.kb_rows, rows); m.wr(m.L.kb_mod, [0]); };
-const keys = (r, max = 3) => { const n = r(4) ? r(max + 1) : 0, l = []; for (let k = 0; k < n; k++) l.push(KB[r(KB.length)]); press(l); return l.map((x) => x[0]); };
+const KB = []; for (let i = 0; i < 64; i++) { const c = m.rd(m.L.kb_bbc + i); if (c && c !== 0x69) KB.push(i); }   // COPY — пауза: на BBC цикл ожидания, на i8080 ещё не сделана
+const SS = [0, 1, 2, 3, 4].map((n) => m.rd(m.L.kb_ss + n));         // F1..F5 с СС
+// нажать клавиши Вектора list (номера строка·8+бит), ss — вместе с СС; эталону — те же клавиши номерами BBC
+const press = (list, ss = false) => { bbc.keys.clear(); const rows = new Array(8).fill(0), codes = [];
+  for (const i of list) { const c = ss && i >= 11 && i <= 15 ? SS[i - 11] : m.rd(m.L.kb_bbc + i); bbc.keys.add(c); codes.push(c); rows[i >> 3] |= 1 << (i & 7); }
+  m.wr(m.L.kb_rows, rows); m.wr(m.L.kb_mod, [ss ? 0x20 : 0]); return codes; };
+const keys = (r, max = 3) => { const n = r(4) ? r(max + 1) : 0, l = []; for (let k = 0; k < n; k++) l.push(r(3) ? KB[r(KB.length)] : 11 + r(5)); return press(l, r(3) === 0); };
 const state = (r, b) => ({ QQ12: r(3) ? 0xFF : 0, QQ21: GAL1, QQ2: GAL1, QQ9: [b(), b()], QQ0: [b(), b()], FIST: r(3) ? 0 : b(), TALLY: r(2) ? [b(), 0] : [b(), r(40)], CRGO: [20, 35][r(2)], BST: r(2) ? 0 : 255,
   ECM: r(2) ? 0 : 255, BOMB: arr(() => (r(2) ? 0 : 255), 4), LASER: arr(() => [0, 15, 143][r(3)], 4), ENERGY: b(), CASH: [0, r(4), b(), b()], QQ14: r(71), GCNT: r(8), MJ: 0, [B.QQ22 + 1]: 0,
   [B.MANY + 10]: r(3), [B.FRIN + 2]: arr(() => r(3), 4), VIEW: r(4) });

@@ -126,7 +126,7 @@ chk_l:
 
 ; RDKEY: нажатая клавиша: A = X = внутренний номер клавиши BBC (16–127), Z и A = 0 — ничего не нажато.
 ; Матрица Вектора (kb_rows из прерывания кадра) переводится таблицей kb_bbc (v06c/data/keys.asm); из нескольких нажатых берётся
-; клавиша с наименьшим номером BBC — как при опросе на BBC.
+; клавиша с наименьшим номером BBC — как при опросе на BBC. F1–F5 — f0–f4, с нажатой СС — f5–f9.
 RDKEY:
 	ld	hl, kb_rows
 	ld	de, kb_bbc
@@ -141,7 +141,28 @@ rk_bit:
 	rrca
 	ld	b, a
 	jp	nc, rk_next
+	ld	a, e			; F1..F5 при нажатой СС — f5..f9
+	sub	low (kb_bbc + 11)
+	cp	5
+	jp	nc, rk_plain
+	push	hl
+	ld	hl, kb_mod
+	ld	a, (hl)
+	and	0x20
+	pop	hl
+	jp	z, rk_plain
+	push	hl
+	ld	a, e
+	sub	low (kb_bbc + 11)
+	add	a, low kb_ss
+	ld	l, a
+	ld	h, high kb_ss
+	ld	a, (hl)
+	pop	hl
+	jp	rk_have
+rk_plain:
 	ld	a, (de)
+rk_have:
 	or	a
 	jp	z, rk_next
 	ex	(sp), hl		; L — лучшая на стеке

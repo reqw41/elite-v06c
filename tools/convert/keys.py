@@ -3,7 +3,9 @@
 
 kb_bbc: клавиша Вектора (строка матрицы · 8 + бит) → внутренний номер клавиши BBC, 0 — нет.
 kb_rev: номер клавиши BBC (0–127) → клавиша Вектора, FFh — нет; 80h + бит — модификатор (бит kb_mod).
-Раскладка — здесь, в одном месте. F1–F5 Вектора — f0–f4 BBC; f5–f9 BBC пока не назначены.
+kb_ss:  F1–F5 при нажатой СС → номера клавиш BBC f5–f9 (решение владельца 07.10.2026).
+Раскладка — здесь, в одном месте. F1–F5 Вектора — f0–f4 BBC, СС + F1–F5 — f5–f9.
+В kb_rev у f5–f9 стоит 40h + клавиша Вектора: нажата, только если нажата и СС.
 Запуск из корня проекта: python3 -I tools/convert/keys.py
 """
 import os
@@ -30,6 +32,7 @@ BBC = {  # внутренние номера клавиш BBC Micro
     'ESCAPE': 0x70, 'f1': 0x71, 'f2': 0x72, 'f3': 0x73, 'f5': 0x74, 'f6': 0x75, 'f8': 0x76, 'f9': 0x77, '\\': 0x78, 'RIGHT': 0x79,
 }
 MODS = {0x00: 5, 0x01: 6}        # SHIFT BBC — СС (бит 5 kb_mod), CTRL BBC — УС (бит 6)
+SHIFTED = ['f5', 'f6', 'f7', 'f8', 'f9']   # СС + F1..F5
 
 
 def db(vals):
@@ -45,11 +48,17 @@ def main():
             rev[c] = i
     for c, bit in MODS.items():
         rev[c] = 0x80 + bit
+    ss = [BBC[k] for k in SHIFTED]
+    for n, c in enumerate(ss):
+        assert rev[c] == 0xFF, hex(c)
+        rev[c] = 0x40 + 11 + n          # F1..F5 — клавиши 11..15 (строка 1, биты 3..7)
     s = ('; Таблицы клавиатуры. Сделано tools/convert/keys.py, руками не править.\n'
-         '; kb_bbc: клавиша Вектора (строка · 8 + бит) -> номер клавиши BBC, 0 — нет.\nkb_bbc:\n' + db(fwd) +
-         '; kb_rev: номер клавиши BBC -> клавиша Вектора; FFh — нет; 80h + бит — модификатор в kb_mod.\n\talign\t128\nkb_rev:\n' + db(rev))
+         '; kb_bbc: клавиша Вектора (строка · 8 + бит) -> номер клавиши BBC, 0 — нет.\n\talign\t128\nkb_bbc:\n' + db(fwd) +
+         '; kb_ss: F1..F5 при нажатой СС -> f5..f9 BBC.\nkb_ss:\n' + db(ss) +
+         '; kb_rev: номер клавиши BBC -> клавиша Вектора; FFh — нет; 80h + бит — модификатор в kb_mod;\n'
+         '; 40h + клавиша — только вместе с СС.\n\talign\t128\nkb_rev:\n' + db(rev))
     open(os.path.join(ROOT, 'v06c/data/keys.asm'), 'w').write(s)
-    print(f'v06c/data/keys.asm: назначено клавиш {sum(1 for c in fwd if c)}, без клавиши на Векторе: '
+    print(f'v06c/data/keys.asm: назначено клавиш {sum(1 for c in fwd if c)} и {len(ss)} с СС, без клавиши на Векторе: '
           + ' '.join(k for k, c in BBC.items() if rev[c] == 0xFF))
 
 
