@@ -3,7 +3,9 @@ import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 600);
 const P = makePair(), { B, bbc } = P;
 const w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
-const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T', 'T1', 'U'];
+const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH'];
+const DRAW_H = [...DRAW, 'T'];                          // HLOIN пишет T на BBC; на Векторе — регистры
+const DRAW_ADD = [...DRAW, 'T', 'T1', 'U'];              // PLS22 → ADD
 const rot = (r) => {
   const a = r(360) * Math.PI / 180, b = r(360) * Math.PI / 180, c = r(360) * Math.PI / 180;
   const [ca, sa, cb, sb, cc, sc] = [Math.cos(a), Math.sin(a), Math.cos(b), Math.sin(b), Math.cos(c), Math.sin(c)];
@@ -30,9 +32,9 @@ const SPECS = [
   { name: 'PLS4', noreg: 'xyc', gen: (r, b) => ({ a: b(), mem: { P: b(), [B.INWK + 14]: b() } }) },
   { name: 'PLS5', noreg: 'ac', gen: (r, b) => ({ x: [15, 21][r(2)], mem: { INWK: body(r, false).mem.INWK } }) },
   { name: 'EDGES', noreg: 'x', gen: (r, b) => ({ a: b(), y: 1 + r(191), mem: { YY: w16(r(4) ? r(256) : r(700) - 220), [B.LSO + 1]: arr(() => r(60), 191) } }) },
-  { name: 'HLOIN2', noreg: 'axyc', skip: DRAW, screen: 'view', gen: (r, b) => ({ a: 1 + r(120), y: 1 + r(191), mem: { YY: w16(r(4) ? r(256) : r(700) - 220) } }) },
-  { name: 'PLANET', noreg: 'axyc', skip: DRAW, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, false) },
-  { name: 'PLANET (солнце)', entry: 'PLANET', ventry: 'PLANET', noreg: 'axyc', skip: DRAW, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, true) },
+  { name: 'HLOIN2', noreg: 'axyc', skip: DRAW_H, screen: 'view', gen: (r, b) => ({ a: 1 + r(120), y: 1 + r(191), mem: { YY: w16(r(4) ? r(256) : r(700) - 220) } }) },
+  { name: 'PLANET', noreg: 'axyc', skip: DRAW_ADD, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, false) },
+  { name: 'PLANET (солнце)', entry: 'PLANET', ventry: 'PLANET', noreg: 'axyc', skip: DRAW_ADD, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, true) },
 ];
 // покрытие ветвей эталона в сериях PLANET
 const COV = ['PL2', 'PL9', 'PL25', 'PL26', 'PLS2', 'PLS22', 'PL42', 'PL43', 'PL40', 'WPL1', 'WP2', 'WP1', 'SUN', 'PLF3', 'PLF17', 'PLF4', 'PLFL2', 'PLFL', 'PLF44', 'PLF11', 'PLF23', 'PLF16', 'PLF10', 'PLFL3', 'PLF8', 'WPLS', 'ED1', 'ED3', 'AR1', 'AR2', 'AR3', 'BL5', 'BL1', 'LL137'];

@@ -3,7 +3,7 @@ import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 3000);
 const P = makePair(), { B, m, bbc } = P;
 const arr = (b, n) => Array.from({ length: n }, b);
-const DRAW = ['SC', 'SCH', 'X1', 'T', 'T1', 'U'];          // T/T1/U — ADD не пишет (liveness launch)
+const DRAW = ['SC', 'SCH', 'X1'];
 // блок корабля: координаты, ориентация, скорость, вращение, флаги; ИИ выключен (тактика — этап P4)
 const ship = (r, b) => {
   const w = arr(b, 36);
@@ -26,7 +26,7 @@ const SPECS = [
   { name: 'CPIX2', noreg: 'axyc', skip: DRAW, screen: 'dash', gen: (r, b) => ({ mem: { X1: r(250), Y1: 193 + r(54), COL: [0xff, 0xf0, 0x0f][r(3)] } }) },
   { name: 'CPIX4', noreg: 'axyc', skip: DRAW, screen: 'dash', gen: (r, b) => ({ mem: { X1: r(250), Y1: 194 + r(53), COL: [0xff, 0xf0, 0x0f][r(3)] } }) },
   { name: 'SCAN', noreg: 'axyc', skip: DRAW, screen: 'dash', gen: (r, b) => { const w = ship(r, b); if (r(4)) w[31] |= 0x10; return { mem: { INWK: w, TYPE: r(8) ? 1 + r(12) : b() } }; } },
-  { name: 'MVEIT', noreg: 'axyc', skip: [...DRAW, ['XX0', 2]], screen: 'dash',
+  { name: 'MVEIT', noreg: 'axyc', skip: [...DRAW, 'T', 'T1', 'U', ['XX0', 2]], screen: 'dash',
     gen: (r, b) => ({ mem: { INWK: ship(r, b), TYPE: 1 + r(12), MCNT: b(), XSAV: b(), ...player(r, b) }, bmem: { XX0: [bp0 & 255, bp0 >> 8] }, vmem: { XX0: [vp0 & 255, vp0 >> 8] } }) },
 ];
 for (const s of SPECS) P.run({ n: N, ...s });
