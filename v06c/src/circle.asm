@@ -197,6 +197,8 @@ bl5:
 	inc	(hl)
 	jp	bl7
 bl1:
+	ld	a, 1
+	ld	(wp_touch), a		; дальше BLINE пишет X1..Y2 (см. wp_step в planet.asm)
 	; быстрый путь: оба конца на экране (старшие байты 0, y < 192) — LL145 только переставляет байты
 	ld	a, (K5 + 1)
 	ld	hl, K5 + 3
@@ -282,6 +284,7 @@ bl8:
 	or	a
 	jp	nz, bl5
 bl7:
+	call	wp_step			; планета: стереть один отрезок прежней окружности
 	ld	hl, (K6)
 	ld	(K5), hl
 	ld	hl, (K6 + 2)

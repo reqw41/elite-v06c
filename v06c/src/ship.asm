@@ -817,11 +817,28 @@ ll72:
 	or	0x08
 	ld	(XX1 + 31), a
 	jp	DOEXP
-ee31:
+ee31:					; на BBC здесь прежние отрезки стираются (LL155) — и корабля нет на экране,
+	xor	a			; пока считаются новые. Здесь прежний список копируется в сторону, а стирается
+	ld	(ll_on), a		; в конце, по отрезку вслед за новым (ll155_ff): без мерцания, итог тот же
+	ld	(ll_edge), a
+	ld	(ll_lp), a
 	ld	a, (XX1 + 31)
 	and	0x08
 	jp	z, ll74
-	call	LL155			; стереть прежние отрезки
+	ld	hl, (XX19)
+	ld	a, (hl)
+	cp	4
+	jp	c, ll74
+	ld	b, a
+	inc	b			; с байтом длины и байтом за списком (LL155 при длине 4 читает и его)
+	ld	de, ll_sh
+	call	ll9_cp
+	ld	a, (ll_sh)
+	add	a, 2
+	rra
+	or	a
+	rra
+	ld	(ll_on), a		; прежних отрезков
 ll74:
 	ld	hl, XX1 + 31
 	ld	a, (hl)
@@ -849,19 +866,22 @@ ll74:
 	ld	h, high XX3
 	ld	a, (hl)
 	ld	(XX15), a
+	ld	(ll_lx), a
 	inc	a
-	jp	z, ll170
+	jp	z, ll_lab1		; вершины нет: в XX15 записан только x
 	inc	l
 	ld	a, (hl)
 	ld	(XX15 + 1), a
 	inc	a
-	jp	z, ll170
+	jp	z, ll_lab2		; записаны только x и y
 	inc	l
 	ld	a, (hl)
 	ld	(XX15 + 2), a
 	inc	l
 	ld	a, (hl)
 	ld	(XX15 + 3), a
+	ld	a, 1
+	ld	(ll_edge), a		; XX15 переписаны целиком
 	xor	a
 	ld	(XX15 + 4), a
 	ld	(XX15 + 5), a
@@ -876,6 +896,14 @@ ll74:
 ll9_las:
 	call	LL145
 	call	nc, ll9_put
+	jp	ll170
+ll_lab1:
+	ld	a, 1
+	ld	(ll_lp), a
+	jp	ll170
+ll_lab2:
+	ld	a, 2
+	ld	(ll_lp), a
 ll170:
 	ld	hl, (XX0)		; V -> рёбра
 	ld	de, 3
@@ -909,6 +937,8 @@ ll75:
 	ld	a, (hl)
 	ld	(Q), a
 	ld	d, a			; вторая вершина
+	ld	a, 1
+	ld	(ll_edge), a		; с этого места XX15 пишут рёбра (см. ll155_ff)
 	ld	h, high XX3
 	ld	l, e
 	ld	a, (hl)
@@ -958,13 +988,18 @@ ll78:
 	jp	ll75
 ll81:
 	ld	a, (U)
+	ld	hl, (XX19)
+	ld	(hl), a
+	jp	ll155_ff
 LL81_2:
 	ld	hl, (XX19)
 	ld	(hl), a
 
 ; LL155: напечатать (или стереть) отрезки корабля из списка XX19: байт 0 — длина списка, дальше по четыре байта.
+; ll155_at — то же для списка по адресу HL.
 LL155:
 	ld	hl, (XX19)
+ll155_at:
 	ld	a, (hl)
 	ld	(XX20), a
 	cp	4
@@ -1002,6 +1037,113 @@ ll27_last:				; последний отрезок — через ячейки: �
 	ld	b, 4
 	call	ll9_cp
 	jp	LOIN
+
+; ll155_ff: печать корабля без мерцания: новые отрезки (список XX19) рисуются, а прежние (копия ll_sh) стираются
+; вперемежку — один новый, один прежний. Рисование — исключающее ИЛИ, от порядка итог не зависит: экран и
+; рабочие области — как после «стереть всё, нарисовать всё» на BBC. Ячейки XX15 в конце — концы последнего
+; нового отрезка; если рёбра не разбирались (ll_edge = 0), — как после стирания на BBC.
+ll155_ff:
+	ld	a, (ll_edge)
+	or	a
+	jp	nz, lf_mix
+	ld	a, (ll_on)
+	or	a
+	jp	z, LL155
+	ld	hl, ll_sh
+	call	ll155_at
+	ld	a, (ll_lp)		; луч без вершины: после стирания на BBC в XX15 успели записать x (и y = FFh)
+	or	a
+	jp	z, LL155
+	ld	hl, ll_lx
+	ld	b, (hl)
+	ld	hl, XX15
+	ld	(hl), b
+	dec	a
+	jp	z, LL155
+	inc	hl
+	ld	(hl), 0xFF
+	jp	LL155
+lf_mix:
+	ld	hl, (XX19)
+	ld	a, (hl)
+	ld	(XX20), a
+	inc	hl
+	ld	(ll_np), hl
+	cp	4
+	jp	nc, lf_n
+	xor	a
+	jp	lf_n2
+lf_n:
+	add	a, 2
+	rra
+	or	a
+	rra
+lf_n2:
+	ld	(ll_nn), a
+	ld	hl, ll_sh + 1
+	ld	(ll_op), hl
+	ld	a, 0xC9			; концы — в регистрах, ячейки X1..Y2 не трогать
+	ld	(lo_swhook), a
+lf_l:
+	ld	a, (ll_nn)
+	or	a
+	jp	z, lf_old
+	dec	a
+	ld	(ll_nn), a
+	jp	z, lf_last
+	ld	hl, (ll_np)
+	call	lf_draw
+	ld	(ll_np), hl
+lf_old:
+	ld	a, (ll_on)
+	or	a
+	jp	z, lf_chk
+	dec	a
+	ld	(ll_on), a
+	ld	hl, (ll_op)
+	call	lf_draw
+	ld	(ll_op), hl
+	jp	lf_l
+lf_chk:
+	ld	a, (ll_nn)
+	or	a
+	jp	nz, lf_l
+	ld	a, 0xC3
+	ld	(lo_swhook), a
+	ret
+lf_last:				; последний новый отрезок — через ячейки XX15, как на BBC
+	ld	a, 0xC3
+	ld	(lo_swhook), a
+	ld	hl, (ll_np)
+	ld	de, XX15
+	ld	b, 4
+	call	ll9_cp
+	call	LOIN
+	ld	a, 0xC9
+	ld	(lo_swhook), a
+	jp	lf_old
+lf_draw:				; отрезок по адресу HL; на выходе HL — за ним
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	a, (hl)
+	inc	hl
+	push	hl
+	ld	h, (hl)
+	ld	l, a
+	call	loin_r
+	pop	hl
+	inc	hl
+	ret
+ll_on:	db	0			; прежних отрезков осталось стереть
+ll_nn:	db	0			; новых отрезков осталось нарисовать
+ll_edge:	db	0		; рёбра уже писали XX15
+ll_lp:	db	0			; луч: записан только x (1) или x и y (2)
+ll_lx:	db	0
+ll_np:	dw	0
+ll_op:	dw	0
+ll_sh:	ds	258			; копия прежнего списка отрезков
 
 ; перенос 6502 на входе LL9 из главного цикла полёта (бит 0) — нужен только при начале взрыва
 ll9_cy:	db	0
