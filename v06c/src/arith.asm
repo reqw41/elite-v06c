@@ -398,26 +398,23 @@ mu8_e:
 	ret
 
 ; DVID4: P = A / Q (целая часть), R = 256 · остаток / Q. X = FEh, перенос 0, A — остаток второго деления.
+; Первый этап развёрнут, как LL31 (второй этап).
 DVID4:
 	ld	l, a
 	ld	h, 0
 	ld	a, (Q)
 	ld	e, a
-	ld	d, 8
-dvl4:
+	dup	8
 	add	hl, hl
-	jp	c, dv8
+	jp	c, $ + 8
 	ld	a, h
 	cp	e
-	jp	c, dv5
-dv8:
+	jp	c, $ + 7
 	ld	a, h
 	sub	e
 	ld	h, a
 	inc	l
-dv5:
-	dec	d
-	jp	nz, dvl4
+	edup
 	ld	a, l
 	ld	(P_), a
 	ld	a, h
