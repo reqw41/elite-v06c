@@ -25,10 +25,12 @@ const report = (name, n, fail, extra = '') => { console.log(`${fail ? 'FAIL' : '
     if (rR !== vR || rb.c !== rv.cf || rv.c !== 0xA5 || (a < q && rv.a !== vR)) fail = `A=${a} Q=${q}: второй процессор R=${rR} C=${rb.c}, Вектор R=${vR} C=${rv.cf} A=${rv.a}`;
   }
   report('LL28', n, fail, `; тактов i8080 ${(tv / n).toFixed(0)}; отличие от точного частного: в среднем ${(err / (n / 2)).toFixed(2)}, наибольшее ${maxe}`); }
-// наклон отрезка: li_div(D, E), D <= E, E <> 0 — то же деление; при D = E — 255, при D = 0 — 0
+// наклон отрезка: li_div(D, E), D <= E, E <> 0: при E < 32 — точная таблица, иначе то же деление по логарифмам;
+// при D = E — 255, при D = 0 — 0
 { let fail = null, n = 0, tv = 0;
   for (let e = 1; e < 256 && !fail; e++) for (let d = 0; d <= e && !fail; d++) {
-    let want; if (d === 0) want = 0; else if (d === e) want = 255; else { sp.call('LL28', { a: d, mem: { Q: e } }); want = sp.mem[S.R]; }
+    let want; if (d === 0) want = 0; else if (d === e) want = 255; else if (e < 32) want = Math.floor(256 * d / e);   // короткие отрезки — точная таблица
+    else { sp.call('LL28', { a: d, mem: { Q: e } }); want = sp.mem[S.R]; }
     const rv = m.call('li_div', { d, e, c: 0xA5, h: 0x12, l: 0x34 });
     n++; tv += rv.cycles;
     if (rv.a !== want || rv.e !== e || rv.c !== 0xA5 || rv.hl !== 0x1234) fail = `D=${d} E=${e}: ждали ${want}, Вектор ${rv.a}, E=${rv.e} C=${rv.c} HL=${rv.hl.toString(16)}`;

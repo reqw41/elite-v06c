@@ -84,6 +84,8 @@ LOGL	equ	LOG + 0x100
 ALOG	equ	LOG + 0x200
 ALOGODD	equ	LOG + 0x300
 	endif
+	align	256
+divtab:	incbin	"divtab.bin"		; наклоны коротких отрезков (tools/convert/divtab.py)
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
 dials:
@@ -102,7 +104,11 @@ vars_end:
 	assert	rom_end <= WS
 
 	ifdef	FAST
+	ifdef	SCHED
+	savebin	"v06c/build/elite_fast_t.rom", 0x0100, rom_end - 0x0100
+	else
 	savebin	"v06c/build/elite_fast.rom", 0x0100, rom_end - 0x0100
+	endif
 	else
 	ifdef	SCHED
 	savebin	"v06c/build/elite_t.rom", 0x0100, rom_end - 0x0100

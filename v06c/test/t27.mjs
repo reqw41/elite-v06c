@@ -10,7 +10,8 @@ const require = createRequire(import.meta.url);
 const { BBC } = require(path.join(ROOT, 'tools/oracle/bbc.js'));
 const { SCN } = require(path.join(ROOT, 'tools/oracle/scenario.js'));
 const name = process.argv[2] || 'launch', LIMIT = +(process.argv[3] || 1e9);
-const m = createVector('elite_t'), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
+const ROM = process.env.ROM || 'elite_t', FREE = !!process.env.FREE;      // FREE=1 — без сверки (быстрая сборка)
+const m = createVector(ROM), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);     // эталон печатает нашим шрифтом
 const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x0F34], [0x0F48, 0x0F51]];
 // вне сравнения: рабочие ячейки рисования и печати на BBC и указатели (в них адреса своей машины)
@@ -46,7 +47,7 @@ outer: for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
     for (let f = 0; f < k; f++) { m.wr('DL', [30]); const la = m.rd('LASCT'); if (la) m.wr('LASCT', [la - 1]); }   // кадры по расписанию, как tick() эталона
     tv += cyc; tb += bbc.cpu.cycles - c0;
     if (inFlight) { flightV += cyc; flightB += bbc.cpu.cycles - c0; flightN++; }
-    const d = compare();
+    const d = FREE ? null : compare();
     if (d) { fail = `проход ${idx} (${label}): ${d}`; break outer; }
   }
 }
@@ -58,10 +59,10 @@ if (flightN) {
 }
 // профиль Вектора по процедурам (метка с прописной буквы или общий помощник), весь сценарий
 const HELP = new Set(['mul8', 'mulhi', 'divlog', 'dash_xor', 'dash_put', 'dash_eor', 'li_div', 'li_addr', 'lo_swhook', 'entry', 'isr', 'cls_all', 'sq_init']);
-const own = Object.entries(L).filter(([n, a]) => a >= 0x100 && a < L.XX21 && (/^[A-Z]/.test(n) || HELP.has(n))).sort((a, b) => a[1] - b[1]);
+const own = Object.entries(L).filter(([n, a]) => a >= 0x100 && a < L.XX21 && (process.env.FINE || /^[A-Z]/.test(n) || HELP.has(n))).sort((a, b) => a[1] - b[1]);
 const cost = {}; let total = 0, kk = 0;
 for (let a = 0x100; a < 0x10000; a++) { while (kk + 1 < own.length && own[kk + 1][1] <= a) kk++; if (prof[a]) { cost[own[kk][0]] = (cost[own[kk][0]] || 0) + prof[a]; total += prof[a]; } }
 console.log(`профиль Вектора в полёте (${flightN} проходов, ${(total / 3e6).toFixed(1)} с машинного времени), доля тактов по процедуре, где стоит команда:`);
-for (const [n, c] of Object.entries(cost).sort((a, b) => b[1] - a[1]).slice(0, 22)) console.log(`${(100 * c / total).toFixed(1).padStart(5)} %  ${n}`);
-console.log(fail ? 'ПРОВАЛ' : 'T27: всё совпало');
+for (const [n, c] of Object.entries(cost).sort((a, b) => b[1] - a[1]).slice(0, process.env.FINE ? 44 : 22)) console.log(`${(100 * c / total).toFixed(1).padStart(5)} %  ${n}`);
+console.log(fail ? 'ПРОВАЛ' : FREE ? `T27: прогон ${ROM} без сверки` : 'T27: всё совпало');
 process.exit(fail ? 1 : 0);

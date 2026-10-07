@@ -350,14 +350,13 @@ ADD:
 	and	0x80
 	ld	(T), a
 	ld	e, a
-	ld	hl, S
-	xor	(hl)
+	ld	hl, (R_)		; L = R, H = S — соседние ячейки
+	xor	h
 	jp	m, MU8
-	ld	a, (R_)
-	ld	hl, P_
-	add	a, (hl)
+	ld	a, (P_)
+	add	a, l
 	ld	b, a
-	ld	a, (S)
+	ld	a, h
 	adc	a, d
 	or	e
 	inc	e			; перенос 6502 здесь равен знаку слагаемых
@@ -366,15 +365,13 @@ ADD:
 	scf
 	ret
 MU8:
-	ld	a, (S)
+	ld	a, h
 	and	0x7F
 	ld	(U), a
 	ld	h, a
 	ld	a, d
 	and	0x7F
 	ld	d, a			; |T1|
-	ld	a, (R_)
-	ld	l, a
 	ld	a, (P_)
 	sub	l
 	ld	b, a

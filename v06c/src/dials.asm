@@ -1,6 +1,6 @@
 ; Панель приборов: DIALS и её части (полоски DIL, DIL2, цвет PZW, компас COMPAS, полоски ракет MSBAR).
-; Перенесено близко к тексту BBC. В SC, SCH держится адрес экрана BBC (&7800–&7EFF), а запись байта режима 5
-; в две плоскости Вектора делает dash_put. Сверка с эталоном — v06c/test/t17.mjs (панель и рабочие области).
+; В SC, SCH держится адрес экрана BBC (&7800–&7EFF). Полоски DIL и DIL2 написаны по смыслу — сразу в две
+; плоскости Вектора; полоски ракет и лампы пишут байт режима 5 через dash_put. Сверка с эталоном — v06c/test/t17.mjs (панель и рабочие области).
 dials_start:
 
 ; dash_put: байт A режима 5 BBC (четыре точки, цвет — старшая и младшая тетрады) по адресу BBC HL — в панель
@@ -153,10 +153,27 @@ dl30:
 dl31:
 	ld	(COL), a
 	ld	c, a
+	ld	h, high dp_nib		; цвет — в маски двух плоскостей (в команды AND ниже)
+	and	15
+	add	a, low dp_nib
+	ld	l, a
+	ld	a, (hl)
+	ld	(dl_e0 + 1), a
+	ld	a, c
+	rrca
+	rrca
+	rrca
+	rrca
+	and	15
+	add	a, low dp_nib
+	ld	l, a
+	ld	a, (hl)
+	ld	(dl_e1 + 1), a
 	ld	b, 4
 	ld	hl, (SC)
 	inc	l
 	inc	l
+	call	dash_scr		; HL — адрес первой строки полоски в плоскости SCR_VIEW
 dl1:
 	ld	a, d
 	cp	4
@@ -165,15 +182,28 @@ dl1:
 	ld	d, a
 	ld	a, e
 dl5:
-	and	c
-	call	dash_put
+	ld	c, a			; C — какие точки знакоместа горят
+dl_e1:
+	and	0
+	ld	(hl), a
+	dec	l
+	ld	(hl), a
+	dec	l
+	ld	(hl), a
+	ld	a, h
+	add	a, high (SCR_2 - SCR_VIEW)
+	ld	h, a
+	ld	a, c
+dl_e0:
+	and	0
+	ld	(hl), a
 	inc	l
-	call	dash_put
+	ld	(hl), a
 	inc	l
-	call	dash_put
-	ld	a, l
-	add	a, 6
-	ld	l, a
+	ld	(hl), a
+	ld	a, h
+	sub	high (SCR_2 - SCR_VIEW) - 1
+	ld	h, a			; следующий столбец, плоскость SCR_VIEW
 	dec	b
 	jp	nz, dl1
 	ld	a, d
@@ -184,14 +214,10 @@ dl5:
 	inc	(hl)
 	ret
 dl2:
-	xor	3			; конец полоски: оставить A левых точек из четырёх
-	ld	d, a
-	ld	a, e
-dl3:
-	add	a, a
-	and	0xEF
-	dec	d
-	jp	p, dl3
+	add	a, low dl_cap		; конец полоски: A левых точек режима 5 из четырёх
+	ld	e, a
+	ld	d, high dl_cap
+	ld	a, (de)
 	ld	e, 0
 	ld	d, 99
 	jp	dl5
@@ -201,16 +227,15 @@ DIL2:
 	ld	d, a
 	ld	hl, (SC)
 	inc	l
-	ld	b, 4
+	call	dash_scr
+	ld	c, 4
 dll10:
 	ld	a, d
 	sub	4
 	jp	nc, dll11
 	ld	a, d
-	ld	d, 0xFF
 	add	a, low dil2_m
 	ld	e, a
-	ld	a, d
 	ld	d, high dil2_m
 	ld	a, (de)
 	ld	d, 0xFF
@@ -219,17 +244,28 @@ dll11:
 	ld	d, a
 	xor	a
 dll12:
-	call	dash_put
+	ld	(hl), a			; четыре строки: чёрточка в плоскости SCR_VIEW, вторая плоскость гасится
+	dec	l
+	ld	(hl), a
+	dec	l
+	ld	(hl), a
+	dec	l
+	ld	(hl), a
+	ld	a, h
+	add	a, high (SCR_2 - SCR_VIEW)
+	ld	h, a
+	xor	a
+	ld	(hl), a
 	inc	l
-	call	dash_put
+	ld	(hl), a
 	inc	l
-	call	dash_put
+	ld	(hl), a
 	inc	l
-	call	dash_put
-	ld	a, l
-	add	a, 5
-	ld	l, a
-	dec	b
+	ld	(hl), a
+	ld	a, h
+	sub	high (SCR_2 - SCR_VIEW) - 1
+	ld	h, a
+	dec	c
 	jp	nz, dll10
 	ld	a, d
 	ld	(Q), a
@@ -237,6 +273,31 @@ dll12:
 	inc	(hl)
 	ret
 
+; dash_scr: адрес BBC HL (&7800–&7EFF) -> HL = адрес в плоскости SCR_VIEW. Портит A.
+dash_scr:
+	push	de
+	ld	a, h
+	sub	0x78
+	add	a, a
+	add	a, a
+	add	a, a
+	ld	e, a
+	ld	a, l
+	and	7
+	add	a, e
+	add	a, DASH_Y
+	cpl
+	ld	e, a
+	ld	a, l
+	rrca
+	rrca
+	rrca
+	and	31
+	or	high SCR_VIEW
+	ld	h, a
+	ld	l, e
+	pop	de
+	ret
 ; DIALS: обновить панель: скорость, крен, тангаж; раз в четыре прохода — энергию, щиты, топливо, температуры,
 ; высоту и компас.
 DIALS:
@@ -553,5 +614,6 @@ sal8:
 
 	align	32
 dp_nib:	db	0x00, 0x03, 0x0C, 0x0F, 0x30, 0x33, 0x3C, 0x3F, 0xC0, 0xC3, 0xCC, 0xCF, 0xF0, 0xF3, 0xFC, 0xFF
-dil2_m:	db	0x80, 0x40, 0x20, 0x10
+dil2_m:	db	0xC0, 0x30, 0x0C, 0x03	; чёрточка шириной в точку режима 5 в четырёх положениях
+dl_cap:	db	0x00, 0xC0, 0xF0, 0xFC	; 0–3 левые точки режима 5
 dials_end:

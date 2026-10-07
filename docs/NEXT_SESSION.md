@@ -43,6 +43,8 @@ BBC, исполняемым под Node.
 - Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
 - **MiSTer 07.10:** владелец проверил образ на железе — заставки, клавиши, экран статуса работают. Заливка:
   `Elite.mgl`, `EliteFast.mgl` (как в `~/.claude` памяти про MiSTer).
+- T28: скорость полёта — 5,8 прохода в секунду (2,27 от BBC); быстрая сборка в полёте выигрывает 1 %. Отчёт —
+  `docs/tasks/T28-report.md`. Сборки: `-DSCHED` → `elite_t.rom`, `-DFAST` → `elite_fast.rom`, обе → `elite_fast_t.rom`.
 - T27, **рубеж М2**: главный цикл полёта (`v06c/src/mainflight.asm`); сценарий `launch` целиком, 525 проходов от
   включения, равен эталону — `sh v06c/build.sh -DSCHED && node v06c/test/t27.mjs`. Полёт: 5,2 прохода в секунду
   против 13,2 у BBC. Профиль — `docs/research/profile_flight_v06c.txt`. Неперенесённые ветви полёта (бой, гибель,

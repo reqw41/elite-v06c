@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 mkdir -p v06c/build
 NAME=elite
-for a in "$@"; do [ "$a" = "-DFAST" ] && NAME=elite_fast; [ "$a" = "-DSCHED" ] && NAME=elite_t; done
+for a in "$@"; do [ "$a" = "-DFAST" ] && NAME=${NAME}_fast; [ "$a" = "-DSCHED" ] && NAME=${NAME}_t; done
 out=$("$ROOT/tools/bin/sjasmplus" --i8080 --fullpath -i v06c/src -i v06c/data "$@" \
 	--lst=v06c/build/$NAME.lst --sym=v06c/build/$NAME.sym v06c/src/elite.asm 2>&1) || {
 	echo "$out"

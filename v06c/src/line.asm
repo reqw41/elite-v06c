@@ -359,6 +359,27 @@ li_addr:
 ; Деление как в LOIN на BBC: A = восемь бит частного 256·D/E (D <= E; при D = E выходит FFh).
 ; Портит B, D. Сохраняет C, E, HL.
 li_div:
+	ld	a, e			; короткий отрезок (dx и dy меньше 32) — наклон из таблицы, результат тот же
+	or	d
+	cp	32
+	jp	nc, li_div_l
+	push	hl
+	ld	a, e
+	rrca
+	rrca
+	rrca
+	ld	l, a
+	and	0x03
+	add	a, high divtab
+	ld	h, a
+	ld	a, l
+	and	0xE0
+	or	d
+	ld	l, a
+	ld	a, (hl)
+	pop	hl
+	ret
+li_div_l:
 	ifdef	FAST
 	ld	a, d			; быстрая сборка: по логарифмам, как отрезок второго процессора
 	or	a
