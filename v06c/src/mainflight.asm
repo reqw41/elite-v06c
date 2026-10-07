@@ -176,9 +176,11 @@ mtt1_t:
 	call	Ze
 	ld	hl, T
 	cp	(hl)
+	ld	e, 1			; перенос 6502 для DORND ниже: 1 после сравнения, 0 после NWSHP без места
 	jp	nc, mtt1_c
 	ld	a, 2
 	call	NWSHP
+	ld	e, 0
 mtt1_c:
 	ld	a, (MANY + 2)
 	or	a
@@ -187,6 +189,8 @@ mtt1_c:
 	dec	(hl)
 	jp	p, MLOOP
 	inc	(hl)
+	ld	a, e
+	rra
 	call	DORND
 	ld	d, a
 	push	af
@@ -909,10 +913,3 @@ ma66:
 	or	a
 	ret	nz
 	jp	STARS
-
-; unported: сюда ведут ветви, которые ещё не перенесены. Образ здесь останавливается, чтобы это было видно.
-unported:
-	jp	unported
-ESCAPE:
-WARP:
-	jp	unported

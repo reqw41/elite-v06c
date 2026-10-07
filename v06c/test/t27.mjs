@@ -31,9 +31,11 @@ function compare() {
 }
 // клавиша BBC → матрица Вектора по таблице образа
 const rows = new Array(8).fill(0);
-const setKey = (code, down) => { let i = m.rd(L.kb_rev + code); const ss = i >= 64 && i < 128;     // 40h + клавиша — вместе с СС
-  if (ss) { i &= 63; m.wr(L.kb_mod, [down ? 0x20 : 0]); }
-  if (i >= 64) throw new Error('клавиша BBC &' + code.toString(16) + ' не назначена');
+let mod = 0;                                                // СС (бит 5) и УС (бит 6) — в kb_mod
+const setKey = (code, down) => { let i = m.rd(L.kb_rev + code);
+  if (i === 255) throw new Error('клавиша BBC &' + code.toString(16) + ' не назначена');
+  if (i & 0x80) { const bit = 1 << (i & 7); mod = down ? mod | bit : mod & ~bit; m.wr(L.kb_mod, [mod]); return; }   // SHIFT, CTRL
+  if (i & 0x40) { i &= 63; mod = down ? mod | 0x20 : mod & ~0x20; m.wr(L.kb_mod, [mod]); }             // 40h + клавиша — вместе с СС
   if (down) rows[i >> 3] |= 1 << (i & 7); else rows[i >> 3] &= ~(1 << (i & 7)); m.wr(L.kb_rows, rows); };
 const VLABEL = { t: 'tt217_t', t2: 'tt217_t2', D2: 'death_d2' };            // метки эталона, которые на Векторе зовутся иначе
 const prof = new Float64Array(0x10000), profAll = new Float64Array(0x10000);   // prof — только проходы полёта
