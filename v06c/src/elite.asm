@@ -119,9 +119,17 @@ vars_end:
 	savebin	"v06c/build/elite_fast.rom", 0x0100, rom_end - 0x0100
 	endif
 	else
+	ifdef	PLAIN
+	ifdef	SCHED
+	savebin	"v06c/build/elite_plain_t.rom", 0x0100, rom_end - 0x0100
+	else
+	savebin	"v06c/build/elite_plain.rom", 0x0100, rom_end - 0x0100
+	endif
+	else
 	ifdef	SCHED
 	savebin	"v06c/build/elite_t.rom", 0x0100, rom_end - 0x0100
 	else
 	savebin	"v06c/build/elite.rom", 0x0100, rom_end - 0x0100
+	endif
 	endif
 	endif

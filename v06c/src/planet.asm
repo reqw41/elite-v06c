@@ -199,6 +199,9 @@ pl82:
 	jp	c, SUN
 	call	WPLS2
 	call	CIRCLE
+	ifdef	PLAIN
+	ret				; сборка -DPLAIN: планета без меридианов и кратера (в эталоне — RTS в PL25)
+	endif
 	ret	c
 	ld	a, (K + 1)
 	or	a
