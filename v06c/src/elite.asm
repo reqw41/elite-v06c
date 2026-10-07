@@ -63,12 +63,15 @@ ws_clr:
 	include	"stubs.asm"
 	include	"title.asm"
 	include	"start.asm"
+	include	"mainloop.asm"
+	include	"status.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
 	include	"words.asm"		; словарь QQ18
 	include	"qq16.asm"
 	include	"na.asm"		; командир по умолчанию
+	include	"keys.asm"
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)

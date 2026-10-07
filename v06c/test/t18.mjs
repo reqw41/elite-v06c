@@ -45,5 +45,18 @@ if (segment('первая заставка (от включения)', N1)) {
   console.log(`переход ко второй заставке: ${t2} тактов i8080 (${(t2 / 3e6).toFixed(2)} с)`);
   segment('вторая заставка', N2);
 }
+// стоянка на станции: пробел на второй заставке → экран статуса → проходы главного цикла
+if (!bad) {
+  const N3 = +(process.argv[4] || 40);
+  bbc.keys.add(0x62); m.wr(L.kb_rows + 7, [0x80]);
+  bbc.pass('MLOOP', 1); const t3 = m.runTo('MLOOP');
+  bbc.keys.delete(0x62); m.wr(L.kb_rows + 7, [0]);
+  console.log(`вторая заставка → станция, экран статуса: ${t3} тактов i8080 (${(t3 / 3e6).toFixed(2)} с)`);
+  let fail = compare('приход в главный цикл');
+  for (let i = 0; i < N3 && !fail; i++) { bbc.pass('MLOOP', 1); m.runTo('MLOOP'); fail = compare(`проход главного цикла ${i}`); }
+  console.log(`${fail ? 'FAIL' : 'OK  '} стоянка: экран статуса и ${N3} проходов главного цикла — обзор, панель и рабочие области = эталон${fail ? ' — ' + fail : ''}`);
+  if (fail) bad++;
+  m.frame(0);
+}
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'T18: всё совпало');
 process.exit(bad ? 1 : 0);
