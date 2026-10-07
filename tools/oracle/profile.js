@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { BBC } = require('./bbc.js');
-const { SCN } = require('./scenario.js');
+const { SCN, prep } = require('./scenario.js');
 const name = process.argv[2] || 'title', from = +(process.argv[3] || 0);
 const m = new BBC({ sched: true }), L = m.lab;
 const ORIG = process.env.ELITE_ORIG || path.resolve(__dirname, '../../orig');
@@ -33,7 +33,8 @@ const first = new Map(starts.map((s) => [s.a, s.n]));
 const stepC = m.step;
 m.step = function () { if (on) { const n = first.get(m.cpu.pc); if (n) calls[n] = (calls[n] || 0) + 1; } stepC(); };
 let idx = 0;
-for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
+for (const step of SCN[name]) {
+  const [label, n, down = [], up = [], k = 2] = step; prep(m, step);
   down.forEach((c) => m.keys.add(c)); up.forEach((c) => m.keys.delete(c));
   for (let i = 0; i < n; i++, idx++) { on = idx >= from; m.pass(label, k); if (on) passes++; }
 }

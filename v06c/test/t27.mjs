@@ -8,7 +8,7 @@ import { createVector, savePng, ROOT } from '../tools/v06c.mjs';
 import { bbcView, vecView, bbcDash, vecDash, firstDiff } from '../tools/screen.mjs';
 const require = createRequire(import.meta.url);
 const { BBC } = require(path.join(ROOT, 'tools/oracle/bbc.js'));
-const { SCN } = require(path.join(ROOT, 'tools/oracle/scenario.js'));
+const { SCN, prep, addr } = require(path.join(ROOT, 'tools/oracle/scenario.js'));
 const name = process.argv[2] || 'launch', LIMIT = +(process.argv[3] || 1e9);
 const ROM = process.env.ROM || 'elite_t', FREE = !!process.env.FREE;      // FREE=1 — без сверки (быстрая сборка)
 const m = createVector(ROM), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
@@ -35,12 +35,16 @@ const setKey = (code, down) => { let i = m.rd(L.kb_rev + code); const ss = i >= 
   if (ss) { i &= 63; m.wr(L.kb_mod, [down ? 0x20 : 0]); }
   if (i >= 64) throw new Error('клавиша BBC &' + code.toString(16) + ' не назначена');
   if (down) rows[i >> 3] |= 1 << (i & 7); else rows[i >> 3] &= ~(1 << (i & 7)); m.wr(L.kb_rows, rows); };
-const VLABEL = { t: 'tt217_t', t2: 'tt217_t2' };            // метки эталона, которые на Векторе зовутся иначе
+const VLABEL = { t: 'tt217_t', t2: 'tt217_t2', D2: 'death_d2' };            // метки эталона, которые на Векторе зовутся иначе
 const prof = new Float64Array(0x10000), profAll = new Float64Array(0x10000);   // prof — только проходы полёта
 let idx = 0, fail = null, tv = 0, tb = 0, flightV = 0, flightB = 0, flightN = 0;
 const t0 = Date.now();
-outer: for (const [label, n, down = [], up = [], k = 2, poke] of SCN[name]) {
-  if (poke) for (const [a, v] of Object.entries(poke)) { bbc.mem.set(v, B[a]); m.wr(WS + B[a], v); }
+outer: for (const step of SCN[name]) {
+  const [label, n, down = [], up = [], k = 2, poke, calls] = step;
+  prep(bbc, step);                                           // записи в память и вызовы шага: эталон…
+  const vput = (map) => { for (const [a, v] of Object.entries(map || {})) m.wr(WS + addr(B, a), v); };
+  vput(poke);                                                // …и то же самое на Векторе
+  for (const [lab, { a = 0, x = 0, y = 0, c = 0 } = {}, mem] of calls || []) { vput(mem); m.call(lab, { a, b: x, c: y, cf: c }); }
   down.forEach((c) => { bbc.keys.add(c); setKey(c, true); }); up.forEach((c) => { bbc.keys.delete(c); setKey(c, false); });
   for (let i = 0; i < n; i++, idx++) {
     if (idx >= LIMIT) break outer;

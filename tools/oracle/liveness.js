@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { BBC } = require('./bbc.js');
-const { SCN } = require('./scenario.js');
+const { SCN, prep } = require('./scenario.js');
 const name = process.argv[2] || 'launch', only = new Set(process.argv.slice(3));
 const m = new BBC({ sched: true }), L = m.lab;
 const ORIG = process.env.ELITE_ORIG || path.resolve(__dirname, '../../orig');
@@ -36,7 +36,8 @@ m.wr = (a, v) => { if (a < 0x100) { const w = owner[pcNow]; writer[a] = w; const
 const step0 = m.step.bind(m);
 m.step = () => { pcNow = m.cpu.pc; step0(); };
 let passes = 0;
-for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
+for (const step of SCN[name]) {
+  const [label, n, down = [], up = [], k = 2] = step; prep(m, step);
   down.forEach((c) => m.keys.add(c)); up.forEach((c) => m.keys.delete(c));
   for (let i = 0; i < n; i++) { m.pass(label, k); passes++; }
 }

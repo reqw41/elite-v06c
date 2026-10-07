@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { BBC } = require('./bbc.js');
-const { SCN } = require('./scenario.js');
+const { SCN, prep } = require('./scenario.js');
 const name = process.argv[2] || 'launch', from = +(process.argv[3] || 0), to = +(process.argv[4] || 1);
 const m = new BBC({ sched: true }), L = m.lab;
 const ORIG = process.env.ELITE_ORIG || path.resolve(__dirname, '../../orig');
@@ -23,7 +23,8 @@ const cyc = {}; let on = false;
 const step0 = m.step.bind(m);
 m.step = () => { const o = owner[m.cpu.pc], c0 = m.cpu.cycles; step0(); if (on && o) cyc[o] = (cyc[o] || 0) + m.cpu.cycles - c0; };
 let idx = 0;
-outer: for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
+outer: for (const step of SCN[name]) {
+  const [label, n, down = [], up = [], k = 2] = step; prep(m, step);
   down.forEach((c) => m.keys.add(c)); up.forEach((c) => m.keys.delete(c));
   for (let i = 0; i < n; i++, idx++) { if (idx >= to) break outer; on = idx >= from; m.pass(label, k); }
 }

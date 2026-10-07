@@ -1,5 +1,6 @@
 // Эталонные сценарии по расписанию кадров. Запуск: node tools/oracle/scenario.js [имя] [--write]
-// Шаг сценария: [метка, проходов, нажать, отпустить, кадров на проход, записать в память {метка: байты}]. Результат — хеши состояния на каждом
+// Шаг сценария: [метка, проходов, нажать, отпустить, кадров на проход, записать в память {метка: байты},
+// вызвать процедуры [[метка, {a, x, y, c}, записать в память перед вызовом], …]]. Адрес записи — «МЕТКА» или «МЕТКА+n». Результат — хеши состояния на каждом
 // проходе; с --write пишется tests/golden/<имя>.json, без него сверяется с записанным.
 'use strict';
 const fs = require('fs');
@@ -7,12 +8,14 @@ const path = require('path');
 const { BBC } = require('./bbc.js');
 const K = { N: 0x55, SPACE: 0x62, F0: 0x20, A: 0x41, S: 0x51, X: 0x42, LT: 0x66, GT: 0x67, H: 0x54, F1: 0x71, F2: 0x72, F3: 0x73, F4: 0x14, F5: 0x74,
   F6: 0x75, F7: 0x16, F8: 0x76, F9: 0x77, K1: 0x30, K2: 0x31, K3: 0x11, RET: 0x49, Q: 0x10, Y: 0x44, RIGHT: 0x79, LEFT: 0x19, UP: 0x39, DOWN: 0x29, D: 0x32,
-  K0: 0x27, K4: 0x12, K5: 0x13, K6: 0x34, K7: 0x24, K8: 0x15, K9: 0x26 };
+  T: 0x23, M: 0x65, E: 0x22, K0: 0x27, K4: 0x12, K5: 0x13, K6: 0x34, K7: 0x24, K8: 0x15, K9: 0x26 };
 // до стоянки на станции: обе заставки и экран статуса
 const DOCK = [['TLL2', 20, [], [], 1], ['TLL2', 1, [K.N]], ['TLL2', 20, [], [K.N], 1], ['MLOOP', 1, [K.SPACE]], ['MLOOP', 5, [], [K.SPACE]]];
 // нажать и отпустить клавиши по очереди в ожидании TT217; out — последняя клавиша выводит в главный цикл
 const tap = (...ks) => ks.flatMap((k) => [['t', 1, [K[k]]], ['t2', 1, [], [K[k]]]]);
 const out = (...ks) => [...tap(...ks.slice(0, -1)), ['MLOOP', 1, [K[ks.at(-1)]]], ['MLOOP', 3, [], [K[ks.at(-1)]]]];
+// появление корабля типа t впереди: z_hi = z, байт поведения ai (бит 7 — тактика, бит 6 — враждебен, бит 0 — ECM)
+const ship = (t, z, ai) => [['ZINF'], ['NWSHP', { a: t }, { 'INWK+7': [z], 'INWK+32': [ai] }]];
 const SCN = {
   title: [['TLL2', 60, [], [], 1]],
   launch: [['TLL2', 60, [], [], 1], ['TLL2', 1, [K.N]], ['TLL2', 60, [], [K.N], 1], ['MLOOP', 1, [K.SPACE]],
@@ -38,17 +41,36 @@ const SCN = {
     ...tap('F3', 'K4', 'RET', 'K5', 'RET', 'K7', 'K1', 'K6', 'RET', 'K0'), ...out('K5', 'RET', 'K0'),
     ...tap('F3', 'K7', 'RET', 'K8', 'RET', 'K9', 'RET', 'K1', 'K0', 'RET', 'K1', 'K1', 'RET', 'K1', 'K2', 'RET', 'K1', 'RET'), ...out('K2', 'RET'),
     ...tap('F3'), ...out('K0', 'RET'), ...tap('F3'), ...out('K1', 'K3'), ...tap('F3'), ...out('K9', 'RET')],
+  // Бой и гибель. Взлёт; Sidewinder стреляет по нам, сбиваем лазером (награда); Mamba — наводим и пускаем ракету;
+  // раненая Cobra пускает ракету в нас — гасим её ECM, Cobra таранит и взрывается; при энергии 12 без щитов
+  // Sidewinder добивает: гибель (85 проходов цикла D2), снова заставка.
+  fight: [...DOCK, ['MLOOP', 3, [K.F0]], ['MLOOP', 70, [], [K.F0], 3],
+    ['MLOOP', 1, [], [], 3, {}, ship(1, 3, 0xFF)], ['MLOOP', 30, [], [], 3], ['MLOOP', 60, [K.A], [], 3], ['MLOOP', 40, [], [K.A], 3],
+    ['MLOOP', 1, [], [], 3, {}, ship(3, 6, 0xC0)], ['MLOOP', 3, [K.T], [], 3], ['MLOOP', 25, [], [K.T], 3], ['MLOOP', 3, [K.M], [], 3], ['MLOOP', 80, [], [K.M], 3],
+    ['MLOOP', 1, [], [], 3, { ECM: [255] }, ship(5, 8, 0xFF)], ['MLOOP', 139, [], [], 3, { 'K%+107': [40] }],
+    ['MLOOP', 3, [K.E], [], 3], ['MLOOP', 95, [], [K.E], 3],
+    ['MLOOP', 1, [], [], 3, { ENERGY: [12], FSH: [0], ASH: [0] }, ship(1, 3, 0xFF)], ['MLOOP', 11, [], [], 3],
+    ['D2', 85, [], [], 3], ['TLL2', 15, [], [], 1]],
 };
+// адрес BBC по «МЕТКА» или «МЕТКА+n»
+const addr = (lab, k) => { const [n, o] = k.split('+'); if (!(n in lab)) throw new Error('нет метки ' + n); return lab[n] + (+o || 0); };
+// записи в память и вызовы шага — для эталона; стенд Вектора делает то же самое у себя (v06c/test/t27.mjs)
+function prep(m, step) {
+  const [, , , , , poke, calls] = step;
+  for (const [a, v] of Object.entries(poke || {})) m.mem.set(v, addr(m.lab, a));
+  for (const [label, regs = {}, mem = {}] of calls || []) { for (const [a, v] of Object.entries(mem)) m.mem.set(v, addr(m.lab, a)); m.call(label, regs); }
+}
 function run(name) {
   const m = new BBC({ sched: true }), out = [];
-  for (const [label, n, down = [], up = [], k = 2, poke] of SCN[name]) {
-    if (poke) for (const [a, v] of Object.entries(poke)) m.mem.set(v, m.lab[a]);
+  for (const step of SCN[name]) {
+    const [label, n, down = [], up = [], k = 2] = step;
+    prep(m, step);
     down.forEach((c) => m.keys.add(c)); up.forEach((c) => m.keys.delete(c));
     for (let i = 0; i < n; i++) { m.pass(label, k); out.push(Object.values(m.state()).join(' ')); }
   }
   return { m, out };
 }
-module.exports = { SCN, K, run };
+module.exports = { SCN, K, run, prep, addr };
 if (require.main === module) {
   const name = process.argv[2] || 'launch', file = path.resolve(__dirname, '../../tests/golden', name + '.json');
   const { m, out } = run(name);
