@@ -45,6 +45,9 @@ BBC, исполняемым под Node.
   `Elite.mgl`, `EliteFast.mgl` (как в `~/.claude` памяти про MiSTer).
 - T29: скорость полёта, пыль и планета — 516 635 → 477 651 тактов (5,8 → 6,3 пр./с); цель 450 000 не взята.
   Отчёт — `docs/tasks/T29-report.md`. Профиль — `docs/research/profile_flight_v06c.txt`.
+- T30–T32: карты, данные о системе, рынок, груз, покупка, продажа;
+  сценарий `trade` (120 точек сверки) равен эталону — `node v06c/test/t27.mjs trade`. Эталон исправлен: `TRTB%`.
+  Отчёт — `docs/tasks/T30-T32-report.md`. Осталось из экранов станции: оборудование `EQSHP`, сохранение.
 - T28: скорость полёта — 5,8 прохода в секунду (2,27 от BBC); быстрая сборка в полёте выигрывает 1 %. Отчёт —
   `docs/tasks/T28-report.md`. Сборки: `-DSCHED` → `elite_t.rom`, `-DFAST` → `elite_fast.rom`, обе → `elite_fast_t.rom`.
 - T27, **рубеж М2**: главный цикл полёта (`v06c/src/mainflight.asm`); сценарий `launch` целиком, 525 проходов от
@@ -82,7 +85,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 q4 q5; do   # и отдельно t18, t27 на сборке -DSCHED node v06c/test/$t.mjs | tail -1; done   # девятнадцать «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # «всё совпало»; t18, t27 и t27 trade — на сборке -DSCHED
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
@@ -92,7 +95,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
    До 450 000 на точной сборке без ослабления сверки — туго; см. гипотезы в `docs/tasks/T29-report.md`.
 2. **Бой и гибель** (остаток P4): попадание, взрыв `DOEXP`, удаление корабля `KS1`, тактика `TACTICS`, ракеты,
    сообщения `MESS`, `DEATH`, пираты и полиция. Для сверки нужны сценарии эталона (T03).
-3. **Экраны станции** (P5): карты, данные о системе, рынок, груз, оборудование — холодный код; сюда уместно
+3. **Экраны станции** (остаток P5): оборудование `EQSHP` (T33) и сохранение — холодный код; сюда уместно
    вернуть локальную модель.
 4. `LL9` по смыслу, пыль в видах назад и в стороны.
 5. При сверке состояния рабочие ячейки рисования и указатели исключаются — список в `v06c/test/t27.mjs`

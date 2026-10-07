@@ -70,6 +70,8 @@ ws_clr:
 	include	"start.asm"
 	include	"mainloop.asm"
 	include	"status.asm"
+	include	"charts.asm"
+	include	"market.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
@@ -77,6 +79,7 @@ ws_clr:
 	include	"qq16.asm"
 	include	"na.asm"		; командир по умолчанию
 	include	"keys.asm"
+	include	"qq23.asm"		; товары рынка
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)

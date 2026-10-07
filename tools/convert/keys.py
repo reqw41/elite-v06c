@@ -33,6 +33,8 @@ BBC = {  # внутренние номера клавиш BBC Micro
 }
 MODS = {0x00: 5, 0x01: 6}        # SHIFT BBC — СС (бит 5 kb_mod), CTRL BBC — УС (бит 6)
 SHIFTED = ['f5', 'f6', 'f7', 'f8', 'f9']   # СС + F1..F5
+# знак, который BBC выдаёт по клавише (таблица ПЗУ системы, TRTB%): буквы — строчные
+ASCII = {'RETURN': 13, 'DELETE': 127, 'SPACE': 32, 'ESCAPE': 27, 'TAB': 0, 'COPY': 0x8B, 'LEFT': 0x8C, 'RIGHT': 0x8D, 'DOWN': 0x8E, 'UP': 0x8F}
 
 
 def db(vals):
@@ -57,6 +59,13 @@ def main():
          '; kb_ss: F1..F5 при нажатой СС -> f5..f9 BBC.\nkb_ss:\n' + db(ss) +
          '; kb_rev: номер клавиши BBC -> клавиша Вектора; FFh — нет; 80h + бит — модификатор в kb_mod;\n'
          '; 40h + клавиша — только вместе с СС.\n\talign\t128\nkb_rev:\n' + db(rev))
+    asc = [0] * 128
+    for k, c in BBC.items():
+        if k in ASCII:
+            asc[c] = ASCII[k]
+        elif len(k) == 1:
+            asc[c] = ord(k.lower())
+    s += ('; kb_ascii: номер клавиши BBC -> знак (как таблица ПЗУ BBC по адресу TRTB%); 0 — нет.\n\talign\t128\nkb_ascii:\n' + db(asc))
     open(os.path.join(ROOT, 'v06c/data/keys.asm'), 'w').write(s)
     print(f'v06c/data/keys.asm: назначено клавиш {sum(1 for c in fwd if c)} и {len(ss)} с СС, без клавиши на Векторе: '
           + ' '.join(k for k, c in BBC.items() if rev[c] == 0xFF))

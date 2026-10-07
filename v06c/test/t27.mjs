@@ -17,7 +17,7 @@ const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x
 // вне сравнения: рабочие ячейки рисования и печати на BBC и указатели (в них адреса своей машины)
 const SKIP = new Set();
 const skip = (n, len = 1) => { for (let k = 0; k < len; k++) SKIP.add((typeof n === 'number' ? n : B[n]) + k); };
-for (const [n, len] of [['P', 3], ['Q', 1], ['R', 1], ['S', 1], ['SWAP', 1], ['YSAV', 1], ['SC', 2], ['X1', 1], ['V', 2], ['XX0', 2], ['INF', 2], ['SLSP', 2],
+for (const [n, len] of [['TRTB%', 2], ['P', 3], ['Q', 1], ['R', 1], ['S', 1], ['SWAP', 1], ['YSAV', 1], ['SC', 2], ['X1', 1], ['V', 2], ['XX0', 2], ['INF', 2], ['SLSP', 2],
   ['YSAV2', 1], ['XSAV2', 1], ['T', 1], ['T1', 1], ['U', 1]]) skip(n, len);
 skip(B.INWK + 33, 2); for (let i = 0; i < 13; i++) skip(0x900 + 36 * i + 33, 2);
 const names = {}; for (const [n, a] of Object.entries(B)) if (a < 0x0F51 && n !== 'S%' && !(a in names)) names[a] = n;
@@ -31,7 +31,11 @@ function compare() {
 }
 // клавиша BBC → матрица Вектора по таблице образа
 const rows = new Array(8).fill(0);
-const setKey = (code, down) => { const i = m.rd(L.kb_rev + code); if (i >= 64) throw new Error('клавиша BBC &' + code.toString(16) + ' не назначена'); if (down) rows[i >> 3] |= 1 << (i & 7); else rows[i >> 3] &= ~(1 << (i & 7)); m.wr(L.kb_rows, rows); };
+const setKey = (code, down) => { let i = m.rd(L.kb_rev + code); const ss = i >= 64 && i < 128;     // 40h + клавиша — вместе с СС
+  if (ss) { i &= 63; m.wr(L.kb_mod, [down ? 0x20 : 0]); }
+  if (i >= 64) throw new Error('клавиша BBC &' + code.toString(16) + ' не назначена');
+  if (down) rows[i >> 3] |= 1 << (i & 7); else rows[i >> 3] &= ~(1 << (i & 7)); m.wr(L.kb_rows, rows); };
+const VLABEL = { t: 'tt217_t', t2: 'tt217_t2' };            // метки эталона, которые на Векторе зовутся иначе
 const prof = new Float64Array(0x10000), profAll = new Float64Array(0x10000);   // prof — только проходы полёта
 let idx = 0, fail = null, tv = 0, tb = 0, flightV = 0, flightB = 0, flightN = 0;
 const t0 = Date.now();
@@ -43,7 +47,7 @@ outer: for (const [label, n, down = [], up = [], k = 2] of SCN[name]) {
     bbc.pass(label, k);
     let cyc;
     const inFlight = label === 'MLOOP' && bbc.mem[B.QQ12] === 0 && idx > 170;
-    try { cyc = m.runTo(label, 3e7, inFlight ? prof : profAll); } catch (e) { fail = `проход ${idx} (${label}): ${e.message}; метка рядом: ${Object.entries(L).filter(([, a]) => a <= (m.cpu.pc & 0xffff)).sort((a, b) => b[1] - a[1])[0][0]}`; break outer; }
+    try { cyc = m.runTo(VLABEL[label] || label, 3e7, inFlight ? prof : profAll); } catch (e) { fail = `проход ${idx} (${label}): ${e.message}; метка рядом: ${Object.entries(L).filter(([, a]) => a <= (m.cpu.pc & 0xffff)).sort((a, b) => b[1] - a[1])[0][0]}`; break outer; }
     for (let f = 0; f < k; f++) { m.wr('DL', [30]); const la = m.rd('LASCT'); if (la) m.wr('LASCT', [la - 1]); }   // кадры по расписанию, как tick() эталона
     tv += cyc; tb += bbc.cpu.cycles - c0;
     if (inFlight) { flightV += cyc; flightB += bbc.cpu.cycles - c0; flightN++; }
@@ -64,5 +68,5 @@ const cost = {}; let total = 0, kk = 0;
 for (let a = 0x100; a < 0x10000; a++) { while (kk + 1 < own.length && own[kk + 1][1] <= a) kk++; if (prof[a]) { cost[own[kk][0]] = (cost[own[kk][0]] || 0) + prof[a]; total += prof[a]; } }
 console.log(`профиль Вектора в полёте (${flightN} проходов, ${(total / 3e6).toFixed(1)} с машинного времени), доля тактов по процедуре, где стоит команда:`);
 for (const [n, c] of Object.entries(cost).sort((a, b) => b[1] - a[1]).slice(0, process.env.FINE ? 44 : 22)) console.log(`${(100 * c / total).toFixed(1).padStart(5)} %  ${n}`);
-console.log(fail ? 'ПРОВАЛ' : FREE ? `T27: прогон ${ROM} без сверки` : 'T27: всё совпало');
+console.log(fail ? 'ПРОВАЛ' : FREE ? `T27: прогон ${ROM} без сверки` : `T27 (${name}): всё совпало`);
 process.exit(fail ? 1 : 0);
