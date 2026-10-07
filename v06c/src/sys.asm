@@ -26,6 +26,16 @@ isr_row:
 	cpl
 	and	0xE0
 	ld	(hl), a			; kb_mod
+	in	a, (0x06)		; джойстик П (порт ПУ) и джойстик порта 0Eh: нажатое — биты, отличные от покоя
+	ld	hl, joy_rest
+	xor	(hl)
+	ld	b, a
+	in	a, (0x0E)
+	inc	hl
+	xor	(hl)
+	or	b
+	and	0xCF
+	call	nz, joy_keys
 	ld	a, 0x88			; все порты на выход
 	out	(0), a
 	ld	a, 0xFF
@@ -153,6 +163,57 @@ ps_one:
 	ld	a, 1
 	ld	(pal_dirty), a
 	ret
+
+; Джойстик. «Джойстик П» — на разъёме ПУ: порт 06h после настройки (83h в порт 04h, 9Fh в порт 05h); джойстик
+; порта 0Eh (ядро MiSTer) — та же раскладка: бит 0 вправо, 1 влево, 2 вверх, 3 вниз, 6 огонь, 7 вторая кнопка.
+; Нажатое — биты, отличные от состояния покоя, снятого при запуске (joy_init), так что полярность не важна.
+; joy_keys: нажатия джойстика становятся нажатиями клавиш в kb_rows: в полёте (QQ11 = 0) — крен, тангаж, лазер
+; и разгон, на остальных экранах — стрелки, пробел и ВК. Игра о джойстике не знает.
+joy_init:
+	ld	a, 0x83
+	out	(0x04), a
+	ld	a, 0x9F
+	out	(0x05), a
+	in	a, (0x06)
+	ld	(joy_rest), a
+	in	a, (0x0E)
+	ld	(joy_rest + 1), a
+	ret
+joy_keys:
+	ld	c, a
+	ld	hl, joy_fly
+	ld	a, (QQ11)
+	or	a
+	jp	z, jk_tab
+	ld	hl, joy_scr
+jk_tab:
+	ld	b, 6
+jk_l:
+	ld	a, (hl)
+	inc	hl
+	and	c
+	jp	z, jk_n
+	ld	e, (hl)
+	inc	hl
+	ld	a, (hl)
+	push	hl
+	ld	d, 0
+	ld	hl, kb_rows
+	add	hl, de
+	or	(hl)
+	ld	(hl), a
+	pop	hl
+	inc	hl
+	jp	jk_c
+jk_n:
+	inc	hl
+	inc	hl
+jk_c:
+	dec	b
+	jp	nz, jk_l
+	ret
+joy_rest:
+	db	0, 0
 
 ; flash: вспышка энергетической бомбы — фон обзора и панели на два кадра жёлтый (на BBC — запись в палитру
 ; до следующего кадра). pal_bg: цвет фона A — в регистры палитры с номером цвета 0.

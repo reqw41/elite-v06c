@@ -66,6 +66,19 @@ def main():
         elif len(k) == 1:
             asc[c] = ord(k.lower())
     s += ('; kb_ascii: номер клавиши BBC -> знак (как таблица ПЗУ BBC по адресу TRTB%); 0 — нет.\n\talign\t128\nkb_ascii:\n' + db(asc))
+    # джойстик: бит порта -> клавиша Вектора (смещение строки в kb_rows, маска). В полёте — клавиши управления,
+    # на остальных экранах — стрелки и пробел.
+    def joy(pairs):
+        out = []
+        for bit, key in pairs:
+            i = rev[BBC[key]]
+            assert i < 64, key
+            out += [1 << bit, i >> 3, 1 << (i & 7)]
+        return out
+    s += ('; joy_fly, joy_scr: джойстик -> клавиши: бит порта, строка в kb_rows, маска клавиши; по шесть записей.\n'
+          '; Биты: 0 вправо, 1 влево, 2 вверх, 3 вниз, 6 огонь, 7 вторая кнопка.\njoy_fly:\n'
+          + db(joy([(0, '.'), (1, ','), (2, 'S'), (3, 'X'), (6, 'A'), (7, 'SPACE')]))
+          + 'joy_scr:\n' + db(joy([(0, 'RIGHT'), (1, 'LEFT'), (2, 'UP'), (3, 'DOWN'), (6, 'SPACE'), (7, 'RETURN')])))
     open(os.path.join(ROOT, 'v06c/data/keys.asm'), 'w').write(s)
     print(f'v06c/data/keys.asm: назначено клавиш {sum(1 for c in fwd if c)} и {len(ss)} с СС, без клавиши на Векторе: '
           + ' '.join(k for k, c in BBC.items() if rev[c] == 0xFF))

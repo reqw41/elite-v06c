@@ -39,6 +39,7 @@ ws_clr:
 	ld	(RAND), hl
 	ld	hl, 0x1D27
 	ld	(RAND + 2), hl
+	call	joy_init		; состояние покоя джойстиков
 	ei
 	jp	TT170
 
