@@ -32,6 +32,7 @@ BBC, исполняемым под Node.
   `v06c/build.sh`, карта памяти `docs/spec/v06c-memory.md` (рабочие области = адрес BBC + `B000h`), стенд
   `v06c/tools/v06c.mjs` (кадры, вызов одной процедуры, снимок). `TT26` сверен с эталоном.
 - T05: `PIXEL`, `LOIN`, `HLOIN` (`v06c/src/line.asm`) — экран равен эталону на 12 000 случаях.
+- Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
 - T06: арифметика, 20 процедур (`v06c/src/arith.asm`), стенд парных тестов `v06c/tools/pair.mjs`, правила
   переноса `docs/spec/porting.md`. Рост кода ×1,35; **время в 1,6–3,3 раза больше BBC** — см. отчёт T06.
 
@@ -41,7 +42,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06; do node v06c/test/$t.mjs | tail -1; done   # три «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 q4; do node v06c/test/$t.mjs | tail -1; done   # четыре «всё совпало»
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
