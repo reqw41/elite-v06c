@@ -49,6 +49,7 @@ ws_clr:
 	include	"screen.asm"
 	include	"dials.asm"
 	include	"reset.asm"
+	include	"universe.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"
