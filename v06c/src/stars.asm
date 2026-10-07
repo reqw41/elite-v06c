@@ -105,6 +105,7 @@ STARS:
 
 ; STARS1: пыль в виде вперёд: каждая пылинка приближается на скорость, смещается на крен и тангаж,
 ; стирается и рисуется заново; ушедшая за край или подошедшая вплотную заменяется новой.
+; |x|·Q и |y|·Q — через mul8 (без MLU1/MLU2); адреса таблиц без st_idx.
 STARS1:
 	ld	a, (NOSTM)
 	ld	c, a
@@ -156,7 +157,28 @@ stl1:
 	ld	(ZZ), a
 	sbc	a, d
 	ld	(hl), a
-	call	MLU1			; y += |y| · Q
+	ld	hl, SY			; y += |y| · Q (mul8 вместо MLU1)
+	ld	b, 0
+	add	hl, bc
+	ld	a, (hl)
+	ld	(Y1), a
+	and	0x7F
+	ld	e, a
+	ld	a, (Q)
+	or	a
+	ld	d, a
+	jp	z, st_y0
+	dec	a
+	ld	(T), a
+	ld	a, d
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, h
+	jp	st_y1
+st_y0:
+	ld	(P_), a
+st_y1:
 	ld	(YY + 1), a
 	ld	hl, SYL
 	ld	b, 0
@@ -170,10 +192,28 @@ stl1:
 	adc	a, (hl)
 	ld	(hl), a
 	ld	(S), a
-	call	st_sx			; x += |x| · Q
+	ld	hl, SX			; x += |x| · Q (mul8 вместо MLU2)
+	ld	b, 0
+	add	hl, bc
 	ld	a, (hl)
 	ld	(X1), a
-	call	MLU2
+	and	0x7F
+	ld	e, a
+	ld	a, (Q)
+	or	a
+	ld	d, a
+	jp	z, st_x0
+	dec	a
+	ld	(T), a
+	ld	a, d
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, h
+	jp	st_x1
+st_x0:
+	ld	(P_), a
+st_x1:
 	ld	(XX + 1), a
 	ld	hl, SXL
 	ld	b, 0
@@ -239,19 +279,25 @@ stl1:
 	call	PIX1			; и стереть пылинку на прежнем месте
 	ld	a, (XX + 1)
 	ld	(X1), a
-	call	st_sx
+	ld	hl, SX
+	ld	b, 0
+	add	hl, bc
 	ld	(hl), a
 	and	0x7F
 	cp	120
 	jp	nc, kill1_c1
 	ld	a, (YY + 1)
-	call	st_sy
+	ld	hl, SY
+	ld	b, 0
+	add	hl, bc
 	ld	(hl), a
 	ld	(Y1), a
 	and	0x7F
 	cp	120
 	jp	nc, kill1_c1
-	call	st_sz
+	ld	hl, SZ
+	ld	b, 0
+	add	hl, bc
 	ld	a, (hl)
 	cp	16
 	jp	c, kill1_c0
@@ -272,19 +318,25 @@ kill1:
 	push	af
 	or	4
 	ld	(Y1), a
-	call	st_sy
+	ld	hl, SY
+	ld	b, 0
+	add	hl, bc
 	ld	(hl), a
 	pop	af
 	call	DORND
 	push	af
 	or	8
 	ld	(X1), a
-	call	st_sx
+	ld	hl, SX
+	ld	b, 0
+	add	hl, bc
 	ld	(hl), a
 	pop	af
 	call	DORND
 	or	144
-	call	st_sz
+	ld	hl, SZ
+	ld	b, 0
+	add	hl, bc
 	ld	(hl), a
 	ld	(ZZ), a
 	jp	stc1
