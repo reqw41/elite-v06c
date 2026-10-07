@@ -256,6 +256,12 @@ mu10:
 ; MLS2: (S R) = XX(1 0), затем MLS1. MLS1: P = ALP1, затем MULTS.
 ; MULTS: (A P) = |A| · (P & 31) со знаком A в бите 7. T = знак, T1 = X = |A| - 1, перенос 0.
 ; При |A| = 0: P(1 0) = 0, A = 0, X = A на входе, перенос не меняется, T1 не меняется.
+MULTS_2:				; на BBC — MULTS-2: сначала P = X
+	ld	d, a
+	ld	a, b
+	ld	(P_), a
+	ld	a, d
+	jp	MULTS
 MLS2:
 	ld	hl, (XX)
 	ld	(R_), hl		; R и S — соседние ячейки

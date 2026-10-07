@@ -41,6 +41,8 @@ BBC, исполняемым под Node.
   `v06c/tools/v06c.mjs` (кадры, вызов одной процедуры, снимок). `TT26` сверен с эталоном.
 - T05: `PIXEL`, `LOIN`, `HLOIN` (`v06c/src/line.asm`) — экран равен эталону на 12 000 случаях.
 - Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
+- T23: звёздная пыль (`v06c/src/stars.asm`), тест `t23.mjs`. По покрытию эталона (`coverage.js launch 123 525`) для
+  взлёта и полёта нужно ещё около 58 процедур — задачи T24–T27 на доске.
 - T19–T22: числа, галактика, клавиши, экран статуса, главный цикл на станции. **От включения до проходов главного
   цикла на станции равно эталону** (`t18.mjs`). Отчёт — `docs/tasks/T19-T22-report.md`. Снимок по клавишам —
   `node v06c/tools/play.mjs <файл.png> 300 N 200 SPACE 200`.
@@ -67,7 +69,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # пятнадцать «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # шестнадцать «всё совпало»
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
