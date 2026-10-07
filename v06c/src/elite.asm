@@ -5,7 +5,8 @@
 
 WS		equ	0xB000		; рабочие области: адрес BBC &0000–&0F3F + WS
 VARS		equ	WS + 0x0200	; переменные слоя Вектора (на BBC здесь векторы системы)
-STACK		equ	WS + 0x0900	; стек растёт вниз от K%
+SQLO		equ	WS + 0x0400	; таблица четвертей квадратов для умножения: 4 страницы
+STACK		equ	WS + 0x0900	; стек растёт вниз от K%, до таблицы — 256 байт
 SCR_VIEW	equ	0xC000		; плоскость обзора: бит 1 цвета
 SCR_2		equ	0xE000		; вторая плоскость: бит 0 цвета (панель)
 DASH_Y		equ	192		; первая строка панели
@@ -29,6 +30,7 @@ ws_clr:
 	ld	a, b
 	or	c
 	jp	nz, ws_clr
+	call	sq_init
 	call	cls_all
 	ld	hl, pal_flight
 	call	pal_set
@@ -46,6 +48,7 @@ main:
 	include	"line.asm"
 	include	"arith.asm"
 	include	"arith2.asm"
+	include	"arith3.asm"
 	include	"demo.asm"
 
 font:
