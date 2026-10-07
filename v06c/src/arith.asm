@@ -206,6 +206,11 @@ ms_zero:
 
 ; MLTU2: (A P+1 P) = (A ~P) · Q без знака: старший байт множимого в A, младший лежит в P перевёрнутым.
 ; X = 0, перенос 0.
+MLTU2_2:				; на BBC — MLTU2-2: сначала Q = X
+	ld	d, a
+	ld	a, b
+	ld	(Q), a
+	ld	a, d
 MLTU2:
 	push	bc
 	ld	c, a

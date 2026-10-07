@@ -50,8 +50,13 @@ main:
 	include	"arith2.asm"
 	include	"arith3.asm"
 	include	"geom.asm"
+	include	"move.asm"
+	include	"scan.asm"
+	include	"stubs.asm"
 	include	"demo.asm"
 
+	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
+	include	"python.asm"
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
 dials:

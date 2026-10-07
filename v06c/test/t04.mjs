@@ -44,7 +44,7 @@ ok([...Array(9)].every((_, i) => m.rd(L.kb_rows + i) === 0), 'после отп�
 
 // 5. печать знака: TT26 на i8080 против TT26 на 6502. Эталону подставлен наш шрифт (на BBC он в ПЗУ, &C000).
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
-let seed = 12345; const rnd = (n) => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 8) % n; };
+let seed = 12345; const rnd = (n) => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return (((t ^ (t >>> 14)) >>> 0) % n); };
 let chars = 0, runs = 0, fail = null;
 for (let run = 0; run < 300 && !fail; run++) {
   bbc.mem.fill(0, 0x6000, 0x7800);

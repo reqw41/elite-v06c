@@ -10,7 +10,7 @@ const N = +(process.argv[2] || 4000);
 let bad = 0;
 const m = createVector('elite'), L = m.L, bbc = new BBC({ sched: true }), B = bbc.lab;
 m.frame(30);
-let seed = 2026; const rnd = (n) => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 8) % n; };
+let seed = 2026; const rnd = (n) => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return (((t ^ (t >>> 14)) >>> 0) % n); };
 const view = () => { const v = new Uint8Array(32 * 192); for (let y = 0; y < 192; y++) for (let c = 0; c < 32; c++) v[y * 32 + c] = m.rd(VIEW + c * 256 + 255 - y); return v; };
 const clear = () => { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) m.wr(VIEW + c * 256 + 64, new Uint8Array(192)); };
 const where = (d) => `столбец ${d.i % 32}, строка ${Math.floor(d.i / 32)}: Вектор ${d.a.toString(2)}, BBC ${d.b.toString(2)}`;
