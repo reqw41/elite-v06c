@@ -56,6 +56,64 @@ dash_put:
 	pop	af
 	ret
 
+; dash_eor: то же исключающим ИЛИ.
+dash_eor:
+	push	af
+	push	bc
+	push	de
+	push	hl
+	ld	c, a
+	ld	a, h
+	sub	0x78
+	add	a, a
+	add	a, a
+	add	a, a
+	ld	b, a			; ряд знакомест · 8
+	ld	a, l
+	and	7
+	add	a, b
+	add	a, DASH_Y
+	cpl
+	ld	e, a			; 255 - y
+	ld	a, l
+	rrca
+	rrca
+	rrca
+	and	31
+	or	high SCR_VIEW
+	ld	d, a
+	ld	h, high dp_nib
+	ld	a, c
+	rrca
+	rrca
+	rrca
+	rrca
+	and	15
+	add	a, low dp_nib
+	ld	l, a
+	ex	de, hl
+	ld	a, (de)
+	xor	(hl)
+	ld	(hl), a
+	ex	de, hl
+	ld	a, d
+	add	a, high (SCR_2 - SCR_VIEW)
+	ld	d, a
+	ld	a, c
+	and	15
+	add	a, low dp_nib
+	ld	l, a
+	ex	de, hl
+	ld	a, (de)
+	xor	(hl)
+	ld	(hl), a
+	ex	de, hl
+	pop	hl
+	pop	de
+	pop	bc
+	pop	af
+	ret
+
 ; PZW: цвета полоски: X = F0h (цвет 2), A = 0Fh (цвет 1) или F0h — когда включено мигание (FLH) и идёт его фаза.
 PZW:
 	ld	b, 0xF0

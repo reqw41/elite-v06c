@@ -523,6 +523,7 @@ mv44:
 	ld	(INWK + 1), a
 	ld	a, (P_ + 1)
 	ld	(INWK), a
+mv45:
 	ld	a, (DELTA)		; z -= скорость игрока
 	ld	(R_), a
 	ld	a, 0x80

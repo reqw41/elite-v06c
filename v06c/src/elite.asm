@@ -53,6 +53,7 @@ ws_clr:
 	include	"stars.asm"
 	include	"circle.asm"
 	include	"planet.asm"
+	include	"flight.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"

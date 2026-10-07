@@ -41,6 +41,10 @@ BBC, исполняемым под Node.
   `v06c/tools/v06c.mjs` (кадры, вызов одной процедуры, снимок). `TT26` сверен с эталоном.
 - T05: `PIXEL`, `LOIN`, `HLOIN` (`v06c/src/line.asm`) — экран равен эталону на 12 000 случаях.
 - Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
+- **MiSTer 07.10:** владелец проверил образ на железе — заставки, клавиши, экран статуса работают. Заливка:
+  `Elite.mgl`, `EliteFast.mgl` (как в `~/.claude` памяти про MiSTer).
+- T26: части полёта и взлёт `TT110` (`v06c/src/flight.asm`), тест `t26.mjs`. До М2 остался T27 — главный цикл полёта
+  `M%` и `TT100`; сейчас `TT100` — заглушка (после взлёта полёт стоит на месте).
 - T24, T25: окружности, взлётный туннель, прицел, луч (`circle.asm`), планета и солнце (`planet.asm`); тесты
   `t24.mjs`, `t25.mjs`. До М2 остались T26 (части полёта) и T27 (главный цикл полёта, сценарий `launch`).
 - T23: звёздная пыль (`v06c/src/stars.asm`), тест `t23.mjs`. По покрытию эталона (`coverage.js launch 123 525`) для
@@ -71,7 +75,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # восемнадцать «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # девятнадцать «всё совпало»
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
@@ -85,7 +89,6 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
    До полёта — переписать панель `DIALS` по смыслу (сейчас в 8,7 раза дольше BBC).
 5. При сверке состояния рабочие ячейки рисования и указатели исключаются — список в `v06c/test/t10.mjs`.
 6. **T03** — сценарии боя, стыковки, торговли, прыжка, гибели (нужны OSWORD 0 и OSFILE в стенде).
-7. Показ на MiSTer: образ `v06c/build/elite.rom` ещё не запускался на железе.
 
 ## Локальная модель (Qwen)
 
