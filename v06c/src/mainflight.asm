@@ -547,7 +547,40 @@ ma21:
 	ld	a, (BST)
 	and	(hl)
 	jp	p, ma58
-	jp	unported		; сбор груза: tnpr, MESS — этап P4
+	ld	a, b			; сбор груза заборником: контейнер — случайный товар, таргон — чужие
+	cp	12			; изделия, капсула — рабы
+	ld	a, 3
+	jp	c, ma_oily
+	jp	nz, ma_slvy2
+	ld	a, 16
+	jp	ma_slvy2
+ma_oily:
+	or	a
+	call	DORND
+	and	7
+ma_slvy2:
+	ld	(QQ29), a
+	ld	a, 1
+	call	tnpr
+	jp	c, ma59			; нет места: груз пропал
+	ld	a, (QQ29)
+	ld	e, a
+	ld	d, 0
+	ld	hl, QQ20
+	add	hl, de
+	inc	(hl)
+	ld	a, e
+	add	a, 208
+	call	MESS
+	jp	ma60
+ma59:
+	call	EXNO3
+ma60:
+	ld	hl, INWK + 31
+	ld	a, (hl)
+	or	0x80
+	ld	(hl), a
+	jp	ma26
 isdk:
 	ld	a, (K_ + NI + 32)	; стыковка: станция не злится, мы носом в щель, щель горизонтальна
 	or	a
