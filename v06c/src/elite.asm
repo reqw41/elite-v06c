@@ -44,6 +44,8 @@ main:
 	include	"text.asm"
 	include	"dash.asm"
 	include	"line.asm"
+	include	"arith.asm"
+	include	"arith2.asm"
 	include	"demo.asm"
 
 font:

@@ -1,0 +1,332 @@
+; Арифметика кассетной версии BBC, первая партия (T06). Правила переноса — docs/spec/porting.md.
+; Регистры: A — как на BBC, X -> B, Y -> C, перенос — как на 6502. После вызова нулевая страница, A, X, Y и
+; перенос равны эталону (v06c/test/t06.mjs); отступления названы в заголовке процедуры.
+arith_start:
+
+; mul8: HL = E · A, без знака. Общее ядро умножений. Портит A, D. Сохраняет BC, E.
+mul8:
+	ld	d, 0
+	ld	h, d
+	ld	l, d
+	add	a, a
+	jp	nc, m8_6
+	ld	l, e
+m8_6:
+	dup	7
+	add	hl, hl
+	add	a, a
+	jp	nc, $ + 4
+	add	hl, de
+	edup
+	ret
+
+; SQUA: (A P) = A·A, бит 7 у A отбрасывается. SQUA2: то же без отбрасывания.
+SQUA:
+	and	0x7F
+SQUA2:
+	ld	(P_), a
+	ld	b, a
+	or	a
+	jp	nz, MU11
+; MU1: P = X, A = X, перенос 0.
+MU1:
+	ld	a, b
+	ld	(P_), a
+	or	a
+	ret
+
+; MLU1: Y1 = SY+Y, (A P) = |Y1| · Q. MLU2: (A P) = |A| · Q.
+MLU1:
+	ld	hl, SY
+	ld	b, 0
+	add	hl, bc
+	ld	a, (hl)
+	ld	(Y1), a
+MLU2:
+	and	0x7F
+	ld	(P_), a
+; MULTU: (A P) = P · Q без знака. На выходе X = 0, перенос 0, T = Q - 1 (при Q = 0 T не меняется).
+MULTU:
+	ld	a, (Q)
+	ld	b, a
+	or	a
+	jp	z, MU1
+; MU11: (A P) = P · X, X <> 0.
+MU11:
+	ld	a, b
+	dec	a
+	ld	(T), a
+	ld	a, (P_)
+	ld	e, a
+	ld	a, b
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, h
+	ld	b, 0
+	or	a			; перенос 0
+	ret
+
+; MU6: P(1 0) = (A A).
+MU6:
+	ld	(P_ + 1), a
+	ld	(P_), a
+	ret
+
+; FMLTU: A = A · Q / 256 без знака. На выходе P = 0, перенос 1, X не меняется.
+FMLTU:
+	ld	e, a
+	ld	a, (Q)
+	call	mul8
+	xor	a
+	ld	(P_), a
+	ld	a, h
+	scf
+	ret
+
+; MULT1: (A P) = Q · A, оба со знаком в бите 7. T = знак, T1 = |Q| - 1, X = 0, перенос 0.
+; При |Q| = 0: (A P) = 0, X = A на входе, перенос = бит 0 у A, T1 не меняется.
+MULT1:
+	ld	d, a
+	and	0x7F
+	ld	e, a			; |A|
+	ld	a, (Q)
+	ld	h, a
+	xor	d
+	and	0x80
+	ld	(T), a
+	ld	a, h
+	and	0x7F
+	jp	z, mu10
+	ld	h, a
+	dec	a
+	ld	(T1), a
+	ld	a, h
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, (T)
+	or	h			; перенос 0
+	ld	b, 0
+	ret
+mu10:
+	ld	(P_), a
+	ld	b, d
+	ld	a, e
+	rrca				; перенос = бит 0 у |A|
+	ld	a, 0
+	ret
+
+; MULT12: (S R) = Q · A со знаком.
+MULT12:
+	call	MULT1
+	ld	(S), a
+	ld	a, (P_)
+	ld	(R_), a
+	ret
+
+; MAD: (A X) = Q · A + (S R). ADD: (A X) = (A P) + (S R). Числа со знаком в бите 7 старшего байта.
+; T1 = A на входе, T = его знак, при разных знаках U — рабочая.
+MAD:
+	call	MULT1
+ADD:
+	ld	(T1), a
+	ld	d, a
+	and	0x80
+	ld	(T), a
+	ld	e, a
+	ld	hl, S
+	xor	(hl)
+	jp	m, MU8
+	ld	a, (R_)
+	ld	hl, P_
+	add	a, (hl)
+	ld	b, a
+	ld	a, (S)
+	adc	a, d
+	or	e
+	inc	e			; перенос 6502 здесь равен знаку слагаемых
+	dec	e
+	ret	z
+	scf
+	ret
+MU8:
+	ld	a, (S)
+	and	0x7F
+	ld	(U), a
+	ld	h, a
+	ld	a, d
+	and	0x7F
+	ld	d, a			; |T1|
+	ld	a, (R_)
+	ld	l, a
+	ld	a, (P_)
+	sub	l
+	ld	b, a
+	ld	a, d
+	sbc	a, h
+	jp	c, mu8_neg
+	xor	e
+	scf
+	ret
+mu8_neg:
+	ld	(U), a
+	ld	h, a
+	ld	a, b
+	cpl
+	inc	a			; Z: младший байт нулевой
+	ld	b, a
+	ld	a, h
+	cpl
+	jp	nz, mu8_e
+	inc	a
+mu8_e:
+	or	0x80
+	xor	e			; перенос 0
+	ret
+
+; DVID4: P = A / Q (целая часть), R = 256 · остаток / Q. X = FEh, перенос 0, A — остаток второго деления.
+DVID4:
+	ld	l, a
+	ld	h, 0
+	ld	a, (Q)
+	ld	e, a
+	ld	d, 8
+dvl4:
+	add	hl, hl
+	jp	c, dv8
+	ld	a, h
+	cp	e
+	jp	c, dv5
+dv8:
+	ld	a, h
+	sub	e
+	ld	h, a
+	inc	l
+dv5:
+	dec	d
+	jp	nz, dvl4
+	ld	a, l
+	ld	(P_), a
+	ld	a, h
+	jp	LL28_4
+
+; LL28: R = 256 · A / Q. При A >= Q: R = 255, A = 255, перенос 1, X не меняется.
+; Иначе X = FEh, перенос 0, A — остаток. LL28_4 — вход без проверки (на BBC — LL28+4).
+LL28:
+	ld	hl, Q
+	cp	(hl)
+	jp	nc, LL2
+LL28_4:
+	ld	h, a
+	ld	l, 0
+	ld	a, (Q)
+	ld	e, a
+	ld	d, 8
+ll31:
+	add	hl, hl
+	jp	c, ll29
+	ld	a, h
+	cp	e
+	jp	c, ll30
+ll29:
+	ld	a, h
+	sub	e
+	ld	h, a
+	inc	l
+ll30:
+	dec	d
+	jp	nz, ll31
+	ld	a, l
+	ld	(R_), a
+	ld	a, h
+	ld	b, 0xFE
+	or	a
+	ret
+LL2:
+	ld	a, 255
+	ld	(R_), a
+	scf
+	ret
+
+; LL5: Q = корень из (R Q). Перенесена команда в команду: на выходе S = 0, T = 0, X, Y, A, перенос — как на BBC.
+LL5:
+	ld	a, (R_)
+	ld	c, a
+	ld	a, (Q)
+	ld	(S), a
+	ld	b, 0
+	xor	a
+	ld	(Q), a
+	ld	a, 8
+	ld	(T), a
+ll6:
+	ld	a, (Q)
+	ld	h, a
+	ld	a, b
+	cp	h
+	jp	c, ll7_0
+	jp	nz, ll8
+	ld	a, c
+	cp	64
+	jp	c, ll7_0
+ll8:
+	ld	a, c
+	sub	64
+	ld	c, a
+	ld	a, b
+	sbc	a, h
+	ld	b, a
+	scf
+	jp	ll7
+ll7_0:
+	or	a
+ll7:
+	ld	a, (Q)
+	rla
+	ld	(Q), a
+	ld	hl, S
+	dup	2
+	ld	a, (hl)
+	add	a, a
+	ld	(hl), a
+	ld	a, c
+	rla
+	ld	c, a
+	ld	a, b
+	rla
+	ld	b, a
+	edup
+	ld	hl, T
+	dec	(hl)
+	jp	nz, ll6
+	ret
+
+; DORND: случайное число в A и X, перенос — как на BBC. DORND2 — то же с переносом 0 на входе.
+; Флаг переполнения 6502 (им пользуется один вызов) не возвращается.
+DORND2:
+	or	a
+DORND:
+	ld	hl, RAND
+	ld	a, (hl)
+	rla
+	ld	b, a
+	inc	hl
+	inc	hl
+	adc	a, (hl)
+	ld	(hl), b
+	dec	hl
+	dec	hl
+	ld	(hl), a
+	inc	hl
+	ld	a, (hl)
+	ld	b, a
+	inc	hl
+	inc	hl
+	adc	a, (hl)
+	ld	(hl), b
+	dec	hl
+	dec	hl
+	ld	(hl), a
+	ret
+arith_end:

@@ -9,7 +9,9 @@ const zlib = require('zlib');
 const { CPU6502, FLAGS } = require('./cpu6502.js');
 
 const ROOT = path.resolve(__dirname, '../..');
-const CAS = path.join(ROOT, 'orig/bbc/cassette');
+// orig/ в git не входит: в соседнем worktree его нет — тогда берётся из ELITE_ORIG или из основного каталога.
+const ORIG = process.env.ELITE_ORIG || (fs.existsSync(path.join(ROOT, 'orig')) ? path.join(ROOT, 'orig') : '/Users/boris/projects/elite-v06c/orig');
+const CAS = path.join(ORIG, 'bbc/cassette');
 const FRAME = 40000;            // тактов 6502 на кадр: 2 МГц, 50 Гц
 const VEC_STUB = 0xff80;        // сюда указывает VEC: «системное» завершение прерывания
 const IRQ_STUB = 0xff90;        // вход в прерывание: STA &FC, JMP (&0204)
@@ -54,7 +56,7 @@ class BBC {
     m.set(out('WORDS9.bin'), 0x0400);
     m.set(out('PYTHON.bin'), 0x7f00);
     m.set(fs.readFileSync(path.join(CAS, '1-source-files/images/P.DIALS.bin')), 0x7800);
-    const rom = path.join(ROOT, 'orig/bbc/mos/os120.rom');
+    const rom = path.join(ORIG, 'bbc/mos/os120.rom');
     if (!fs.existsSync(rom)) throw new Error('нет orig/bbc/mos/os120.rom (ПЗУ системы BBC, нужен шрифт)');
     m.set(fs.readFileSync(rom), 0xc000);
     const w16 = (a, v) => { m[a] = v & 0xff; m[a + 1] = v >> 8; };
