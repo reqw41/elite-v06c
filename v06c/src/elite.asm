@@ -58,6 +58,7 @@ main:
 	include	"sys.asm"
 	include	"text.asm"
 	include	"tokens.asm"
+	include	"screen.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"
@@ -103,5 +104,9 @@ vars_end:
 	ifdef	FAST
 	savebin	"v06c/build/elite_fast.rom", 0x0100, rom_end - 0x0100
 	else
+	ifdef	SCHED
+	savebin	"v06c/build/elite_t.rom", 0x0100, rom_end - 0x0100
+	else
 	savebin	"v06c/build/elite.rom", 0x0100, rom_end - 0x0100
+	endif
 	endif

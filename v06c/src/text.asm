@@ -110,26 +110,8 @@ td_row:
 	jp	nz, td_row
 	jp	tt_ret
 
-; Заглушки до своих этапов: гудок (звук, P6) и очистка обзора с рамкой (P5; здесь — только очистка и курсор).
+; Гудок — заглушка до этапа звука (P6).
 BEEP:
-	ret
-TTX66:
-	ld	h, high SCR_VIEW
-tx_col:
-	ld	l, 255
-	ld	b, DASH_Y
-tx_b:
-	ld	(hl), 0
-	dec	l
-	dec	b
-	jp	nz, tx_b
-	inc	h
-	ld	a, h
-	cp	high SCR_VIEW + 32
-	jp	nz, tx_col
-	ld	a, 1
-	ld	(XC), a
-	ld	(YC), a
 	ret
 
 ; Строка: HL -> знаки, конец — 0.

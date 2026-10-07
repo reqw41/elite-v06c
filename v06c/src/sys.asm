@@ -61,6 +61,31 @@ isr_end:
 	ei
 	ret
 
+; WSCAN: ждать начала следующего кадра (на BBC — по флагу DL, который ставит обработчик кадра).
+; В сборке SCHED кадры считает стенд: возврат сразу, DL = 30 — как в эталоне по расписанию.
+WSCAN:
+	ifdef	SCHED
+	ld	a, 30
+	ld	(DL), a
+	ret
+	else
+	xor	a
+	ld	(DL), a
+ws_lp:
+	ld	a, (DL)
+	or	a
+	jp	z, ws_lp
+	ret
+	endif
+; DEL8: ждать 8 кадров. DELAY: ждать Y кадров (Y — регистр C).
+DEL8:
+	ld	c, 8
+DELAY:
+	call	WSCAN
+	dec	c
+	jp	nz, DELAY
+	ret
+
 ; Ждать следующего кадра.
 wait_frame:
 	ld	hl, v_frames

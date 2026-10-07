@@ -2,12 +2,13 @@
 # Сборка v06c/build/elite.rom (i8080, старт 0100h). Ассемблер: tools/bin/sjasmplus, режим --i8080.
 # sh v06c/build.sh [-DИМЯ ...] — например -DVIEW_YELLOW (обзор жёлтый), -DSCHED (кадры считает стенд).
 # -DFAST — быстрая сборка (умножение и деление по логарифмам), пишется в v06c/build/elite_fast.rom.
+# -DSCHED — сборка для стенда, пишется в v06c/build/elite_t.rom.
 set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 mkdir -p v06c/build
 NAME=elite
-for a in "$@"; do [ "$a" = "-DFAST" ] && NAME=elite_fast; done
+for a in "$@"; do [ "$a" = "-DFAST" ] && NAME=elite_fast; [ "$a" = "-DSCHED" ] && NAME=elite_t; done
 out=$("$ROOT/tools/bin/sjasmplus" --i8080 --fullpath -i v06c/src -i v06c/data "$@" \
 	--lst=v06c/build/$NAME.lst --sym=v06c/build/$NAME.sym v06c/src/elite.asm 2>&1) || {
 	echo "$out"
