@@ -9,7 +9,9 @@ const zlib = require('zlib');
 const { CPU6502, FLAGS } = require('./cpu6502.js');
 
 const ROOT = path.resolve(__dirname, '../..');
-const CAS = path.join(ROOT, 'orig/bbc/cassette');
+// orig/ в git не входит: в соседнем worktree его нет — тогда берётся из ELITE_ORIG или из основного каталога.
+const ORIG = process.env.ELITE_ORIG || (fs.existsSync(path.join(ROOT, 'orig')) ? path.join(ROOT, 'orig') : '/Users/boris/projects/elite-v06c/orig');
+const CAS = path.join(ORIG, 'bbc/cassette');
 const FRAME = 40000;            // тактов 6502 на кадр: 2 МГц, 50 Гц
 const VEC_STUB = 0xff80;        // сюда указывает VEC: «системное» завершение прерывания
 const IRQ_STUB = 0xff90;        // вход в прерывание: STA &FC, JMP (&0204)
@@ -23,7 +25,9 @@ function loadLabels() {
 }
 
 class BBC {
-  constructor() {
+  // sched: true — время по расписанию: прерываний кадра нет, кадры отсчитывает tick() на границе прохода.
+  constructor({ sched = false } = {}) {
+    this.sched = sched;
     this.mem = new Uint8Array(0x10000);
     this.lab = loadLabels();
     this.cpu = new CPU6502((a) => this.rd(a), (a, v) => this.wr(a, v));
@@ -52,7 +56,7 @@ class BBC {
     m.set(out('WORDS9.bin'), 0x0400);
     m.set(out('PYTHON.bin'), 0x7f00);
     m.set(fs.readFileSync(path.join(CAS, '1-source-files/images/P.DIALS.bin')), 0x7800);
-    const rom = path.join(ROOT, 'orig/bbc/mos/os120.rom');
+    const rom = path.join(ORIG, 'bbc/mos/os120.rom');
     if (!fs.existsSync(rom)) throw new Error('нет orig/bbc/mos/os120.rom (ПЗУ системы BBC, нужен шрифт)');
     m.set(fs.readFileSync(rom), 0xc000);
     const w16 = (a, v) => { m[a] = v & 0xff; m[a + 1] = v >> 8; };
@@ -66,6 +70,10 @@ class BBC {
     this.hooks.set(0xfff4, () => this.osbyte());
     this.hooks.set(0xfff1, () => this.osword());
     this.hooks.set(0xffdd, () => { throw new Error('OSFILE: сохранение в эталоне не сделано'); });
+    if (this.sched) {
+      // WSCAN ждёт кадра по флагу DL, который ставит обработчик: по расписанию возвращаемся сразу.
+      this.hooks.set(L.WSCAN, () => { m[L.DL] = 30; this.cpu.a = 30; this.cpu.p &= ~0x82; return true; });
+    }
     this.cpu.pc = m[L['S%']] | (m[L['S%'] + 1] << 8);      // TT170
     this.cpu.s = 0xff; this.cpu.p = FLAGS.U;
   }
@@ -115,6 +123,7 @@ class BBC {
   // Один шаг: прерывания, перехваты, команда.
   step() {
     const c = this.cpu;
+    if (this.sched) { const h0 = this.hooks.get(c.pc); if (h0) { if (h0(this)) c.rts(); return; } const w0 = this.watch.get(c.pc); if (w0) w0(this); c.step(); return; }
     if (c.cycles >= this.nextVsync) {
       this.nextVsync += FRAME; this.frames++; this.ifr |= 0x02;
       this.palDash.set(this.ula);                          // к концу кадра стоит палитра панели
@@ -158,6 +167,25 @@ class BBC {
     return r;
   }
   peek(label, n = 1) { const at = typeof label === 'number' ? label : this.lab[label]; return n === 1 ? this.mem[at] : Array.from(this.mem.subarray(at, at + n)); }
+  // Кадр по расписанию: всё, что обработчик кадра делает с состоянием игры, — DL и счётчик паузы лазера.
+  tick(n = 1) {
+    const L = this.lab;
+    for (let i = 0; i < n; i++) { this.frames++; this.mem[L.DL] = 30; if (this.mem[L.LASCT]) this.mem[L.LASCT]--; }
+    this.palView.set([0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 7, 7, 7]);
+    this.palDash.set([0, 0, 1, 1, 0, 0, 1, 1, 3, 3, 2, 2, 3, 3, 2, 2]);
+  }
+  // Один проход цикла по расписанию: идти до метки, затем отсчитать k кадров.
+  pass(label, k = 2, maxCycles = 4e7) {
+    const a = this.lab[label], end = this.cpu.cycles + maxCycles;
+    do { this.step(); } while (this.cpu.pc !== a && this.cpu.cycles < end);
+    if (this.cpu.pc !== a) throw new Error(`проход не дошёл до ${label}`);
+    this.tick(k);
+  }
+  // Состояние игры для сверки: нулевая страница игры, пилот, блоки кораблей, слоты и переменные, экран.
+  state() {
+    return { zp: this.hash(0, 0xb0), t: this.hash(0x300, 0x372), k: this.hash(0x900, 0xd40), wp: this.hash(0xd40, 0xf34),
+      scr: this.hash(0x6000, 0x7f00) };
+  }
   press(code, frames = 6) { this.keys.add(code); this.runFrames(frames); this.keys.delete(code); }
 
   // Экран 256×248: сверху режим 4 (1 бит), снизу 56 строк режима 5 (2 бита, точки двойной ширины).
