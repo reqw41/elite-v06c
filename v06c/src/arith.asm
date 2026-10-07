@@ -165,6 +165,74 @@ mu10:
 	ld	a, 0
 	ret
 
+; MLS2: (S R) = XX(1 0), затем MLS1. MLS1: P = ALP1, затем MULTS.
+; MULTS: (A P) = |A| · (P & 31) со знаком A в бите 7. T = знак, T1 = X = |A| - 1, перенос 0.
+; При |A| = 0: P(1 0) = 0, A = 0, X = A на входе, перенос не меняется, T1 не меняется.
+MLS2:
+	ld	hl, (XX)
+	ld	(R_), hl		; R и S — соседние ячейки
+MLS1:
+	ld	d, a
+	ld	a, (ALP1)
+	ld	(P_), a
+	ld	a, d
+MULTS:
+	ld	b, a
+	push	af
+	and	0x80
+	ld	(T), a
+	ld	a, b
+	and	0x7F
+	jp	z, ms_zero
+	pop	de
+	ld	e, a
+	dec	a
+	ld	(T1), a
+	ld	b, a
+	ld	a, (P_)
+	and	31
+	call	mul8
+	ld	a, l
+	ld	(P_), a
+	ld	a, (T)
+	or	h			; перенос 0
+	ret
+ms_zero:
+	pop	af			; перенос — как на входе
+	ld	a, 0
+	ld	(P_ + 1), a
+	ld	(P_), a
+	ret
+
+; MLTU2: (A P+1 P) = (A ~P) · Q без знака: старший байт множимого в A, младший лежит в P перевёрнутым.
+; X = 0, перенос 0.
+MLTU2:
+	push	bc
+	ld	c, a
+	ld	a, (Q)
+	ld	b, a
+	ld	e, a
+	ld	a, (P_)
+	cpl
+	call	mul8			; младший байт · Q
+	ld	a, l
+	ld	(P_), a
+	push	hl
+	ld	e, b
+	ld	a, c
+	call	mul8			; старший байт · Q
+	pop	de
+	ld	e, d
+	ld	d, 0
+	add	hl, de
+	ld	a, l
+	ld	(P_ + 1), a
+	ld	a, h
+	pop	bc
+	ld	b, 0
+	or	a
+	ret
+
 ; MULT12: (S R) = Q · A со знаком.
 MULT12:
 	call	MULT1

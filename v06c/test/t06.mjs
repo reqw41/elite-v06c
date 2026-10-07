@@ -16,6 +16,10 @@ const SPECS = [
   { name: 'FMLTU', gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { Q: b() } }) },
   { name: 'MULT1', gen: (r, b) => ({ a: sm(r, b), y: b(), mem: { Q: r(8) ? sm(r, b) : [0, 128][r(2)] } }) },
   { name: 'MULT12', gen: (r, b) => ({ a: sm(r, b), y: b(), mem: { Q: r(8) ? sm(r, b) : [0, 128][r(2)] } }) },
+  { name: 'MULTS', gen: (r, b) => ({ a: r(6) ? b() : [0, 128][r(2)], y: b(), c: r(2), mem: { P: b() } }) },
+  { name: 'MLS1', gen: (r, b) => ({ a: r(6) ? b() : [0, 128][r(2)], y: b(), c: r(2), mem: { ALP1: b() } }) },
+  { name: 'MLS2', gen: (r, b) => ({ a: r(6) ? b() : [0, 128][r(2)], y: b(), c: r(2), mem: { ALP1: b(), XX: [b(), b()] } }) },
+  { name: 'MLTU2', gen: (r, b) => ({ a: b(), y: b(), c: r(2), mem: { P: b(), Q: b() } }) },
   { name: 'ADD', gen: (r, b) => (r(5) ? { a: b(), y: b(), mem: { P: b(), S: b(), R: b() } }
     : (() => { const hi = b() & 127, lo = b(); return { a: hi | (r(2) << 7), y: b(), mem: { P: lo, S: hi | (r(2) << 7), R: r(3) ? lo : b() } }; })()) },   // равные модули
   { name: 'MAD', gen: (r, b) => ({ a: b(), y: b(), mem: { Q: b(), S: b(), R: b() } }) },
@@ -30,7 +34,7 @@ for (const s of SPECS) P.run({ n: N, ...s });
 P.timing();
 
 // Рост кода: байты BBC (метка и длина, из листинга) против блока arith_start..arith_end на Векторе.
-const BBC_SIZE = [['SQUA', B.FMLTU2 - B.SQUA, 'SQUA…MU6'], ['FMLTU', 24, 'FMLTU'], ['MULT1', B.TAS3 - B.MULT1, 'MULT1, MULT12'], ['MAD', B.TIS1 - B.MAD, 'MAD, ADD'],
+const BBC_SIZE = [['SQUA', B.FMLTU2 - B.SQUA, 'SQUA…MU6'], ['FMLTU', 24, 'FMLTU'], ['MLS2', B.SQUA - B.MLS2, 'MLS2, MLS1, MULTS'], ['MLTU2', B.MUT3 - B.MLTU2, 'MLTU2'], ['MULT1', B.TAS3 - B.MULT1, 'MULT1, MULT12'], ['MAD', B.TIS1 - B.MAD, 'MAD, ADD'],
   ['DVID4', B.DVID3B2 - B.DVID4, 'DVID4'], ['LL5', B.LL28 - B.LL5, 'LL5'], ['LL28', B.LL38 - B.LL28, 'LL28'], ['DORND2', 21, 'DORND']];
 const b = BBC_SIZE.reduce((s, r) => s + r[1], 0), v = m.L.arith_end - m.L.arith_start, core = m.L.SQUA - m.L.mul8;
 { let badsq = 0; for (let x = 0; x < 512; x++) if ((m.rd(m.L.SQLO + x) | (m.rd(m.L.SQLO + 512 + x) << 8)) !== Math.floor(x * x / 4)) badsq++; console.log(`${badsq ? 'FAIL' : 'OK  '} таблица четвертей квадратов: 512 значений`); if (badsq) process.exitCode = 1; }
