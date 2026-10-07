@@ -82,9 +82,9 @@ export function createVector(name = 'elite') {
       return r;
     },
     // Исполнять программу (без видео и прерываний) до прихода в метку; хотя бы одна команда. Возврат — такты.
-    runTo(label, maxInsns = 2e8) {
+    runTo(label, maxInsns = 2e8, prof = null) {
       const at = m.at(label); let cycles = 0, n = 0;
-      do { cpu.instruction(); cycles += cpu.vcycles | 0; if (cpu.last_opcode === 0xd3) io.commit(); if (++n > maxInsns) throw new Error(`runTo ${label}: не дошли за ${maxInsns} команд, PC=${(cpu.pc & 0xffff).toString(16)}`); } while ((cpu.pc & 0xffff) !== at);
+      do { const pc = cpu.pc & 0xffff; cpu.instruction(); cycles += cpu.vcycles | 0; if (prof) prof[pc] += cpu.vcycles | 0; if (cpu.last_opcode === 0xd3) io.commit(); if (++n > maxInsns) throw new Error(`runTo ${label}: не дошли за ${maxInsns} команд, PC=${(cpu.pc & 0xffff).toString(16)}`); } while ((cpu.pc & 0xffff) !== at);
       return cycles;
     },
     bmp: () => v06c.bmp,

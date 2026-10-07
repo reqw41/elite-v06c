@@ -34,6 +34,8 @@ rs_b:
 	jp	nz, rs_b
 	ld	a, 0xFF
 	ld	(QQ12), a
+RES4:					; заправить щиты и энергию, дальше RES2
+	ld	a, 0xFF
 	ld	(FSH), a
 	ld	(ASH), a
 	ld	(ENERGY), a

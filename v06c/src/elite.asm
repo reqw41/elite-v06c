@@ -54,6 +54,7 @@ ws_clr:
 	include	"circle.asm"
 	include	"planet.asm"
 	include	"flight.asm"
+	include	"mainflight.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"

@@ -1,0 +1,735 @@
+; Главный цикл полёта: M% (16 частей кассетной версии BBC), TT100 (появление кораблей), MAS1, ECMOF, GOIN.
+; Перенесено близко к тексту BBC. Сверка — v06c/test/t27.mjs: сценарий launch целиком против эталона.
+; Ветви боя, сбора груза, гибели и удаления корабля зовут ещё не перенесённые процедуры (unported).
+
+; MAS1: INWK(X+2 X+1 X) += 2 · INWK(Y+1 Y) — сдвинуть точку вдоль вектора ориентации; A = |старший байт|.
+MAS1:
+	ld	hl, INWK
+	ld	d, 0
+	ld	e, c
+	add	hl, de
+	ld	a, (hl)
+	add	a, a
+	ld	(K + 1), a
+	inc	hl
+	ld	a, (hl)
+	rla
+	ld	(K + 2), a
+	ld	a, 0
+	rra
+	ld	(K + 3), a
+	push	bc
+	call	MVT3
+	pop	bc
+	ld	hl, INWK + 2
+	ld	d, 0
+	ld	e, b
+	add	hl, de
+	ld	(hl), a
+	ld	d, a
+	dec	hl
+	ld	a, (K + 2)
+	ld	(hl), a
+	dec	hl
+	ld	a, (K + 1)
+	ld	(hl), a
+	ld	a, d
+	and	0x7F
+	ret
+
+; ECMOF: выключить ECM: счётчики, лампа, звук.
+ECMOF:
+	xor	a
+	ld	(ECMA), a
+	ld	(ECMP), a
+	call	ECBLB
+	ld	a, 72
+	jp	NOISE
+
+; GOIN: стыковка: туннель, заправка щитов и энергии, на станцию.
+GOIN:
+	xor	a
+	ld	(QQ22 + 1), a
+	call	LAUN
+	call	RES4
+	jp	BAY
+
+; TT100: проход главного цикла в полёте: M%, счётчик сообщения, раз в 256 проходов — новые корабли.
+TT100:
+	call	M_
+	ld	hl, DLY
+	dec	(hl)
+	jp	z, me2
+	jp	p, me3
+	inc	(hl)
+me3:
+	ld	hl, MCNT
+	dec	(hl)
+	jp	nz, MLOOP
+	ld	hl, MJ			; проверка без сброса переноса: он идёт в генератор случайных чисел
+	inc	(hl)
+	dec	(hl)
+	jp	nz, MLOOP
+	call	DORND			; астероид или контейнер
+	cp	35
+	jp	nc, mtt1
+	ld	a, (MANY + 10)
+	cp	3
+	jp	nc, mtt1
+	call	ZINF
+	ld	a, 38
+	ld	(INWK + 7), a
+	or	a			; на BBC перенос здесь — от сравнения выше (ноль)
+	call	DORND
+	ld	(INWK), a
+	ld	d, a
+	ld	a, b
+	ld	(INWK + 3), a
+	ld	a, d
+	push	af
+	and	0x80
+	ld	(INWK + 2), a
+	ld	a, b
+	and	0x80
+	ld	(INWK + 5), a
+	pop	af
+	ld	a, (INWK + 1)
+	rla
+	rla
+	ld	(INWK + 1), a
+	ld	a, (RAND + 3)
+	ld	e, a
+	call	DORND
+	ld	d, a
+	push	af
+	xor	e			; переполнение 6502 при последнем сложении в DORND: знак суммы отличается
+	ld	l, a			; от знака обоих слагаемых
+	ld	a, b
+	xor	d
+	and	l
+	jp	m, mtt4
+	pop	af
+	push	af
+	or	0x6F
+	ld	(INWK + 29), a
+	ld	a, (SSPR)
+	or	a
+	jp	nz, mtt1_p
+	pop	af
+	ld	a, b
+	jp	c, mtt2
+	and	31
+	or	16
+	ld	(INWK + 27), a
+	or	a
+	jp	mtt3
+mtt2:
+	or	0x7F
+	ld	(INWK + 30), a
+	scf
+mtt3:
+	call	DORND
+	cp	5
+	ld	a, 10
+	jp	nc, mtt3_n
+	ld	a, 11
+mtt3_n:
+	call	NWSHP
+	jp	mtt1
+mtt4:
+	pop	af
+	jp	GTHG_
+mtt1_p:
+	pop	af
+mtt1:
+	ld	a, (SSPR)		; полиция и пираты — только вне зоны станции
+	or	a
+	jp	nz, MLOOP
+	call	BAD
+	add	a, a
+	ld	d, a
+	ld	a, (MANY + 2)
+	or	a
+	ld	a, d
+	jp	z, mtt1_t
+	ld	hl, FIST
+	or	(hl)
+mtt1_t:
+	ld	(T), a
+	call	Ze
+	ld	hl, T
+	cp	(hl)
+	jp	nc, mtt1_c
+	ld	a, 2
+	call	NWSHP
+mtt1_c:
+	ld	a, (MANY + 2)
+	or	a
+	jp	nz, MLOOP
+	ld	hl, EV
+	dec	(hl)
+	jp	p, MLOOP
+	inc	(hl)
+	call	DORND
+	ld	d, a
+	ld	a, (gov)
+	or	a
+	ld	a, d
+	jp	z, label_2
+	cp	90
+	jp	nc, MLOOP
+	and	7
+	ld	hl, gov
+	cp	(hl)
+	jp	c, MLOOP
+label_2:
+	jp	unported		; пираты и охотники: Ze, разбор стаи — этап P4
+me2:
+	jp	unported		; стереть сообщение: MESS — этап P4
+
+; M%: проход цикла полёта.
+M_:
+	ld	a, (K_)			; подмешать в генератор случайных чисел координату планеты
+	ld	(RAND), a
+	; --- часть 2: крен и тангаж по ручкам JSTX, JSTY ---
+	ld	a, (JSTX)
+	ld	b, a
+	call	cntr
+	call	cntr
+	ld	a, b
+	ld	(JSTX), a
+	xor	0x80
+	ld	c, a
+	and	0x80
+	ld	(ALP2), a
+	xor	0x80
+	ld	(ALP2 + 1), a
+	ld	a, c
+	or	a
+	jp	p, m_roll
+	cpl
+	inc	a
+m_roll:
+	rrca
+	rrca
+	and	0x3F
+	ld	e, 1			; E — перенос 6502 после этого места: 1, если крен не меньше 8
+	cp	8
+	jp	nc, m_roll2
+	or	a
+	rra
+	ld	e, 0
+m_roll2:
+	ld	(ALP1), a
+	ld	hl, ALP2
+	or	(hl)
+	ld	(ALPHA), a
+	ld	a, (JSTY)
+	ld	b, a
+	push	de
+	call	cntr
+	pop	de
+	ld	a, b
+	ld	(JSTY), a
+	xor	0x80
+	ld	c, a
+	and	0x80
+	ld	(BET2 + 1), a
+	xor	0x80
+	ld	(BET2), a
+	ld	a, c
+	or	a
+	jp	p, m_pitch
+	cpl
+m_pitch:
+	add	a, 4			; на BBC сюда приходит перенос от расчёта крена
+	add	a, e
+	rrca
+	rrca
+	rrca
+	rrca
+	and	0x0F
+	cp	3
+	jp	nc, m_pitch2
+	or	a
+	rra
+m_pitch2:
+	ld	(BET1), a
+	ld	hl, BET2
+	or	(hl)
+	ld	(BETA), a
+	; --- часть 3: скорость, ракеты, бомба, капсула, ECM, стыковочный компьютер, лазер ---
+	ld	a, (KY2)
+	or	a
+	jp	z, ma17
+	ld	a, (DELTA)
+	cp	40
+	jp	nc, ma17
+	inc	a
+	ld	(DELTA), a
+ma17:
+	ld	a, (KY1)
+	or	a
+	jp	z, ma4
+	ld	hl, DELTA
+	dec	(hl)
+	jp	nz, ma4
+	inc	(hl)
+ma4:
+	ld	hl, NOMSL
+	ld	a, (KY15)
+	and	(hl)
+	jp	z, ma20
+	ld	c, 0xEE			; снять ракету с цели
+	call	ABORT
+	ld	a, 40
+	call	NOISE
+	xor	a
+	ld	(MSAR), a
+ma20:
+	ld	a, (MSTG)
+	or	a
+	jp	p, ma25
+	ld	a, (KY14)
+	or	a
+	jp	z, ma25
+	ld	d, a
+	ld	a, (NOMSL)
+	or	a
+	jp	z, ma25
+	ld	b, a
+	ld	a, d
+	ld	(MSAR), a		; взвести ракету
+	ld	c, 0xE0
+	call	MSBAR
+ma25:
+	ld	a, (KY16)
+	or	a
+	jp	z, ma24
+	ld	a, (MSTG)
+	or	a
+	jp	m, ma64
+	call	FRMIS
+ma24:
+	ld	a, (KY12)
+	or	a
+	jp	z, ma76
+	ld	hl, BOMB
+	ld	a, (hl)
+	add	a, a
+	ld	(hl), a
+ma76:
+	ld	hl, ESCP
+	ld	a, (KY13)
+	and	(hl)
+	jp	nz, ESCAPE
+	ld	a, (KY18)
+	or	a
+	call	nz, WARP
+	ld	hl, ECM
+	ld	a, (KY17)
+	and	(hl)
+	jp	z, ma64
+	ld	a, (ECMA)
+	or	a
+	jp	nz, ma64
+	ld	hl, ECMP
+	dec	(hl)
+	call	ECBLB2
+ma64:
+	ld	hl, DKCMP
+	ld	a, (KY19)
+	and	(hl)
+	ld	hl, SSPR
+	and	(hl)
+	jp	z, ma68
+	ld	a, (K_ + NI + 32)
+	or	a
+	jp	p, GOIN
+ma68:
+	xor	a
+	ld	(LAS), a
+	ld	a, (DELTA)		; DELT4 = скорость · 64
+	ld	l, 0
+	or	a
+	rra
+	ld	h, a
+	ld	a, l
+	rra
+	ld	l, a
+	ld	a, h
+	or	a
+	rra
+	ld	h, a
+	ld	a, l
+	rra
+	ld	l, a
+	ld	(DELT4), hl
+	ld	a, (LASCT)
+	or	a
+	jp	nz, ma3
+	ld	a, (KY7)
+	or	a
+	jp	z, ma3
+	ld	a, (GNTMP)
+	cp	242
+	jp	nc, ma3
+	ld	a, (VIEW)
+	ld	e, a
+	ld	d, 0
+	ld	hl, LASER
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	jp	z, ma3
+	push	af			; огонь
+	and	0x7F
+	ld	(LAS), a
+	ld	(LAS2), a
+	xor	a
+	call	NOISE
+	call	LASLI
+	pop	af
+	or	a
+	jp	p, ma1
+	xor	a
+ma1:
+	and	0xFA
+	ld	(LASCT), a
+	; --- части 4–12: корабли по местам ---
+ma3:
+	xor	a
+mal1:
+	ld	(XSAV), a
+	ld	b, a
+	ld	e, a
+	ld	d, 0
+	ld	hl, FRIN
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	jp	z, ma18
+	ld	(TYPE), a
+	call	GINF
+	ld	hl, (INF)
+	ld	de, INWK
+	ld	b, NI
+	call	ll9_cp
+	ld	a, (TYPE)
+	or	a
+	jp	m, ma21
+	add	a, a
+	ld	e, a
+	ld	d, 0
+	ld	hl, XX21 - 2
+	add	hl, de
+	ld	a, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, a
+	ld	(XX0), hl
+	ld	a, (BOMB)
+	or	a
+	jp	p, ma21
+	ld	a, e
+	cp	2 * 8
+	jp	z, ma21
+	ld	a, (INWK + 31)
+	and	0x20
+	jp	nz, ma21
+	ld	a, (INWK + 31)		; бомба: всё, кроме станции, гибнет
+	or	0x80
+	ld	(INWK + 31), a
+	call	EXNO2
+ma21:
+	call	MVEIT
+	ld	hl, (INF)
+	ex	de, hl
+	ld	hl, INWK
+	ld	b, NI
+	call	ll9_cp
+	ld	a, (INWK + 31)		; часть 6: столкновение, стыковка, сбор груза — только вплотную
+	and	0xA0
+	call	MAS4
+	jp	nz, ma26
+	ld	a, (INWK)
+	ld	hl, INWK + 3
+	or	(hl)
+	ld	hl, INWK + 6
+	or	(hl)
+	jp	m, ma26
+	ld	d, a
+	ld	a, (TYPE)
+	ld	b, a
+	or	a
+	jp	m, ma26
+	cp	8
+	jp	z, isdk
+	ld	a, d
+	and	0xC0
+	jp	nz, ma26
+	ld	a, b
+	cp	9
+	jp	z, ma26
+	cp	11
+	jp	c, ma58
+	ld	hl, INWK + 5
+	ld	a, (BST)
+	and	(hl)
+	jp	p, ma58
+	jp	unported		; сбор груза: tnpr, MESS — этап P4
+isdk:
+	ld	a, (K_ + NI + 32)	; стыковка: станция не злится, мы носом в щель, щель горизонтальна
+	or	a
+	jp	m, ma62
+	ld	a, (INWK + 14)
+	cp	214
+	jp	c, ma62
+	call	SPS4
+	ld	a, (XX15 + 2)
+	or	a
+	jp	m, ma62
+	cp	89
+	jp	c, ma62
+	ld	a, (INWK + 16)
+	and	0x7F
+	cp	80
+	jp	nc, GOIN
+ma62:
+	ld	a, (DELTA)
+	cp	5
+	jp	nc, DEATH
+	jp	unported		; отскок от станции: OOPS, EXNO3 — этап P4
+ma58:
+	jp	unported		; столкновение: OOPS, EXNO3 — этап P4
+	; --- часть 10: прицел и попадание ---
+ma26:
+	ld	a, (QQ11)
+	or	a
+	jp	nz, ma15
+	call	PLUT
+	call	HITCH
+	jp	nc, ma8
+	ld	a, (MSAR)
+	or	a
+	jp	z, ma47
+	call	BEEP			; ракета захватила цель
+	ld	a, (XSAV)
+	ld	b, a
+	ld	c, 0x0E
+	call	ABORT2
+ma47:
+	ld	a, (LAS)
+	or	a
+	jp	z, ma8
+	jp	unported		; попадание лазером: EXNO, ANGRY, гибель корабля — этап P4
+ma8:
+	call	LL9
+	; --- часть 12: сохранить блок, убрать улетевших ---
+ma15:
+	ld	hl, (INF)
+	ld	de, 35
+	add	hl, de
+	ld	a, (INWK + 35)
+	ld	(hl), a
+	ld	a, (INWK + 31)
+	or	a
+	jp	p, mac1
+	and	0x20
+	jp	z, mac1
+	jp	unported		; корабль взорвался: награда, удаление KS1 — этап P4
+mac1:
+	ld	a, (TYPE)
+	or	a
+	jp	m, ma27
+	call	FAROF
+	jp	nc, KS1
+ma27:
+	ld	hl, (INF)
+	ld	de, 31
+	add	hl, de
+	ld	a, (INWK + 31)
+	ld	(hl), a
+	ld	a, (XSAV)
+	inc	a
+	jp	mal1
+	; --- часть 13: бомба, щиты, энергия, станция при подлёте к планете ---
+ma18:
+	ld	a, (BOMB)
+	or	a
+	jp	p, ma77
+	add	a, a
+	ld	(BOMB), a
+	call	WSCAN			; вспышка — этап P6
+ma77:
+	ld	a, (MCNT)
+	and	7
+	jp	nz, ma22
+	ld	a, (ENERGY)
+	or	a
+	jp	p, ma_b
+	ld	a, (ASH)
+	ld	b, a
+	call	SHD
+	ld	a, b
+	ld	(ASH), a
+	ld	a, (FSH)
+	ld	b, a
+	call	SHD
+	ld	a, b
+	ld	(FSH), a
+ma_b:
+	ld	hl, ENERGY
+	ld	a, (ENGY)
+	scf
+	adc	a, (hl)
+	jp	c, ma_b2
+	ld	(hl), a
+ma_b2:
+	ld	a, (MJ)
+	or	a
+	jp	nz, ma23
+	ld	a, (MCNT)
+	and	31
+	jp	nz, ma93
+	ld	a, (SSPR)
+	or	a
+	jp	nz, ma23
+	ld	c, a
+	call	MAS2
+	jp	nz, ma23
+	ld	hl, K_			; близко к планете: поставить станцию на орбиту
+	ld	de, INWK
+	ld	b, 29
+	call	ll9_cp
+	ld	bc, 0x0009
+	call	MAS1
+	jp	nz, ma23
+	ld	bc, 0x030B
+	call	MAS1
+	jp	nz, ma23
+	ld	bc, 0x060D
+	call	MAS1
+	jp	nz, ma23
+	ld	a, 192
+	call	FAROF2
+	jp	nc, ma23
+	ld	a, (QQ11)
+	or	a
+	call	z, WPLS
+	call	NWSPS
+	jp	ma23
+	; --- часть 15: высота над планетой, жар солнца ---
+ma22:
+	ld	a, (MJ)
+	or	a
+	jp	nz, ma23
+	ld	a, (MCNT)
+	and	31
+ma93:
+	cp	10
+	jp	nz, ma29
+	ld	hl, ENERGY
+	ld	a, 50
+	cp	(hl)
+	jp	c, ma93_e
+	add	a, a			; «ENERGY LOW»
+	call	MESS
+ma93_e:
+	ld	a, 0xFF
+	ld	(ALTIT), a
+	ld	c, 0
+	xor	a
+	call	MAS2
+	jp	nz, ma23
+	call	MAS3
+	jp	c, ma23
+	sub	37			; на BBC SBC #36 при переносе 0
+	jp	c, DEATH		; врезались в планету
+	ld	(R_), a
+	call	LL5
+	ld	a, (Q)
+	ld	(ALTIT), a
+	or	a
+	jp	nz, ma23
+	jp	DEATH
+ma29:
+	cp	20
+	jp	nz, ma23
+	ld	a, 30
+	ld	(CABTMP), a
+	ld	a, (SSPR)
+	or	a
+	jp	nz, ma23
+	ld	c, NI
+	call	MAS2
+	jp	nz, ma23
+	call	MAS3
+	cpl
+	adc	a, 30
+	ld	(CABTMP), a
+	jp	c, DEATH		; сгорели у солнца
+	cp	224
+	jp	c, ma23
+	ld	a, (BST)
+	or	a
+	jp	z, ma23
+	ld	a, (DELT4 + 1)		; топливозаборники
+	or	a
+	rra
+	ld	hl, QQ14
+	adc	a, (hl)
+	cp	70
+	jp	c, ma29_f
+	ld	a, 70
+ma29_f:
+	ld	(hl), a
+	ld	a, 160
+	call	MESS
+	; --- часть 16: луч лазера, ECM, пыль ---
+ma23:
+	ld	a, (LAS2)
+	or	a
+	jp	z, ma16
+	ld	a, (LASCT)
+	cp	8
+	jp	nc, ma16
+	call	LASLI2
+	xor	a
+	ld	(LAS2), a
+ma16:
+	ld	a, (ECMP)
+	or	a
+	jp	z, ma69
+	call	DENGY
+	jp	z, ma70
+ma69:
+	ld	a, (ECMA)
+	or	a
+	jp	z, ma66
+	ld	hl, ECMA
+	dec	(hl)
+	jp	nz, ma66
+ma70:
+	call	ECMOF
+ma66:
+	ld	a, (QQ11)
+	or	a
+	ret	nz
+	jp	STARS
+
+; unported: сюда ведут ветви, которые ещё не перенесены. Образ здесь останавливается, чтобы это было видно.
+unported:
+	jp	unported
+ABORT:
+FRMIS:
+ESCAPE:
+WARP:
+EXNO2:
+MESS:
+DEATH:
+ABORT2:
+KS1:
+Ze:
+GTHG_:
+	jp	unported
