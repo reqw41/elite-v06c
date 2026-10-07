@@ -7,6 +7,7 @@ SNE:
 	db	255, 255, 251, 245, 237, 226, 213, 198, 181, 162, 142, 121, 98, 74, 50, 25
 
 ; FMLTU2: A = K · sin(A): угол A в 64-х долях круга (берётся по модулю 32), X = угол.
+; Синус и произведение — через mul8 (старший байт), как FMLTU, без второго прохода через ячейки.
 FMLTU2:
 	and	0x1F
 	ld	b, a
@@ -16,8 +17,16 @@ FMLTU2:
 	add	hl, de
 	ld	a, (hl)
 	ld	(Q), a
+	ld	e, a
 	ld	a, (K)
-	jp	FMLTU
+	call	mul8
+	ld	a, h
+	ld	d, a
+	xor	a
+	ld	(P_), a
+	ld	a, d
+	scf
+	ret
 
 ; CHKON: помещается ли окружность (центр K3(1 0), K4(1 0), радиус K) на экран хотя бы частью.
 ; Перенос 1 — нет. При переносе 0: P(2 1) = нижний край, X = верхний край.
@@ -91,8 +100,16 @@ CIRCLE2:
 	xor	a
 	ld	(CNT), a
 pll3:
-	ld	a, (CNT)		; x = центр ± K · sin
-	call	FMLTU2
+	ld	a, (CNT)		; x = центр ± K · sin (mul8, без FMLTU2)
+	and	0x1F
+	ld	e, a
+	ld	d, 0
+	ld	hl, SNE
+	add	hl, de
+	ld	e, (hl)
+	ld	a, (K)
+	call	mul8
+	ld	a, h
 	ld	d, a
 	xor	a
 	ld	(T), a
@@ -117,7 +134,15 @@ pl37:
 	ld	(K6 + 1), a
 	ld	a, (CNT)		; y = центр ± K · cos
 	add	a, 16
-	call	FMLTU2
+	and	0x1F
+	ld	e, a
+	ld	d, 0
+	ld	hl, SNE
+	add	hl, de
+	ld	e, (hl)
+	ld	a, (K)
+	call	mul8
+	ld	a, h
 	ld	b, a
 	xor	a
 	ld	(T), a
