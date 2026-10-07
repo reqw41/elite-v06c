@@ -434,48 +434,51 @@ pl_sin:					; A = Q = синус угла A
 	ret
 
 ; WPLS2: стереть окружность планеты по списку LSX2, LSY2. WP1: список пуст.
+; HL → LSY2, DE → LSX2: без пересчёта адреса на каждую точку.
 WPLS2:
 	ld	a, (LSX2)
 	or	a
 	jp	nz, WP1
 	ld	c, a
+	ld	hl, LSY2
+	ld	de, LSX2
 wpl1:
 	ld	a, (LSP)
-	ld	d, a
+	ld	b, a
 	ld	a, c
-	cp	d
+	cp	b
 	jp	nc, WP1
-	ld	hl, LSY2
-	ld	b, 0
-	add	hl, bc
 	ld	a, (hl)
 	cp	0xFF
 	jp	z, wp2
 	ld	(Y2), a
-	ld	de, LSX2 - LSY2
-	add	hl, de
-	ld	a, (hl)
+	ld	a, (de)
 	ld	(X2), a
+	push	hl
+	push	de
 	call	LOIN
-	call	wp_pt			; следующий отрезок — от этой точки (на BBC — по признаку SWAP)
+	pop	de
+	pop	hl
+	ld	a, (de)			; следующий отрезок — от этой точки (на BBC — по признаку SWAP)
+	ld	(X1), a
+	ld	a, (hl)
+	ld	(Y1), a
 	inc	c
+	inc	hl
+	inc	de
 	jp	wpl1
 wp2:
 	inc	c
-	call	wp_pt
-	inc	c
-	jp	wpl1
-wp_pt:					; (X1, Y1) = точка Y списка
-	ld	hl, LSX2
-	ld	b, 0
-	add	hl, bc
-	ld	a, (hl)
+	inc	hl
+	inc	de
+	ld	a, (de)
 	ld	(X1), a
-	ld	de, LSY2 - LSX2
-	add	hl, de
 	ld	a, (hl)
 	ld	(Y1), a
-	ret
+	inc	c
+	inc	hl
+	inc	de
+	jp	wpl1
 WP1:
 	ld	a, 1
 	ld	(LSP), a
