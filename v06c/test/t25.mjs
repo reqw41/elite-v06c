@@ -1,7 +1,9 @@
 // T25: планета и солнце — парные тесты 6502 ↔ i8080. node v06c/test/t25.mjs [случаев = 600]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 600);
-const P = makePair(), { B, bbc } = P;
+const MER = !!process.env.MERID;                          // MERID=1 — сборка с меридианами и кратером (elite_merid.rom)
+const P = makePair(MER ? 'elite_merid' : 'elite'), { B, bbc } = P;
+if (!MER) bbc.mem[B.PL25] = 0x60;                         // планета — окружность: в эталоне RTS на месте меридианов
 const w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH'];
 const DRAW_H = [...DRAW, 'T'];                          // HLOIN пишет T на BBC; на Векторе — регистры
@@ -24,7 +26,7 @@ const body = (r, fresh, sun) => {
   return { mem };
 };
 // таблицы синуса и арктангенса в образе — как в эталоне
-for (const [t, n] of [['SNE', 32], ['ACT', 32]]) for (let i = 0; i < n; i++) if (P.m.rd(P.m.L[t] + i) !== bbc.mem[B[t] + i]) throw new Error(`таблица ${t}: элемент ${i}: Вектор ${P.m.rd(P.m.L[t] + i)}, BBC ${bbc.mem[B[t] + i]}`);
+for (const [t, n] of MER ? [['SNE', 32], ['ACT', 32]] : [['SNE', 32]]) for (let i = 0; i < n; i++) if (P.m.rd(P.m.L[t] + i) !== bbc.mem[B[t] + i]) throw new Error(`таблица ${t}: элемент ${i}: Вектор ${P.m.rd(P.m.L[t] + i)}, BBC ${bbc.mem[B[t] + i]}`);
 const SPECS = [
   { name: 'ARCTAN', noreg: 'y', gen: (r, b) => ({ mem: { P: b(), Q: r(6) ? b() : 0 } }) },
   { name: 'PLS1', noreg: 'c', gen: (r, b) => ({ x: 9 + 2 * r(9), mem: { INWK: body(r, false).mem.INWK } }) },
@@ -41,7 +43,8 @@ const COV = ['PL2', 'PL9', 'PL25', 'PL26', 'PLS2', 'PLS22', 'PL42', 'PL43', 'PL4
 const hits = Object.fromEntries(COV.map((n) => [n, 0])), at = new Map(COV.map((n) => [B[n], n]));
 const step = bbc.cpu.step.bind(bbc.cpu); let cov = false;
 bbc.cpu.step = () => { if (cov) { const n = at.get(bbc.cpu.pc); if (n) hits[n]++; } step(); };
-for (const s of SPECS) { cov = s.name.startsWith('PLANET'); P.run({ n: N, ...s }); }
+const MERONLY = new Set(['ARCTAN', 'PLS1', 'PLS3', 'PLS4', 'PLS5']);
+for (const s of SPECS) { if (!MER && MERONLY.has(s.name)) continue; cov = s.name.startsWith('PLANET'); P.run({ n: N, ...s }); }
 console.log('ветви эталона в сериях PLANET: ' + COV.map((n) => `${n} ${hits[n]}`).join(', '));
 P.timing();
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T25: всё совпало');

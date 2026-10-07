@@ -13,7 +13,8 @@ const name = process.argv[2] || 'launch', LIMIT = +(process.argv[3] || 1e9);
 const ROM = process.env.ROM || 'elite_t', FREE = !!process.env.FREE;      // FREE=1 — без сверки (быстрая сборка)
 const m = createVector(ROM), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);     // эталон печатает нашим шрифтом
-if (process.env.PLAIN) bbc.mem[B.PL25] = 0x60;                // сборка -DPLAIN: в эталоне планета тоже без меридианов и кратера (RTS)
+if (!process.env.MERID) bbc.mem[B.PL25] = 0x60;               // планета — окружность: в эталоне тоже без меридианов и кратера (RTS);
+                                                              // сборка -DMERID: MERID=1 ROM=elite_merid_t
 const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x0F34], [0x0F48, 0x0F51]];
 // вне сравнения: рабочие ячейки рисования и печати на BBC и указатели (в них адреса своей машины)
 const SKIP = new Set();
