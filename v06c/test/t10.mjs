@@ -9,7 +9,8 @@ import { createVector, savePng, ROOT } from '../tools/v06c.mjs';
 import { bbcView, vecView, bbcDash, vecDash, firstDiff, VIEW, PLANE2 } from '../tools/screen.mjs';
 const { BBC } = createRequire(import.meta.url)(path.join(ROOT, 'tools/oracle/bbc.js'));
 const N1 = +(process.argv[2] || 300), N2 = +(process.argv[3] || 150);
-const m = createVector('elite'), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
+const ROM = process.env.ROM || 'elite', FREE = !!process.env.FREE;   // FREE=1 — без сверки (быстрая сборка расходится с кассетой намеренно)
+const m = createVector(ROM), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
 m.frame(30);
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);   // эталон печатает текст нашим шрифтом (на BBC он в ПЗУ)
 const AREAS = [[0x0000, 0x0100], [0x0100, 0x01C0], [0x0300, 0x0372], [0x0900, 0x0F34]];
@@ -52,11 +53,13 @@ function segment(title, n, shot) {
     for (const [lo, hi] of AREAS) for (let a = lo; a < hi && diff.length < 6; a++) if (vm[WS + a] !== bbc.mem[a] && !SKIP.has(a)) diff.push(`${cell(a)}: BBC ${bbc.mem[a]}, Вектор ${vm[WS + a]}`);
     let d = firstDiff(vecView(vm), bbcView(bbc.mem)); if (d) diff.push(`обзор: столбец ${d.i % 32}, строка ${Math.floor(d.i / 32)}: Вектор ${d.a}, BBC ${d.b}`);
     d = firstDiff(vecDash(vm), bbcDash(bbc.mem)); if (d) diff.push(`панель: x=${d.i & 255}, строка ${192 + (d.i >> 8)}: Вектор ${d.a}, BBC ${d.b}`);
-    if (diff.length) fail = `проход ${i}: ${diff.join('; ')}`;
+    if (diff.length && !FREE) fail = `проход ${i}: ${diff.join('; ')}`;
+    if (diff.length) st.differ = (st.differ || 0) + 1;
   }
-  console.log(`${fail ? 'FAIL' : 'OK  '} ${title} (тип корабля ${type}): ${st.n} проходов — обзор, панель, блок корабля, список отрезков, вершины, рабочие области = эталон${fail ? ' — ' + fail : ''}`);
+  if (FREE) console.log(`     ${title} (тип корабля ${type}), образ ${ROM}: ${st.n} проходов без сверки; проходов, где состояние или экран отличаются от кассетного эталона: ${st.differ || 0}`);
+  else console.log(`${fail ? 'FAIL' : 'OK  '} ${title} (тип корабля ${type}): ${st.n} проходов — обзор, панель, блок корабля, список отрезков, вершины, рабочие области = эталон${fail ? ' — ' + fail : ''}`);
   if (fail) bad++;
-  if (shot) { m.frame(3); savePng(m.bmp(), path.join(ROOT, 'work/v06c', shot)); }
+  if (shot) { m.frame(3); savePng(m.bmp(), path.join(ROOT, 'work/v06c', (FREE ? 'fast-' : '') + shot)); }
   return st;
 }
 bbc.pass('TLL2', 1);
@@ -73,12 +76,12 @@ for (const [t, s] of [['первая, весь прогон', s1], ['перва�
 console.log(`отрезков корабля вблизи в среднем: первая ${(s1.lines / Math.max(1, s1.near.n)).toFixed(1)}, вторая ${(s2.lines / Math.max(1, s2.near.n)).toFixed(1)}`);
 
 // Профиль Вектора: такты относятся к процедуре, в которой стоит команда (метка с прописной буквы или общий помощник).
-const HELP = new Set(['mul8', 'dash_xor', 'li_div', 'li_addr', 'norm_sq', 'tidy_norm', 'shpt', 'mv_nose', 'mv_rat', 'mvs4_hl', 'title_pass']);
+const HELP = new Set(['mul8', 'mulhi', 'divlog', 'lo_swhook', 'entry', 'dash_xor', 'li_div', 'li_addr', 'norm_sq', 'tidy_norm', 'shpt', 'mv_nose', 'mv_rat', 'mvs4_hl', 'title_pass']);
 const own = Object.entries(L).filter(([n, a]) => a >= 0x100 && a < L.font && (process.env.FINE || /^[A-Z]/.test(n) || HELP.has(n))).sort((a, b) => a[1] - b[1]);
 const cost = {}; let total = 0, k = 0;
 for (let a = 0x100; a < 0x10000; a++) { while (k + 1 < own.length && own[k + 1][1] <= a) k++; if (prof[a]) { cost[own[k][0]] = (cost[own[k][0]] || 0) + prof[a]; total += prof[a]; } }
 const passes = s1.n + s2.n;
 console.log(`\nпрофиль Вектора за ${passes} проходов: ${Math.round(total / passes)} тактов на проход\nдоля  | тактов на проход | процедура`);
 for (const [n, c] of Object.entries(cost).sort((a, b) => b[1] - a[1]).slice(0, 24)) console.log(`${(100 * c / total).toFixed(1).padStart(5)} | ${String(Math.round(c / passes)).padStart(16)} | ${n}`);
-console.log(bad ? `ПРОВАЛ: ${bad}` : 'T10: всё совпало');
+console.log(bad ? `ПРОВАЛ: ${bad}` : FREE ? 'T10: прогон без сверки' : 'T10: всё совпало');
 process.exit(bad ? 1 : 0);

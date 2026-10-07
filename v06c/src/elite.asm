@@ -73,6 +73,13 @@ main:
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
+	ifdef	FAST
+	align	256
+LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)
+LOGL	equ	LOG + 0x100
+ALOG	equ	LOG + 0x200
+ALOGODD	equ	LOG + 0x300
+	endif
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
 dials:
@@ -90,4 +97,8 @@ vars_end:
 	assert	vars_end <= WS + 0x0300
 	assert	rom_end <= WS
 
+	ifdef	FAST
+	savebin	"v06c/build/elite_fast.rom", 0x0100, rom_end - 0x0100
+	else
 	savebin	"v06c/build/elite.rom", 0x0100, rom_end - 0x0100
+	endif

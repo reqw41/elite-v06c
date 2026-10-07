@@ -3,6 +3,93 @@
 ; перенос равны эталону (v06c/test/t06.mjs); отступления названы в заголовке процедуры.
 arith_start:
 
+; MULHI: A = старший байт E · A. Точная сборка — через mul8. Быстрая сборка (-DFAST) — по таблицам логарифмов,
+; как FMLTU в версии BBC Elite для второго процессора: результат приближённый, сверяется с ней до бита (t11.mjs).
+	macro	MULHI
+	ifdef	FAST
+	call	mulhi
+	else
+	call	mul8
+	ld	a, h
+	endif
+	endm
+
+	ifdef	FAST
+; mulhi: A = antilog(log A + log E), ноль — если один из сомножителей ноль или сумма логарифмов меньше 256.
+; Портит D, HL. Сохраняет BC, E.
+mulhi:
+	or	a
+	ret	z
+	ld	d, a
+	ld	a, e
+	or	a
+	ret	z
+	ld	h, high LOGL
+	ld	l, d
+	ld	a, (hl)
+	ld	l, e
+	add	a, (hl)
+	jp	m, mh_odd
+	dec	h
+	ld	a, (hl)
+	ld	l, d
+	adc	a, (hl)
+	jp	nc, mh_zero
+	ld	l, a
+	ld	h, high ALOG
+	ld	a, (hl)
+	ret
+mh_odd:
+	dec	h
+	ld	a, (hl)
+	ld	l, d
+	adc	a, (hl)
+	jp	nc, mh_zero
+	ld	l, a
+	ld	h, high ALOGODD
+	ld	a, (hl)
+	ret
+mh_zero:
+	xor	a
+	ret
+
+; divlog: A = 256 · D / E по логарифмам (D, E <> 0), как LL28 второго процессора. CY — частное не меньше 256.
+; Портит HL. Сохраняет BC, DE.
+divlog:
+	ld	h, high LOGL
+	ld	l, d
+	ld	a, (hl)
+	ld	l, e
+	sub	(hl)
+	jp	m, dl_odd
+	dec	h
+	ld	l, d
+	ld	a, (hl)
+	ld	l, e
+	sbc	a, (hl)
+	jp	nc, dl_ovf
+	ld	l, a
+	ld	h, high ALOG
+	ld	a, (hl)
+	or	a
+	ret
+dl_odd:
+	dec	h
+	ld	l, d
+	ld	a, (hl)
+	ld	l, e
+	sbc	a, (hl)
+	jp	nc, dl_ovf
+	ld	l, a
+	ld	h, high ALOGODD
+	ld	a, (hl)
+	or	a
+	ret
+dl_ovf:
+	scf
+	ret
+	endif
+
 ; mul8: HL = E · A, без знака. Общее ядро умножений: a·b = f(a + b) - f(|a - b|), f(x) = x·x / 4 нацело.
 ; Таблица f — SQLO (младшие байты, 512 значений) и на две страницы выше старшие; строит sq_init при запуске.
 ; Портит A, DE. Сохраняет BC.
@@ -125,10 +212,11 @@ MU6:
 FMLTU:
 	ld	e, a
 	ld	a, (Q)
-	call	mul8
+	MULHI
+	ld	d, a
 	xor	a
 	ld	(P_), a
-	ld	a, h
+	ld	a, d
 	scf
 	ret
 
@@ -338,6 +426,17 @@ LL28:
 	ld	hl, Q
 	cp	(hl)
 	jp	nc, LL2
+	ifdef	FAST
+	or	a			; быстрая сборка: по логарифмам; A = R, X не меняется
+	jp	z, ll28_st
+	ld	d, a
+	ld	e, (hl)
+	call	divlog
+	jp	c, LL2
+ll28_st:
+	ld	(R_), a
+	ret
+	endif
 LL28_4:
 	ld	b, 0xFE
 ; LL31: вход с готовым R (его ставит вызывающий), X не меняется.

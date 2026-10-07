@@ -166,8 +166,8 @@ PROJ:
 	ld	a, (XX15 + vec)
 	ld	e, a
 	ld	a, (XX16 + mat)
-	call	mul8
-	ld	d, h
+	MULHI
+	ld	d, a
 	ld	a, (XX15 + vec + 1)
 	ld	hl, XX16 + mat + 1
 	xor	(hl)
