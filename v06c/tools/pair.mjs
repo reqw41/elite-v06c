@@ -7,7 +7,7 @@ import { createVector, ROOT } from './v06c.mjs';
 import { bbcDash, vecDash, bbcView, vecView, firstDiff } from './screen.mjs';
 const { BBC } = createRequire(import.meta.url)(path.join(ROOT, 'tools/oracle/bbc.js'));
 
-export const AREAS = [[0x0000, 0x0100], [0x0300, 0x0372], [0x0900, 0x0F34]];
+export const AREAS = [[0x0000, 0x0100], [0x0300, 0x0372], [0x0900, 0x0F34], [0x0F48, 0x0F51]];
 const RESERVED = new Set('A B C D E H L I R M F AF BC DE HL SP IX IY NZ Z NC PO PE P'.split(' '));
 // имя метки BBC → имя в исходниках Вектора (то же правило, что в tools/convert/bbcvars.py)
 export const vname = (n) => { const s = n.replace(/%/g, '_'); return RESERVED.has(s.toUpperCase()) ? s + '_' : s; };
@@ -21,7 +21,7 @@ export function makePair(rom = 'elite') {
   const rnd = (n) => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return (((t ^ (t >>> 14)) >>> 0) % n); };
   const byte = () => (rnd(3) ? rnd(256) : EDGE[rnd(EDGE.length)]);          // треть случаев — края
   const names = {};                                         // адрес BBC → имя (для сообщений)
-  for (const [n, a] of Object.entries(B)) if (a < 0x0F40 && !(a in names)) names[a] = n;
+  for (const [n, a] of Object.entries(B)) if (a < 0x0F51 && n !== 'S%' && !(a in names)) names[a] = n;
   const cell = (a) => { for (let k = 0; k < 8; k++) if ((a - k) in names) return names[a - k] + (k ? '+' + k : ''); return '&' + a.toString(16); };
   const stats = [];
   // spec: { name, entry (метка BBC или адрес; по умолчанию name), ventry (метка Вектора), n, gen(rnd, byte, i) →
@@ -36,7 +36,7 @@ export function makePair(rom = 'elite') {
     if (!(ventry in m.L)) { st.fail = `на Векторе нет метки ${ventry}`; return report(st); }
     const areas = [...AREAS, ...(spec.areas || [])];
     const off = new Set();
-    for (const s of skip) { const [lab, len] = Array.isArray(s) ? s : [s, 1]; for (let k = 0; k < len; k++) off.add(B[lab] + k); }
+    for (const s of skip) { const [lab, len] = Array.isArray(s) ? s : [s, 1]; for (let k = 0; k < len; k++) off.add((typeof lab === 'number' ? lab : B[lab]) + k); }
     for (let a = 0; a < 0x100; a++) { const v = rnd(256); bbc.mem[a] = v; }   // мусор в нулевой странице: чтение лишнего всплывёт
     for (const [lo, hi] of areas) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
     if (spec.screen === 'view') { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) m.wr(0xC000 + c * 256 + 64, new Uint8Array(192)); }

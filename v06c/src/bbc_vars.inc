@@ -219,3 +219,14 @@ QQ8	equ	WS + 0x0F2F
 QQ9	equ	WS + 0x0F31
 QQ10	equ	WS + 0x0F32
 NOSTM	equ	WS + 0x0F33
+
+; --- настройки (на BBC — в начале кода): BBC &0F48 ---
+COMC	equ	WS + 0x0F48
+DNOIZ	equ	WS + 0x0F49
+DAMP	equ	WS + 0x0F4A
+DJD	equ	WS + 0x0F4B
+PATG	equ	WS + 0x0F4C
+FLH	equ	WS + 0x0F4D
+JSTGY	equ	WS + 0x0F4E
+JSTE	equ	WS + 0x0F4F
+JSTK	equ	WS + 0x0F50

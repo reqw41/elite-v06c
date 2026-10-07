@@ -22,6 +22,7 @@ AREAS = [  # имя, начало, конец (не включая), что
     ('T_', 0x0300, 0x0400, 'пилот, звёздная пыль'),
     ('K_', 0x0900, 0x0D40, 'блоки кораблей и куча отрезков'),
     ('WP', 0x0D40, 0x0F40, 'слоты и переменные'),
+    ('COMC', 0x0F48, 0x0F51, 'настройки (на BBC — в начале кода)'),
 ]
 RESERVED = set('A B C D E H L I R M F AF BC DE HL SP IX IY NZ Z NC PO PE P'.split())
 RESERVED |= set('''ADC ADD AND BIT CALL CCF CP CPL DAA DEC DI EI EX HALT IN INC JP JR LD NOP OR OUT POP PUSH RES RET RLA
@@ -58,7 +59,7 @@ def main():
         lines.append('')
         total += len(part)
         print(f'{area:4s} &{lo:04X}: меток {len(part)}, последняя &{max(a for _, a in part):04X}')
-    renamed = sorted({n for n, a in labs if a < 0x0F40 and vname(n) != n and '%' not in n})
+    renamed = sorted({n for n, a in labs if a < 0x0F51 and vname(n) != n and '%' not in n})
     open(OUT, 'w').write('\n'.join(lines))
     print(f'{os.path.relpath(OUT, ROOT)}: меток {total}; переименованы из-за совпадения с регистром: {" ".join(renamed)}')
 

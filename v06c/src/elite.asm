@@ -22,7 +22,7 @@ entry:
 	ld	hl, isr
 	ld	(0x0039), hl
 	ld	hl, WS			; обнулить рабочие области (стек лежит внутри них — поэтому не подпрограммой)
-	ld	bc, 0x0F40
+	ld	bc, 0x0F60
 ws_clr:
 	ld	(hl), 0
 	inc	hl
@@ -59,6 +59,8 @@ main:
 	include	"text.asm"
 	include	"tokens.asm"
 	include	"screen.asm"
+	include	"dials.asm"
+	include	"reset.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"
