@@ -57,6 +57,7 @@ main:
 
 	include	"sys.asm"
 	include	"text.asm"
+	include	"tokens.asm"
 	include	"dash.asm"
 	include	"line.asm"
 	include	"arith.asm"
@@ -73,6 +74,8 @@ main:
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
+	include	"words.asm"		; словарь QQ18
+	include	"qq16.asm"
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)
