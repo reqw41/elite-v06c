@@ -74,7 +74,7 @@ console.log(`отрезков корабля вблизи в среднем: п�
 
 // Профиль Вектора: такты относятся к процедуре, в которой стоит команда (метка с прописной буквы или общий помощник).
 const HELP = new Set(['mul8', 'dash_xor', 'li_div', 'li_addr', 'norm_sq', 'tidy_norm', 'shpt', 'mv_nose', 'mv_rat', 'mvs4_hl', 'title_pass']);
-const own = Object.entries(L).filter(([n, a]) => a >= 0x100 && a < L.font && (/^[A-Z]/.test(n) || HELP.has(n))).sort((a, b) => a[1] - b[1]);
+const own = Object.entries(L).filter(([n, a]) => a >= 0x100 && a < L.font && (process.env.FINE || /^[A-Z]/.test(n) || HELP.has(n))).sort((a, b) => a[1] - b[1]);
 const cost = {}; let total = 0, k = 0;
 for (let a = 0x100; a < 0x10000; a++) { while (k + 1 < own.length && own[k + 1][1] <= a) k++; if (prof[a]) { cost[own[k][0]] = (cost[own[k][0]] || 0) + prof[a]; total += prof[a]; } }
 const passes = s1.n + s2.n;

@@ -58,10 +58,12 @@ px_one:
 ; направления). Концы в X1..Y2 меняются местами так же, как на BBC: при пологом отрезке слева должен быть X1,
 ; при крутом Y1 >= Y2. Сохраняет BC. Портит A, DE, HL.
 LOIN:
-	push	bc
 	ld	hl, (X1)
 	ex	de, hl			; E = X1, D = Y1
 	ld	hl, (X2)		; L = X2, H = Y2
+; loin_r: то же с концами в регистрах: E = X1, D = Y1, L = X2, H = Y2.
+loin_r:
+	push	bc
 	ld	a, l
 	sub	e
 	jp	nc, li_1
@@ -84,11 +86,8 @@ li_2:
 	cp	l
 	ld	a, 0
 	jp	c, lx_ord		; X1 < X2
-	ex	de, hl			; поменять концы
-	ld	(X2), hl
-	ex	de, hl
-	ld	(X1), hl
-	ex	de, hl			; E = X1, D = Y1, H = Y2 — уже новые
+	ex	de, hl			; поменять концы: E = X1, D = Y1, H = Y2 — уже новые
+	call	lo_swhook
 	ld	a, 0xFF
 lx_ord:
 	ld	l, a			; L = 0 — не меняли, FFh — меняли
@@ -99,45 +98,169 @@ lx_ord:
 	inc	a			; DEC L — вниз
 	inc	l			; вниз первая точка пропускается, если концы НЕ меняли
 lx_dir:
-	ld	(lx_ystep), a
+	ld	h, a
+	ld	a, (lxu_y0)
+	cp	h
+	call	nz, lx_patch		; направление сменилось: подменить команду шага по y в восьми местах
 	ld	a, l
 	or	a
-	push	af			; NZ — пропустить первую точку (иначе не рисуется последняя)
-	call	li_addr			; HL — адрес, A — маска точки (X1, Y1)
+	ld	hl, lxu_tabp
+	jp	z, lx_tab
+	ld	hl, lxu_tabs		; NZ — пропустить первую точку (иначе не рисуется последняя)
+lx_tab:
 	push	af
+	ld	a, e
+	and	7
+	add	a, a
+	add	a, l
+	ld	l, a
+	ld	a, (hl)
+	inc	l
+	ld	h, (hl)
+	ld	l, a
+	pop	af
+	push	hl			; куда войти в развёрнутый цикл
+	push	af
+	ld	a, d
+	cpl
+	ld	l, a
+	ld	a, e
+	rrca
+	rrca
+	rrca
+	and	31
+	or	high SCR_VIEW
+	ld	h, a			; HL — адрес байта точки (X1, Y1)
 	ld	d, c
 	ld	e, b
 	call	li_div			; A = 256·dy/dx
 	ld	d, a
 	ld	b, e
-	inc	b
-	pop	af
-	ld	c, a
 	ld	e, 128
 	pop	af
-	jp	nz, lx_step
-	dec	b
-lx_loop:
+	ret	z			; вход с печати первой точки, точек dx
+	inc	b
+	ret				; вход с шага, точек dx + 1 без первой
+lx_done:
+	pop	bc
+	ret
+; Цикл развёрнут по восьми положениям точки в байте: маска — константа, сдвигать её не нужно.
+lxu_p0:
 	ld	a, (hl)
-	xor	c
+	xor	0x80
 	ld	(hl), a
-lx_step:
-	ld	a, c
-	rrca
-	ld	c, a
-	jp	nc, lx_1
-	inc	h
-lx_1:
+lxu_s0:
 	ld	a, e
 	add	a, d
 	ld	e, a
-	jp	nc, lx_2
-lx_ystep:
+	jp	nc, $ + 4
+lxu_y0:
 	inc	l
-lx_2:
 	dec	b
-	jp	nz, lx_loop
-	pop	bc
+	jp	z, lx_done
+lxu_p1:
+	ld	a, (hl)
+	xor	0x40
+	ld	(hl), a
+lxu_s1:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y1:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p2:
+	ld	a, (hl)
+	xor	0x20
+	ld	(hl), a
+lxu_s2:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y2:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p3:
+	ld	a, (hl)
+	xor	0x10
+	ld	(hl), a
+lxu_s3:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y3:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p4:
+	ld	a, (hl)
+	xor	0x08
+	ld	(hl), a
+lxu_s4:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y4:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p5:
+	ld	a, (hl)
+	xor	0x04
+	ld	(hl), a
+lxu_s5:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y5:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p6:
+	ld	a, (hl)
+	xor	0x02
+	ld	(hl), a
+lxu_s6:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y6:
+	inc	l
+	dec	b
+	jp	z, lx_done
+lxu_p7:
+	ld	a, (hl)
+	xor	0x01
+	ld	(hl), a
+lxu_s7:
+	ld	a, e
+	add	a, d
+	ld	e, a
+	jp	nc, $ + 4
+lxu_y7:
+	inc	l
+	dec	b
+	jp	z, lx_done
+	inc	h
+	jp	lxu_p0
+lx_patch:
+	ld	a, h
+	ld	(lxu_y0), a
+	ld	(lxu_y1), a
+	ld	(lxu_y2), a
+	ld	(lxu_y3), a
+	ld	(lxu_y4), a
+	ld	(lxu_y5), a
+	ld	(lxu_y6), a
+	ld	(lxu_y7), a
 	ret
 
 ; --- крутой: шаг по y вверх, наклон = 256·dx/dy ---
@@ -147,10 +270,7 @@ li_steep:
 	ld	a, 0
 	jp	nc, ly_ord		; Y1 >= Y2
 	ex	de, hl
-	ld	(X2), hl
-	ex	de, hl
-	ld	(X1), hl
-	ex	de, hl
+	call	lo_swhook
 	ld	a, 0xFF
 ly_ord:
 	or	a
@@ -200,6 +320,17 @@ ly_2:
 	dec	b
 	jp	nz, ly_loop
 	pop	bc
+	ret
+
+; Перестановка концов в ячейках X1..Y2, как на BBC. LL155 на время печати списка ставит сюда RET (C9h):
+; ячейки нужны только после последнего отрезка.
+lo_swhook:
+	jp	lo_swst
+lo_swst:
+	ld	(X2), hl
+	ex	de, hl
+	ld	(X1), hl
+	ex	de, hl
 	ret
 
 ; Адрес и маска точки: E = x, D = y -> HL, A. Портит DE.
@@ -330,8 +461,12 @@ hl_last:
 
 line_code_end:
 ; Маски точек — все в одной странице памяти.
-	align	32
+	align	64
 TWOS:	db	0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01
 TWOS2:	db	0xC0, 0x60, 0x30, 0x18, 0x0C, 0x06, 0x03, 0x03
 TWFL:	db	0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF
 TWFR:	db	0xFF, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01
+lxu_tabp:
+	dw	lxu_p0, lxu_p1, lxu_p2, lxu_p3, lxu_p4, lxu_p5, lxu_p6, lxu_p7
+lxu_tabs:
+	dw	lxu_s0, lxu_s1, lxu_s2, lxu_s3, lxu_s4, lxu_s5, lxu_s6, lxu_s7

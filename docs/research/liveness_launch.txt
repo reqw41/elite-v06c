@@ -1,0 +1,853 @@
+сценарий launch, проходов 525. Писатель, ячейка: записей → чужие читатели (число чтений)
+ADD T                57598 → —
+ADD T1               57598 → —
+ADD U                53372 → —
+ARCTAN P               167 → —
+ARCTAN Q               545 → LL28 4331
+ARCTAN T               312 → —
+ARCTAN T1              384 → —
+BAY QQ12                 1 → DORND 41, TT102 40, STATUS 1, TT110 1
+BLINE BLCNT          13092 → —
+BLINE BLN+1          13092 → —
+BLINE CNT            13092 → CIRCLE2 26752
+BLINE EXCN           13092 → —
+BLINE FLAG             644 → —
+BLINE K5             13092 → —
+BLINE LSP            12135 → WPLS2 11957
+BLINE QQ19           13092 → —
+BLINE QQ19+1         13092 → —
+BLINE X2             12716 → LL145 23664, LOIN 589, LL118 257
+BLINE XX12           12448 → LL145 23898
+BLINE XX12+1         12448 → LL145 14202
+BLINE XX15           12716 → LOIN 26233, LL145 777, LL118 253, LL120 4
+BLINE Y1             12716 → LL145 14198, LOIN 893, LL118 510
+BLINE Y2             12716 → LL145 14194, LOIN 540, LL118 412
+BLINE Y2+1           12448 → LL145 12137
+BLINE Y2+2           12448 → LL145 14206
+BPRNT K                 96 → —
+BPRNT K+1               96 → —
+BPRNT K+2               96 → —
+BPRNT K+3               96 → —
+BPRNT S                 98 → —
+BPRNT T                 40 → —
+BPRNT U                 24 → —
+BPRNT X2                54 → —
+BPRNT XX15              54 → —
+BPRNT XX17              26 → —
+BPRNT Y1                54 → —
+BPRNT Y2                54 → —
+BPRNT Y2+1              54 → —
+BR1 XC                   1 → —
+BULB P+1                 1 → TT26 8
+BULB P+2                 1 → TT26 8
+BULB SC                  1 → TT26 16
+BUMP2 T                100 → —
+CHKON P+1              211 → —
+CHKON P+2              192 → —
+CIRCLE STP             192 → BLINE 12480, PLS22 5760
+CIRCLE2 BLN           6948 → BLINE 13636
+CIRCLE2 CNT            260 → BLINE 260
+CIRCLE2 FLAG           260 → BLINE 520
+CIRCLE2 K6            6948 → BLINE 13636
+CIRCLE2 T            20324 → BLINE 6948
+CLYNS SC                 2 → LYN 1398
+CLYNS SCH                6 → LYN 1398
+CLYNS XC                 2 → TT26 4
+CLYNS YC                 2 → TT26 2
+CPIX2 SC              2158 → SCAN 4180
+CPIX2 SCH             1870 → SCAN 2809
+CPIX4 Y1               845 → CPIX2 845
+DIALS K                592 → DILX 874
+DIALS K+1              685 → DILX 462
+DIALS P                778 → ADD 812
+DIALS Q                372 → —
+DIALS R                406 → ADD 812
+DIALS S                406 → ADD 1624
+DIALS SC               499 → DILX 16032, DIL2 12992
+DIALS SCH              499 → DILX 6487
+DIALS T1               685 → DILX 1336
+DIALS XX12             186 → —
+DIALS XX12+1           186 → —
+DIALS XX12+2           186 → —
+DIALS XX12+3           186 → —
+DIL2 Q                4060 → —
+DIL2 SCH               812 → DILX 1209
+DILX COL              1336 → —
+DILX Q                9066 → —
+DILX R                2081 → —
+DILX SCH              1336 → DIL2 6902
+DK4 KL                 403 → TT17 403
+DKS1 KY2                40 → Main 40
+DKS1 KY3                60 → DOKEY 60
+DKS1 KY6                40 → DOKEY 40
+DKS1 KY7                40 → Main 10
+DOKEY JSTX             403 → Main 363
+DOKEY JSTY             403 → Main 362
+DORND MCNT             363 → MVEIT 724, Main 724, PZW 542, DIALS 362
+DORND ZP              1686 → —
+DORND ZP+1            1686 → —
+DORND ZP+2            1686 → —
+DORND ZP+3            1686 → —
+DOT COL                186 → CPIX2 384
+DOT XX15               186 → CPIX2 384
+DOT Y1                 186 → CPIX2 186, CPIX4 6
+DV41 Q                6534 → LL28 66911, DVID4 52562
+DVID3B2 K             2088 → FMLTU2 12672, PLS1 1152, CHKON 807, PLS6 346, PROJ 331, CIRCLE 192, PL9 192
+DVID3B2 K+1           2399 → PLS1 1152, PLS6 714, PLANET 222, PL9 192
+DVID3B2 K+2           2399 → PLS6 714
+DVID3B2 K+3           4487 → PLS6 1391, PLS1 1152
+DVID3B2 P            28572 → —
+DVID3B2 P+1          26484 → —
+DVID3B2 P+2           4176 → —
+DVID3B2 Q            21448 → LL28 17543
+DVID3B2 R            21448 → LL28 2088
+DVID3B2 S             2088 → —
+DVID3B2 T             2088 → —
+DVID4 P              60480 → STARS1 6534, SPS2 186
+DVIDT P                901 → —
+DVIDT P+1              954 → —
+DVIDT Q                106 → —
+DVIDT T                 53 → —
+FMLTU P             381591 → —
+FMLTU2 Q             13896 → FMLTU 41532
+GINF INF               732 → Main 53724, NWSHP 146, WPSHPS 68
+GINF INF+1             732 → Main 53724, NWSHP 146, WPSHPS 68
+HFS2 K                  84 → FMLTU2 1224
+HFS2 K3                  2 → CIRCLE2 612
+HFS2 K3+1                2 → CIRCLE2 612
+HFS2 K4                  2 → BLINE 612
+HFS2 K4+1                2 → BLINE 612
+HFS2 LSP                68 → BLINE 138
+HFS2 STP                 1 → BLINE 612
+HFS2 XX4                18 → —
+HLOIN R                  8 → —
+HLOIN SC                 8 → —
+HLOIN SCH                8 → —
+HLOIN T                  8 → —
+HLOIN X2                 8 → —
+HLOIN YSAV               8 → —
+LASLI X2                80 → LOIN 168
+LASLI XX15              80 → LOIN 160
+LASLI Y1                80 → LOIN 184
+LASLI Y2                80 → LOIN 220
+LL118 R                744 → LL123 293, LL129 219, LL120 5
+LL118 S                756 → LL129 748, LL123 297, LL120 5
+LL118 X2               525 → LL145 533
+LL118 XX15             525 → LOIN 533, BLINE 517, LL145 8
+LL118 Y1               525 → LL145 16
+LL118 Y2               525 → LL145 16
+LL120 Q                419 → —
+LL120 R                427 → LL123 4, LL129 4
+LL120 S                419 → —
+LL123 R               8170 → —
+LL123 S               8170 → —
+LL129 Q                525 → LL123 8135, LL120 54
+LL129 R                223 → LL123 174, LL120 49
+LL129 S                223 → LL123 174, LL120 49
+LL145 Q                517 → LL28 6407
+LL145 S                517 → —
+LL145 SWAP           12716 → BLINE 11620
+LL145 T                571 → LL123 517, LL120 8
+LL145 X2             12158 → LOIN 25563, BLINE 11620, LL62 270, LL118 268
+LL145 XX12             268 → —
+LL145 XX12+1           268 → —
+LL145 XX12+2          1508 → LL129 525
+LL145 XX12+3          1034 → LL129 525
+LL145 XX12+4           793 → —
+LL145 XX12+5           793 → —
+LL145 XX13           12978 → BLINE 11620
+LL145 XX15             268 → LL118 264, LL120 4
+LL145 Y1             12158 → LOIN 31353, BLINE 1003, LL118 532, LL62 270
+LL145 Y2             12158 → LOIN 25142, BLINE 11620, LL118 411, LL62 270
+LL145 Y2+1             268 → —
+LL145 Y2+2             268 → —
+LL28 R               89924 → STARS1 6534, DVID3B2 2088, LL145 517, LL62 390, ARCTAN 378, LL9 135
+LL38 S                 304 → LL51 196, LL9 90
+LL5 Q                 1917 → TIS2 6140, Main 11, TT111 3
+LL5 S                 3621 → —
+LL5 T                 1917 → —
+LL51 Q                3150 → FMLTU 7574, LL38 1260
+LL51 R                1260 → LL38 1260
+LL51 S                 630 → LL38 1394
+LL51 T                1260 → —
+LL51 XX12              210 → LL9 210
+LL51 XX12+1            210 → LL9 210
+LL51 XX12+2            210 → LL9 210
+LL51 XX12+3            210 → LL9 210
+LL51 XX12+4            210 → LL9 107, LL62 103
+LL51 XX12+5            210 → LL9 210
+LL62 CNT               420 → —
+LL62 P                 300 → —
+LL62 Q                 660 → LL28 3510
+LL62 T                1273 → —
+LL62 T1                 15 → —
+LL62 U                1768 → —
+LL62 V                 570 → —
+LL62 V+1                30 → —
+LL62 X2               1214 → LOIN 2410, LL145 540
+LL62 XX1+31             15 → MVEIT 42, SCAN 14
+LL62 XX12              270 → LL145 540
+LL62 XX12+1            270 → LL145 270
+LL62 XX15             2384 → LOIN 2134
+LL62 XX17              585 → —
+LL62 XX20              255 → —
+LL62 Y1               2384 → LOIN 2274, LL145 270
+LL62 Y2               2384 → LOIN 1994, LL145 270
+LL62 Y2+1             1440 → LL145 270
+LL62 Y2+2              270 → —
+LL9 BLCNT              120 → —
+LL9 BLN                 30 → —
+LL9 BLN+1              120 → —
+LL9 CNT                 15 → LL62 30
+LL9 EXCN                15 → —
+LL9 EXCN+1              30 → —
+LL9 K3                  15 → LL62 45
+LL9 K3+1                15 → LL62 15
+LL9 K3+10               15 → LL62 15
+LL9 K3+11               15 → LL62 30
+LL9 K3+12               15 → LL62 15
+LL9 K3+2                15 → LL62 15
+LL9 K3+3                15 → LL62 30
+LL9 K3+4                15 → LL62 30
+LL9 K3+5                15 → LL62 15
+LL9 K3+6                15 → LL62 15
+LL9 K3+7                15 → LL62 30
+LL9 K3+8                15 → LL62 30
+LL9 K3+9                15 → LL62 45
+LL9 K4+1                15 → —
+LL9 K5                 120 → —
+LL9 K6                 105 → —
+LL9 P                  195 → —
+LL9 Q                  990 → FMLTU 2249, LL28 1393, LL38 390
+LL9 QQ19               105 → —
+LL9 QQ19+1              30 → —
+LL9 R                  390 → LL38 390
+LL9 S                  195 → LL38 390
+LL9 T                 1386 → LL62 92
+LL9 U                   92 → LL62 184
+LL9 V                   30 → —
+LL9 V+1                 30 → —
+LL9 X2                 937 → LL51 630, LL62 195
+LL9 XX1+31             104 → SHPPT 104
+LL9 XX12               195 → —
+LL9 XX12+1             195 → —
+LL9 XX12+2             195 → —
+LL9 XX12+3             195 → —
+LL9 XX12+4             195 → —
+LL9 XX12+5             195 → —
+LL9 XX15               937 → LL51 630, LL62 195
+LL9 XX16                30 → LL51 210
+LL9 XX16+1              15 → LL51 210
+LL9 XX16+10             45 → LL51 210
+LL9 XX16+11             30 → LL51 210
+LL9 XX16+12             45 → LL51 210
+LL9 XX16+13             30 → LL51 210
+LL9 XX16+14             45 → LL51 210
+LL9 XX16+15             30 → LL51 210
+LL9 XX16+16             30 → LL51 210
+LL9 XX16+17             15 → LL51 210
+LL9 XX16+2              45 → LL51 210
+LL9 XX16+3              30 → LL51 210
+LL9 XX16+4              45 → LL51 210
+LL9 XX16+5              30 → LL51 210
+LL9 XX16+6              45 → LL51 210
+LL9 XX16+7              30 → LL51 210
+LL9 XX16+8              30 → LL51 210
+LL9 XX16+9              15 → LL51 210
+LL9 XX17               435 → LL62 420
+LL9 XX20                30 → LL62 420
+LL9 XX4                484 → LL62 570
+LL9 Y1                 712 → LL51 630, LL62 390
+LL9 Y2                 710 → LL51 630, LL62 195
+LL9 Y2+1               935 → LL51 630, LL62 390
+LL9 Y2+2               710 → LL51 630, LL62 195
+LOIN P              132632 → —
+LOIN Q              128618 → —
+LOIN R              319717 → —
+LOIN S              400090 → —
+LOIN SC              56271 → —
+LOIN SCH             57706 → —
+LOIN SWAP            34908 → WPLS2 11084
+LOIN X2              11158 → TTX66 15
+LOIN XX15            11158 → TTX66 15
+LOIN Y1              11158 → —
+LOIN Y2              11158 → —
+LOIN YSAV            23750 → —
+MAS3 R                  22 → —
+MLS1 P              191070 → ADD 12672
+MLS1 T               19602 → —
+MLS1 T1              19052 → —
+MLS2 R                6534 → ADD 6534
+MLS2 S                6534 → ADD 13068
+MLTU2 P              32912 → —
+MLTU2 P+1            32912 → MVT6 1452, MVEIT 484
+MLU1 Y1               6534 → PIXEL2 11884, STARS1 6534
+MLU2 P               13068 → MU11 13068
+MSBAR SC                 8 → —
+MSBAR SCH                8 → —
+MSBAR T                  8 → —
+MU1 P                  170 → NORM 153, TT111 6
+MU11 P              121860 → STARS1 13068, NORM 444, TT24 3
+MU11 T               13540 → —
+MU5 K                  824 → MV40 226
+MU5 K+1                824 → MVT3 598, MV40 226
+MU5 K+2                824 → MVT3 598, MV40 226
+MU5 K+3                824 → MVT3 1093, MV40 452
+MU6 P                  550 → ADD 396
+MU6 P+1                550 → —
+MULT1 P              75537 → ADD 10376, STARS1 6534, MULT12 212
+MULT1 T              17122 → —
+MULT1 T1              5899 → —
+MULT12 R               212 → ADD 212
+MULT12 S               212 → ADD 424
+MULT3 K              15700 → MV40 137
+MULT3 K+1            15700 → MVT3 491, MV40 137
+MULT3 K+2            17152 → MVT3 491, MV40 137
+MULT3 K+3              628 → MVT3 697, MV40 274
+MULT3 R               1452 → —
+MULT3 T               1256 → —
+MUT1 R                6534 → ADD 6534
+MUT2 S                6534 → ADD 13068
+MV40 K2+1              363 → —
+MV40 K2+2              363 → —
+MV40 K2+3              363 → —
+MV40 P                1644 → MULT3 628
+MV40 P+1              1452 → MULT3 628
+MV40 Q                1089 → MULT3 2080
+MV40 T                 363 → —
+MV40 XX1               363 → Main 363, PROJ 259
+MV40 XX1+1             363 → Main 363, MAS4 363, PROJ 259
+MV40 XX1+2             363 → Main 363, PROJ 259
+MV40 XX1+3             459 → Main 363, PROJ 243
+MV40 XX1+4             459 → Main 363, MAS4 363, PROJ 243
+MV40 XX1+5             363 → Main 363, PROJ 243
+MV40 XX1+6             363 → MVT1 363
+MV40 XX1+7             363 → MVT1 363
+MV40 XX1+8             363 → MVT1 726
+MVEIT K2+1             484 → —
+MVEIT K2+2             484 → —
+MVEIT K2+3             484 → —
+MVEIT P               1936 → MLTU2 1936
+MVEIT P+2             1936 → MVT6 1452
+MVEIT Q                484 → FMLTU 3051
+MVEIT R               2299 → MVT1 2299
+MVEIT RAT2            1694 → MVS5 7986
+MVEIT XX1              484 → Main 363
+MVEIT XX1+1            484 → SCAN 1080, Main 363, MAS4 363, FAROF2 363, LL9 331, MVT1 119, PROJ 106
+MVEIT XX1+2            484 → SCAN 477, Main 363, MVT1 238, LL9 210, PROJ 106
+MVEIT XX1+27           484 → Main 363
+MVEIT XX1+28           484 → Main 363
+MVEIT XX1+29           847 → Main 726
+MVEIT XX1+3            485 → Main 363
+MVEIT XX1+30           484 → Main 363
+MVEIT XX1+31           847 → Main 2904, LL9 1541, SCAN 847, LL62 45, SHPPT 2
+MVEIT XX1+4            485 → SCAN 1080, Main 363, MAS4 363, FAROF2 363, LL9 331, MVT1 119, PROJ 106
+MVEIT XX1+5            485 → SCAN 477, Main 363, MVT1 238, LL9 210, PROJ 106
+MVEIT XX1+6            484 → MVT1 484
+MVEIT XX1+7            484 → MVT1 484
+MVEIT XX1+8            484 → MVT1 968
+MVS4 P               12705 → —
+MVS4 Q                5082 → MULT1 20328
+MVS4 R               10164 → ADD 10164
+MVS4 S               10164 → ADD 20328
+MVS4 XX1+10            847 → MVS5 1936, Main 363
+MVS4 XX1+11           1694 → MVS5 968, Main 363
+MVS4 XX1+12           1694 → MVS5 1936, Main 363
+MVS4 XX1+13            847 → MVS5 968, Main 363
+MVS4 XX1+14            847 → MVS5 1936, Main 363
+MVS4 XX1+15            847 → MVS5 1694
+MVS4 XX1+16            847 → MVS5 3388
+MVS4 XX1+17           1694 → MVS5 1694
+MVS4 XX1+18           1694 → MVS5 3388
+MVS4 XX1+19            847 → MVS5 1694
+MVS4 XX1+20            847 → MVS5 3388
+MVS4 XX1+21            847 → MVS5 1694
+MVS4 XX1+22            847 → MVS5 3388
+MVS4 XX1+23           1694 → MVS5 1694
+MVS4 XX1+24           1694 → MVS5 3388
+MVS4 XX1+25            847 → MVS5 1694
+MVS4 XX1+26            847 → MVS5 3388
+MVS4 XX1+9             847 → MVS5 968, Main 363
+MVS5 K                3993 → —
+MVS5 K+1              3993 → —
+MVS5 P               39930 → ADD 7986
+MVS5 Q                7986 → LL5 11
+MVS5 R                7986 → ADD 7986
+MVS5 S                7986 → ADD 15972
+MVS5 T               15972 → —
+MVS5 XX1+10            484 → PLS1 384, Main 363, MVEIT 226, MVS4 226, LL9 15, TIDY 6
+MVS5 XX1+11            484 → Main 363, PLS1 192, MVS4 113, LL9 15
+MVS5 XX1+12            484 → PLS1 384, Main 363, MVEIT 226, MVS4 113, LL9 15, TIDY 6
+MVS5 XX1+13            484 → Main 363, MVS4 226, LL9 15
+MVS5 XX1+14            484 → PL9 384, PLS4 384, Main 363, MVEIT 226, MVS4 226, LL9 15, TIDY 6
+MVS5 XX1+15           1331 → Main 726, MVS4 226, PLS1 192, LL9 15
+MVS5 XX1+16           1331 → Main 726, PLS1 384, MVS4 226, LL9 15
+MVS5 XX1+17           1331 → Main 726, PLS1 192, MVS4 113, LL9 15
+MVS5 XX1+18           1331 → Main 726, PLS1 384, MVS4 113, LL9 15, TIS3 6, TIDY 6
+MVS5 XX1+19           1331 → Main 726, MVS4 226, LL9 15
+MVS5 XX1+20           1331 → Main 726, MVS4 226, PL9 192, LL9 15, TIS3 6, TIDY 6
+MVS5 XX1+21            847 → Main 726, MVS4 226, PLS1 192, LL9 15
+MVS5 XX1+22            847 → Main 726, PLS1 384, MVS4 226, LL9 15
+MVS5 XX1+23            847 → Main 726, PLS1 192, MVS4 113, LL9 15
+MVS5 XX1+24            847 → Main 726, PLS1 384, MVS4 113, LL9 15
+MVS5 XX1+25            847 → Main 726, MVS4 238, LL9 15
+MVS5 XX1+26            847 → Main 726, MVS4 226, PL9 192, LL9 15
+MVS5 XX1+9             484 → Main 363, MVS4 226, PLS1 192, LL9 15
+MVT1 S                4598 → —
+MVT1 T                2299 → —
+MVT1 XX1               484 → MVEIT 484, MVT6 484
+MVT1 XX1+1             484 → MVEIT 484, MVT6 484
+MVT1 XX1+2             484 → MVEIT 484, MVT6 484
+MVT1 XX1+3             484 → MVT6 484
+MVT1 XX1+4             484 → MVT6 484
+MVT1 XX1+5             484 → MVT6 484
+MVT1 XX1+6            1331 → DVID3B2 1876, Main 726, MVT6 484
+MVT1 XX1+7            1331 → DVID3B2 2088, SCAN 904, Main 726, MAS4 726, LL9 712, MVT6 484, FAROF2 363, PLANET 259, TITLE 238, LL62 103
+MVT1 XX1+8            1331 → DVID3B2 2088, Main 726, HITCH 726, LL9 499, MVT6 484, SCAN 477, PLANET 363
+MVT3 K+1              1097 → MV40 1089
+MVT3 K+2              1097 → MV40 1089
+MVT3 K+3              1097 → MV40 1089
+MVT3 S                1477 → —
+MVT3 T                1089 → —
+MVT6 P+1              1458 → MVEIT 1452
+MVT6 P+2              1458 → MVEIT 1452
+Main ALP1              363 → MLS1 13068, MVEIT 726, DIALS 362
+Main ALP2              363 → STARS1 6534, MVEIT 363, DIALS 362
+Main ALP2+1            363 → STARS1 6534, MVEIT 363
+Main ALPHA             363 → MVS4 2178, MV40 726
+Main BET1              363 → STARS1 6534, MVEIT 363, DIALS 362
+Main BET2              363 → MVEIT 726
+Main BET2+1            363 → STARS1 6534
+Main BETA              363 → STARS1 6534, MVS4 2178, MV40 363, DIALS 362
+Main DELT4            1089 → STARS1 6534
+Main DELT4+1           363 → STARS1 6534
+Main DELTA              28 → DV41 4320, MVEIT 480, DIALS 239
+Main JSTX              363 → DOKEY 362
+Main JSTY              363 → DOKEY 362
+Main LAS               373 → —
+Main R                  11 → LL5 11
+Main TYPE              726 → MVEIT 1452, SCAN 1088, LL9 726, HITCH 259, PLANET 222, PL9 192, PL2 141
+Main XSAV             1089 → MVEIT 726
+Main XX0               363 → MVEIT 726
+Main XX0+1             363 → MVEIT 726
+Main XX1               726 → MV40 363, MVT3 363, MVT1 363
+Main XX1+1             726 → SCAN 724, MV40 363, MVT3 363, MVT1 363
+Main XX1+10            726 → MVS4 1362, MVEIT 682, TIDY 45
+Main XX1+11            726 → MVS4 681
+Main XX1+12            726 → MVEIT 682, MVS4 681, TIDY 45
+Main XX1+13            726 → MVS4 1362
+Main XX1+14            726 → MVS4 1362, MVEIT 682, TIDY 45
+Main XX1+15            726 → MVS4 1362
+Main XX1+16            726 → MVS4 1362, TIS3 25, TIDY 25
+Main XX1+17            726 → MVS4 681
+Main XX1+18            726 → MVS4 681, TIS3 33, TIDY 33
+Main XX1+19            726 → MVS4 1362
+Main XX1+2             726 → MVT3 726, MVT1 726, MV40 363, SCAN 362
+Main XX1+20            726 → MVS4 1362, TIS3 32, TIDY 32
+Main XX1+21            726 → MVS4 1362
+Main XX1+22            726 → MVS4 1362
+Main XX1+23            726 → MVS4 681
+Main XX1+24            726 → MVS4 681
+Main XX1+25            726 → MVS4 1452
+Main XX1+26            726 → MVS4 1362
+Main XX1+27            726 → MVEIT 726
+Main XX1+28            726 → MVEIT 363
+Main XX1+29            726 → MVEIT 1452
+Main XX1+3             726 → MVT3 363, MVT1 363
+Main XX1+30            726 → MVEIT 1452
+Main XX1+31            726 → MVEIT 2178, SCAN 363
+Main XX1+32            726 → MVEIT 363
+Main XX1+4             726 → SCAN 724, MVT3 363, MVT1 363
+Main XX1+5             726 → MVT3 726, MVT1 726, SCAN 362
+Main XX1+6             726 → MVT3 363, MVT1 363
+Main XX1+7             726 → SCAN 724, MVT3 363, MVT1 363
+Main XX1+8             726 → MVT3 726, MVT1 726, SCAN 362
+Main XX1+9             726 → MVS4 1362
+Main XX19              726 → —
+Main XX19+1            726 → —
+Main XX19+2            726 → —
+Main ZP                363 → DORND 273
+NLIN2 X2                 1 → HLOIN 2
+NLIN2 XX15               1 → HLOIN 2
+NLIN2 Y1                 1 → HLOIN 2
+NORM Q                 597 → LL5 199
+NORM R                 597 → LL5 199
+NORM T                 398 → —
+NORM X2                199 → TIDY 106, SP2 93
+NORM XX15              199 → TIDY 159, SP2 93
+NORM Y1                199 → TIDY 133, SP2 93
+NOS1 XX16               11 → —
+NOS1 XX16+1             11 → —
+NOS1 XX16+2             11 → —
+NOS1 XX16+3             11 → —
+NOS1 XX16+4             11 → —
+NOS1 XX16+5             11 → —
+NOS1 XX16+6             11 → —
+NOS1 XX16+7             11 → —
+NWSHP T                  4 → —
+NWSHP T1                 2 → —
+NWSHP XX0                3 → LL9 347, MVEIT 121, LL62 75
+NWSHP XX0+1              3 → LL9 347, MVEIT 121, LL62 75
+NWSHP XX1+31             3 → MVEIT 6, SCAN 2
+NWSHP XX19               2 → LL62 5217, SHPPT 848
+NWSHP XX19+1             2 → LL62 5217, SHPPT 848
+NWSHP XX19+2             3 → —
+NWSPS XX1+29             1 → NWSHP 1
+NWSPS XX1+30             1 → NWSHP 1
+NWSPS XX1+32             1 → NWSHP 1
+NWSPS XX19               1 → NWSHP 1
+NWSPS XX19+1             1 → NWSHP 1
+NwS1 XX1+10              1 → NWSHP 1
+NwS1 XX1+12              1 → NWSHP 1
+NwS1 XX1+14              1 → NWSHP 1
+PIX1 YY+1             6534 → STARS1 6299
+PIXEL SC             10716 → PX3 10982
+PIXEL SCH            10716 → PX3 10982
+PIXEL T1             10716 → PX3 5491
+PIXEL2 T             10716 → —
+PL9 K2                 192 → PLS22 6144, MV40 362
+PL9 K2+1               192 → PLS22 6144
+PL9 P                  384 → ARCTAN 762
+PL9 XX16               192 → PLS22 6144
+PL9 XX16+1             192 → PLS22 6144
+PLANET K                17 → CHKON 29
+PLANET P               222 → DVID3B2 222
+PLANET P+1             222 → DVID3B2 222
+PLS1 P                1152 → DVID3B2 1152
+PLS1 P+1              1152 → DVID3B2 1152
+PLS2 TGT               384 → PLS22 6144
+PLS22 BLN             6144 → BLINE 11904
+PLS22 CNT              384 → BLINE 384
+PLS22 CNT2            5760 → —
+PLS22 FLAG             384 → BLINE 768
+PLS22 K               6144 → —
+PLS22 K+2             6144 → —
+PLS22 K6              6144 → BLINE 11904
+PLS22 P              12288 → ADD 12288
+PLS22 Q              12288 → FMLTU 75504
+PLS22 R              12288 → ADD 12288
+PLS22 S              12288 → ADD 24576
+PLS22 T              18346 → BLINE 6144
+PLS22 XX16+4          6144 → —
+PLS22 XX16+5          6144 → —
+PLS4 CNT2              384 → PLS22 1920
+PLS4 Q                 384 → ARCTAN 768
+PLS5 K2+2              384 → PLS22 6144
+PLS5 K2+3              384 → PLS22 6144
+PLS5 XX16+2            384 → PLS22 6144
+PLS5 XX16+3            384 → PLS22 6144
+PLS6 K                 346 → PROJ 346
+PROJ K3                349 → CIRCLE2 6336, PLS22 6144, CHKON 433, SHPPT 212
+PROJ K3+1              349 → CIRCLE2 6336, PLS22 6144, CHKON 433, SHPPT 106
+PROJ K4                328 → BLINE 12480, CHKON 403, SHPPT 212
+PROJ K4+1              328 → BLINE 12480, CHKON 403
+PROJ P                 714 → DVID3B2 714
+PROJ P+1               714 → DVID3B2 714
+QU5 QQ11                 1 → —
+RES2 ALP1                3 → MVEIT 242, DIALS 44
+RES2 ALP2                3 → MVEIT 121, DIALS 44
+RES2 ALP2+1              3 → MVEIT 121
+RES2 ALPHA               3 → MVS4 363
+RES2 BET2                3 → MVEIT 242
+RES2 BET2+1              3 → —
+RES2 DELTA               3 → DIALS 3
+RES2 JSTY                3 → DOKEY 1, Main 1
+RES2 MCNT                3 → PZW 9, MVEIT 4, DIALS 3, TITLE 2, Main 2, DORND 1
+RES2 MSTG                3 → Main 363
+RESET BET1               2 → MVEIT 121, DIALS 44
+RESET BETA               2 → MVS4 363, DIALS 44
+RESET ECMA               2 → Main 363, RES2 3
+RESET QQ12               2 → —
+RESET QQ22               2 → —
+RESET QQ22+1             2 → TT102 400, TTX66 5
+RESET XC                 2 → —
+RESET YC                 2 → —
+SCAN COL               965 → CPIX2 3356
+SCAN SC                839 → —
+SCAN SCH               317 → —
+SCAN XX15             1678 → CPIX2 3356
+SCAN Y1                839 → CPIX2 839, CPIX4 839
+SHPPT XX1+31           106 → MVEIT 315, SCAN 105
+SIGHT BLCNT              2 → TT15 8
+SIGHT QQ19               1 → TT15 6
+SIGHT QQ19+1             1 → TT15 6
+SOS1 XX1+29              1 → NWSHP 1
+SOS1 XX1+30              1 → NWSHP 1
+SP2 T                   93 → —
+SPS2 Q                 186 → LL28 1777, DVID4 1626
+SPS3 K3                  3 → TAS2 6
+SPS3 K3+1                3 → TAS2 6
+SPS3 K3+2                3 → TAS2 3
+SPS3 K3+3                3 → TAS2 6
+SPS3 K3+4                3 → TAS2 6
+SPS3 K3+5                3 → TAS2 3
+SPS3 K3+6                3 → TAS2 6
+SPS3 K3+7                3 → TAS2 6
+SPS3 K3+8                3 → TAS2 3
+SPS4 K3                 90 → TAS2 180
+SPS4 K3+1               90 → TAS2 180
+SPS4 K3+2               90 → TAS2 90
+SPS4 K3+3               90 → TAS2 180
+SPS4 K3+4               90 → TAS2 180
+SPS4 K3+5               90 → TAS2 90
+SPS4 K3+6               90 → TAS2 180
+SPS4 K3+7               90 → TAS2 180
+SPS4 K3+8               90 → TAS2 90
+SQUA2 P                636 → MU11 466
+STARS1 P             26136 → ADD 13068
+STARS1 Q             13068 → MULTU 13068, MULT1 13068
+STARS1 R             13068 → ADD 13068
+STARS1 S             13068 → ADD 26136
+STARS1 T              6534 → —
+STARS1 XX            13068 → MLS2 6534, MUT1 6534
+STARS1 XX+1          26136 → MLS2 6534, MUT2 6534
+STARS1 XX15          13605 → PIXEL2 13068
+STARS1 Y1             6836 → PIXEL2 11886
+STARS1 YY            13068 → —
+STARS1 YY+1          19602 → —
+STARS1 ZZ            13068 → PIXEL 15918
+STATUS CNT               4 → —
+STATUS XC                1 → TT26 2
+STATUS XX4               5 → —
+TAS2 K3                436 → TT26 1
+TAS2 K3+1              436 → —
+TAS2 K3+3              436 → —
+TAS2 K3+4              436 → —
+TAS2 K3+6              436 → —
+TAS2 K3+7              436 → —
+TAS2 K3+9              622 → —
+TAS2 X2                 93 → NORM 186
+TAS2 XX15               93 → NORM 186
+TAS2 Y1                 93 → NORM 186
+TIDY Q                  53 → MULT1 106
+TIDY X2                106 → NORM 212
+TIDY XX1+10             53 → MVS4 106, MVEIT 60, TIS3 53
+TIDY XX1+11             53 → MVS4 53
+TIDY XX1+12             53 → MVEIT 60, TIS3 53, MVS4 53
+TIDY XX1+13             53 → MVS4 106
+TIDY XX1+14             53 → MVS4 106, MVEIT 60, TIS3 53
+TIDY XX1+15             53 → MVS4 106
+TIDY XX1+16             79 → MVS4 106
+TIDY XX1+17             53 → MVS4 53
+TIDY XX1+18             65 → MVS4 53
+TIDY XX1+19             53 → MVS4 106
+TIDY XX1+20             68 → MVS4 106
+TIDY XX1+21             53 → MVS4 106
+TIDY XX1+22             53 → MVS4 106
+TIDY XX1+23             53 → MVS4 53
+TIDY XX1+24             53 → MVS4 53
+TIDY XX1+26             53 → MVS4 106
+TIDY XX1+9              53 → MVS4 106
+TIDY XX15              106 → NORM 212
+TIDY Y1                106 → NORM 212
+TIS1 Q                 159 → MULT1 530
+TIS1 T                 159 → —
+TIS1 T1               1431 → —
+TIS2 T                5709 → —
+TIS3 P                  53 → DVIDT 53
+TIS3 P+2                53 → —
+TIS3 Q                 159 → MULT1 212, DVIDT 106
+TITLE DELTA              2 → MVEIT 121, DIALS 41
+TITLE K5                 2 → TT27 12, TT41 12, TT26 10
+TITLE MCNT             121 → MVEIT 119, PZW 41, DIALS 41
+TITLE QQ11               2 → —
+TITLE TYPE               2 → MVEIT 242, SCAN 240, LL9 121
+TITLE XC                 6 → TT26 8
+TITLE XX1              121 → LL9 331, MVT1 119, PROJ 106
+TITLE XX1+14             2 → NWSHP 2, TIDY 2
+TITLE XX1+29             2 → MVEIT 4, NWSHP 2
+TITLE XX1+3            121 → LL9 331, MVT1 119, PROJ 106
+TITLE XX1+30             2 → MVEIT 4, NWSHP 2
+TITLE XX1+6            121 → LL9 470, DVID3B2 212, MVT1 119, LL62 103
+TITLE XX1+7            123 → SCAN 176, MVT1 121, NWSHP 2
+TITLE YC                 2 → —
+TT102 T1               400 → —
+TT11 K                   1 → BPRNT 2
+TT11 K+1                 1 → BPRNT 2
+TT11 K+2                 1 → BPRNT 2
+TT11 K+3                 1 → BPRNT 2
+TT11 U                   1 → BPRNT 1
+TT110 DELTA              1 → DV41 2214, MVEIT 246, Main 125, DIALS 123
+TT110 QQ12               3 → DORND 363, TT102 360
+TT110 XX1+7              1 → NWSHP 1
+TT110 XX1+8              2 → NWSHP 2
+TT111 BLCNT              9 → —
+TT111 BLN                9 → —
+TT111 BLN+1              9 → —
+TT111 K                  3 → —
+TT111 K+1                3 → —
+TT111 K6                 9 → —
+TT111 Q                  3 → LL5 3
+TT111 QQ15               3 → hyp1 1, ypl 1
+TT111 QQ15+1             3 → TT24 3, hyp1 1, ypl 1
+TT111 QQ19               9 → —
+TT111 QQ19+1             9 → —
+TT111 R                  3 → LL5 3
+TT111 S                768 → —
+TT111 T                 12 → —
+TT111 U                771 → —
+TT111 V219               3 → TT24 3, hyp1 1, ypl 1
+TT111 V219+1             3 → TT24 3, hyp1 1, ypl 1
+TT111 V219+2             3 → hyp1 1, ypl 1
+TT111 V219+3             3 → hyp1 1, ypl 1
+TT15 BLN+1               2 → —
+TT15 X2                  4 → HLOIN 4, LOIN 4
+TT15 XX15                4 → HLOIN 4, LOIN 4
+TT15 Y1                  4 → HLOIN 4, LOIN 4
+TT15 Y2                  2 → LOIN 6
+TT24 P                  12 → MU11 3
+TT24 Q                   6 → MULTU 6
+TT26 K3                336 → —
+TT26 P+1               315 → —
+TT26 P+2               315 → —
+TT26 SC                315 → —
+TT26 SCH               316 → —
+TT26 XC                336 → —
+TT26 YC                 21 → TITLE 2
+TT27 K5                  4 → TT26 11, TT41 4
+TT41 K5                 47 → TT26 199, TT27 199
+TT46 K5                 47 → TT26 96, TT27 78, TT41 78
+TT54 QQ15             3078 → TT111 6
+TT54 QQ15+1           3078 → TT111 771
+TT54 V219             3078 → TT111 6
+TT54 V219+1           3078 → TT111 771
+TT54 V219+2           3078 → TT111 6
+TT54 V219+3           3078 → TT111 6, cpl 4
+TT66 QQ11                4 → Main 1089, DORND 403, DK4 403, TT102 400, LASLI 20, TTX66 5, LOOK1 3, TITLE 2, TT15 2, NWSTARS 1
+TT81 QQ15                3 → TT111 3, TT54 3
+TT81 QQ15+1              3 → TT111 6, TT54 3
+TT81 V219                3 → TT54 6, TT111 3
+TT81 V219+1              3 → TT111 6, TT54 6
+TT81 V219+2              3 → TT111 3, TT54 3
+TT81 V219+3              3 → TT111 3, TT54 3
+TTX66 K5                10 → TT26 20, TT27 14, TT41 1
+TTX66 X2                30 → LOIN 40, HLOIN 10
+TTX66 XC                 1 → TT26 2
+TTX66 XX15              30 → LOIN 40, HLOIN 10
+TTX66 Y1                25 → LOIN 40, HLOIN 10
+TTX66 Y2                20 → LOIN 60
+TTX66 YC                 5 → TT26 69
+U% KY1                 403 → Main 363
+U% KY12                403 → Main 363
+U% KY13                403 → Main 363
+U% KY14                403 → Main 363
+U% KY15                403 → Main 363
+U% KY16                403 → Main 363
+U% KY17                403 → Main 363
+U% KY18                403 → Main 363
+U% KY19                403 → Main 363
+U% KY2                 403 → Main 323
+U% KY3                 403 → DOKEY 343
+U% KY4                 403 → DOKEY 403
+U% KY5                 403 → DOKEY 403
+U% KY6                 403 → DOKEY 363
+U% KY7                 403 → Main 323
+Unused Q              1452 → MLTU2 6273
+WP1 LSP                363 → BLINE 507, WPLS2 2
+WPLS2 X2             11084 → LOIN 24948
+WPLS2 XX15            6681 → LOIN 15565
+WPLS2 Y1              6681 → LOIN 20383
+WPLS2 Y2             11084 → LOIN 24474
+WPSHPS TYPE              2 → —
+WPSHPS XSAV              2 → —
+WPSHPS XX1               2 → —
+WPSHPS XX1+1             2 → —
+WPSHPS XX1+10            2 → —
+WPSHPS XX1+11            2 → —
+WPSHPS XX1+12            2 → —
+WPSHPS XX1+13            2 → —
+WPSHPS XX1+14            2 → —
+WPSHPS XX1+15            2 → —
+WPSHPS XX1+16            2 → —
+WPSHPS XX1+17            2 → —
+WPSHPS XX1+18            2 → —
+WPSHPS XX1+19            2 → —
+WPSHPS XX1+2             2 → —
+WPSHPS XX1+20            2 → —
+WPSHPS XX1+21            2 → —
+WPSHPS XX1+22            2 → —
+WPSHPS XX1+23            2 → —
+WPSHPS XX1+24            2 → —
+WPSHPS XX1+25            2 → —
+WPSHPS XX1+26            2 → —
+WPSHPS XX1+27            2 → —
+WPSHPS XX1+28            2 → —
+WPSHPS XX1+29            2 → —
+WPSHPS XX1+3             2 → —
+WPSHPS XX1+30            2 → —
+WPSHPS XX1+31            2 → SCAN 2
+WPSHPS XX1+4             2 → —
+WPSHPS XX1+5             2 → —
+WPSHPS XX1+6             2 → —
+WPSHPS XX1+7             2 → —
+WPSHPS XX1+8             2 → —
+WPSHPS XX1+9             2 → —
+ZES1 SC                145 → ZES2 37120
+ZES2 SCH               145 → —
+ZINF XX1                 3 → NWSHP 4, MVT1 2
+ZINF XX1+1               3 → NWSHP 4, MVT1 2
+ZINF XX1+10              3 → NWSHP 3, TIDY 2, NwS1 1
+ZINF XX1+11              3 → NWSHP 4
+ZINF XX1+12              3 → NWSHP 3, TIDY 2, NwS1 1
+ZINF XX1+13              3 → NWSHP 4
+ZINF XX1+14              6 → NWSHP 1, NwS1 1
+ZINF XX1+15              3 → NWSHP 4
+ZINF XX1+16              3 → NWSHP 4, TIS3 2, TIDY 2
+ZINF XX1+17              3 → NWSHP 4
+ZINF XX1+18              6 → NWSHP 4, TIS3 2, TIDY 2
+ZINF XX1+19              3 → NWSHP 4
+ZINF XX1+2               3 → NWSHP 4, MVT1 4
+ZINF XX1+20              3 → NWSHP 4
+ZINF XX1+21              3 → NWSHP 4
+ZINF XX1+22              6 → NWSHP 4
+ZINF XX1+23              3 → NWSHP 4
+ZINF XX1+24              3 → NWSHP 4
+ZINF XX1+25              3 → NWSHP 4, MVS4 4
+ZINF XX1+26              3 → NWSHP 4
+ZINF XX1+27              3 → NWSHP 4, MVEIT 4
+ZINF XX1+28              3 → NWSHP 4, MVEIT 2
+ZINF XX1+29              3 → —
+ZINF XX1+3               3 → NWSHP 4, MVT1 2
+ZINF XX1+30              3 → —
+ZINF XX1+31              3 → NWSHP 1
+ZINF XX1+32              3 → MVEIT 121, NWSHP 3
+ZINF XX1+4               3 → NWSHP 4, MVT1 2
+ZINF XX1+5               3 → NWSHP 4, MVT1 4
+ZINF XX1+6               3 → NWSHP 4, MVT1 2
+ZINF XX1+7               3 → NWSHP 1, TT110 1
+ZINF XX1+8               3 → MVT1 4, NWSHP 2, TT110 1
+ZINF XX1+9               3 → NWSHP 4
+ZINF XX19                3 → NWSHP 1
+ZINF XX19+1              3 → NWSHP 1
+ZINF XX19+2              3 → NWSHP 1
+cpl BLCNT                2 → —
+cpl BLN                  2 → —
+cpl BLN+1                2 → —
+cpl K6                   2 → —
+cpl QQ15                 2 → ypl 1
+cpl QQ15+1               2 → ypl 1
+cpl QQ19                 2 → —
+cpl QQ19+1               2 → —
+cpl T                    8 → —
+cpl V219                 2 → ypl 1
+cpl V219+1               2 → ypl 1
+cpl V219+2               2 → ypl 1
+cpl V219+3               2 → ypl 1
+crlf XC                  3 → TT26 6
+csh K                    1 → BPRNT 2
+csh K+1                  1 → BPRNT 2
+csh K+2                  1 → BPRNT 2
+csh K+3                  1 → BPRNT 2
+csh U                    1 → BPRNT 1
+ex V                    37 → —
+ex V+1                 386 → —
+nWq XX15                18 → PIXEL2 18
+nWq Y1                  18 → PIXEL2 32
+nWq ZZ                  18 → PIXEL 23
+plf2 XC                  2 → TT26 2
+ypl QQ15                 2 → cpl 4, TT54 2
+ypl QQ15+1               2 → cpl 2, TT54 2
+ypl V219                 2 → TT54 4, cpl 2
+ypl V219+1               2 → TT54 4, cpl 2
+ypl V219+2               2 → cpl 2, TT54 2
+ypl V219+3               2 → cpl 4, TT54 2

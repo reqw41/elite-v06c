@@ -956,14 +956,10 @@ LL155:
 	cp	4
 	ret	c
 	inc	hl
+	ld	a, 0xC9			; концы — в регистрах, ячейки X1..Y2 не трогать
+	ld	(lo_swhook), a
 	ld	c, 1
 ll27:
-	ld	de, XX15
-	ld	b, 4
-	call	ll9_cp
-	push	hl
-	call	LOIN
-	pop	hl
 	ld	a, c
 	add	a, 4
 	ld	c, a
@@ -971,8 +967,27 @@ ll27:
 	ld	d, a
 	ld	a, c
 	cp	d
-	jp	c, ll27
-	ret
+	jp	nc, ll27_last
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	a, (hl)
+	inc	hl
+	push	hl
+	ld	h, (hl)
+	ld	l, a
+	call	loin_r
+	pop	hl
+	inc	hl
+	jp	ll27
+ll27_last:				; последний отрезок — через ячейки: после LL155 в XX15 его концы, как на BBC
+	ld	a, 0xC3
+	ld	(lo_swhook), a
+	ld	de, XX15
+	ld	b, 4
+	call	ll9_cp
+	jp	LOIN
 
 ; --- помощники ---
 ll9_cp6:

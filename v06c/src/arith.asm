@@ -346,21 +346,17 @@ LL31:
 	ld	l, 0
 	ld	a, (Q)
 	ld	e, a
-	ld	d, 8
-ll31:
+	dup	8			; развёрнуто: остаток в H, частное в L
 	add	hl, hl
-	jp	c, ll29
+	jp	c, $ + 8
 	ld	a, h
 	cp	e
-	jp	c, ll30
-ll29:
+	jp	c, $ + 7
 	ld	a, h
 	sub	e
 	ld	h, a
 	inc	l
-ll30:
-	dec	d
-	jp	nz, ll31
+	edup
 	ld	a, l
 	ld	(R_), a
 	ld	a, h

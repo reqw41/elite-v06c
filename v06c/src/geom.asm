@@ -157,70 +157,61 @@ PROJ:
 	or	a
 	ret
 
-; LL51: XX12 = XX15 · XX16 — три скалярных произведения (вектор на строки матрицы), результат со знаком
-; в отдельном байте. На выходе X = 18, Y = 6, A = 18, перенос 1.
+; LL51: XX12 = XX15 · XX16 — три скалярных произведения (вектор на строки матрицы); числа — модуль и знак
+; в отдельных байтах. Написано по смыслу: слагаемое — старший байт произведения модулей, сумма — как LL38
+; (сложение модулей по модулю 256; при разных знаках вычитание и, если ушли за ноль, смена знака).
+; В отличие от BBC, не пишет рабочие ячейки P, Q, R, S, T (по трассировке эталона их после LL51 никто не читает:
+; docs/research/liveness_launch.txt). На выходе X = 18, Y = 6, A = 18, перенос 1.
+	macro	LL51TERM vec, mat
+	ld	a, (XX15 + vec)
+	ld	e, a
+	ld	a, (XX16 + mat)
+	call	mul8
+	ld	d, h
+	ld	a, (XX15 + vec + 1)
+	ld	hl, XX16 + mat + 1
+	xor	(hl)
+	endm
+	macro	LL51ROW row
+	LL51TERM 0, row * 6
+	ld	b, d			; B — модуль суммы, C — её знак
+	ld	c, a
+	LL51TERM 2, row * 6 + 2
+	call	ll51_add
+	LL51TERM 4, row * 6 + 4
+	call	ll51_add
+	ld	a, b
+	ld	(XX12 + row * 2), a
+	ld	a, c
+	ld	(XX12 + row * 2 + 1), a
+	endm
 LL51:
-	ld	hl, XX16
-	ld	de, XX12
-ll51_row:
-	push	de
-	ld	a, (XX15)
-	ld	(Q), a
-	ld	a, (hl)
-	push	hl
-	call	FMLTU
-	pop	hl
-	ld	(T), a
-	inc	hl
-	ld	a, (XX15 + 1)
-	xor	(hl)
-	ld	(S), a
-	inc	hl
-	ld	a, (XX15 + 2)
-	ld	(Q), a
-	ld	a, (hl)
-	push	hl
-	call	FMLTU
-	pop	hl
-	ld	(Q), a
-	ld	a, (T)
-	ld	(R_), a
-	inc	hl
-	ld	a, (XX15 + 3)
-	xor	(hl)
-	push	hl
-	call	LL38
-	pop	hl
-	ld	(T), a
-	inc	hl
-	ld	a, (XX15 + 4)
-	ld	(Q), a
-	ld	a, (hl)
-	push	hl
-	call	FMLTU
-	pop	hl
-	ld	(Q), a
-	ld	a, (T)
-	ld	(R_), a
-	inc	hl
-	ld	a, (XX15 + 5)
-	xor	(hl)
-	push	hl
-	call	LL38
-	pop	hl
-	inc	hl
-	pop	de
-	ld	(de), a
-	inc	de
-	ld	a, (S)
-	ld	(de), a
-	inc	de
-	ld	a, l
-	cp	low (XX16 + 18)
-	jp	nz, ll51_row
+	LL51ROW 0
+	LL51ROW 1
+	LL51ROW 2
 	ld	bc, 0x1206
 	ld	a, 18
 	scf
+	ret
+; (C B) += (A D): модуль в B и D, знак — бит 7 у C и A
+ll51_add:
+	xor	c
+	jp	m, ll51_sub
+	ld	a, b
+	add	a, d
+	ld	b, a
+	ret
+ll51_sub:
+	ld	a, b
+	sub	d
+	ld	b, a
+	ret	nc
+	cpl
+	inc	a
+	ld	b, a
+	ld	a, c
+	xor	0x80
+	ld	c, a
 	ret
 
 ; LL120, LL123: для отсечения отрезка — (Y X) = (S x1_lo) · наклон или (S R) / наклон, со знаком.
