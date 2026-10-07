@@ -92,7 +92,19 @@ LL9:
 	inc	hl
 	inc	hl
 	ld	(hl), 0
+	ld	a, (XX1 + 31)		; перенос перед первым DORND — как на BBC: корабль на экране — после
+	and	0x08			; стирания (LL155: число байт списка >= 4), иначе — тот, с которым LL9 вызвана
+	jp	z, ee_inv
 	call	EE51
+	ld	a, (XX20)
+	cp	4
+	ccf
+	jp	ee_sd
+ee_inv:
+	ld	a, (ll9_cy)
+	rra
+ee_sd:
+	push	af
 	ld	hl, (XX0)
 	ld	de, 7
 	add	hl, de
@@ -102,6 +114,7 @@ LL9:
 	ld	(hl), 18
 	inc	hl
 	ld	(hl), a
+	pop	af
 	ld	c, 4
 ee55:
 	inc	hl
@@ -109,6 +122,7 @@ ee55:
 	call	DORND
 	pop	hl
 	ld	(hl), a
+	or	a			; дальше перенос 0 (на BBC — после CPY #6)
 	dec	c
 	jp	nz, ee55
 ee28:
@@ -989,6 +1003,8 @@ ll27_last:				; последний отрезок — через ячейки: �
 	call	ll9_cp
 	jp	LOIN
 
+; перенос 6502 на входе LL9 из главного цикла полёта (бит 0) — нужен только при начале взрыва
+ll9_cy:	db	0
 ; --- помощники ---
 ll9_cp6:
 	ld	b, 6

@@ -17,7 +17,7 @@ const dust = (r, b) => ({ NOSTM: 18, RAND: arr(b, 4), [B.SX]: arr(() => r(120) |
 const bp = (t) => ({ bmem: { XX0: w16(bbc.mem[B.XX21 + 2 * (t - 1)] | (bbc.mem[B.XX21 + 2 * t - 1] << 8)) }, vmem: { XX0: w16(m.rd16(m.L.XX21 + 2 * (t - 1))) } });
 const SPECS = [
   { name: 'MULT3', gen: (r, b) => ({ a: b(), x: b(), y: b(), mem: { P: [b(), b()], Q: r(8) ? b() : [0, 128][r(2)] } }) },
-  { name: 'MVT3', noreg: 'c', gen: (r, b) => ({ x: 3 * r(3), y: b(), mem: { K: arr(b, 4), INWK: arr(b, 9) } }) },
+  { name: 'MVT3', gen: (r, b) => ({ x: 3 * r(3), y: b(), mem: { K: arr(b, 4), INWK: arr(b, 9) } }) },
   { name: 'MV40', noreg: 'axyc', skip: DRAW, gen: (r, b) => ({ mem: { INWK: [...arr(b, 9), ...arr(() => b(), 18), r(40), 0, b(), b(), 0, 0, 0, 0, 0], TYPE: [128, 129, 130][r(3)], ...fly(r, b) } }) },
   { name: 'MAS2', gen: (r, b) => ({ a: b(), y: [0, 36][r(2)], mem: { [0x900]: arr(b, 72) } }) },
   { name: 'MAS3', noreg: 'x', gen: (r, b) => ({ y: [0, 36][r(2)], mem: { [0x900]: arr(() => (r(3) ? r(16) : b()), 72) } }) },

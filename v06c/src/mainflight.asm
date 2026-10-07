@@ -136,9 +136,24 @@ mtt3:
 mtt3_n:
 	call	NWSHP
 	jp	mtt1
-mtt4:
+mtt4:					; торговец
 	pop	af
-	jp	GTHG_
+	or	a
+	rra
+	ld	(INWK + 32), a
+	ld	(INWK + 29), a
+	ld	d, a
+	ld	hl, INWK + 31
+	ld	a, (hl)
+	rla
+	ld	(hl), a
+	ld	a, d
+	and	31
+	or	16
+	ld	(INWK + 27), a
+	ld	a, 7
+	call	NWSHP
+	jp	TT100
 mtt1_p:
 	pop	af
 mtt1:
@@ -148,6 +163,7 @@ mtt1:
 	call	BAD
 	add	a, a
 	ld	d, a
+	push	af			; перенос сдвига идёт в Ze
 	ld	a, (MANY + 2)
 	or	a
 	ld	a, d
@@ -156,6 +172,7 @@ mtt1:
 	or	(hl)
 mtt1_t:
 	ld	(T), a
+	pop	af
 	call	Ze
 	ld	hl, T
 	cp	(hl)
@@ -172,20 +189,73 @@ mtt1_c:
 	inc	(hl)
 	call	DORND
 	ld	d, a
+	push	af
 	ld	a, (gov)
 	or	a
+	jp	z, label_2p		; анархия: пираты всегда; перенос — от DORND
+	pop	af
 	ld	a, d
-	jp	z, label_2
 	cp	90
 	jp	nc, MLOOP
 	and	7
 	ld	hl, gov
 	cp	(hl)
 	jp	c, MLOOP
+	scf
+	jp	label_2
+label_2p:
+	pop	af
 label_2:
-	jp	unported		; пираты и охотники: Ze, разбор стаи — этап P4
+	call	Ze
+	cp	200
+	jp	nc, mt1
+	ld	hl, EV
+	inc	(hl)
+	and	3
+	add	a, 3
+	ld	c, a
+	ld	a, b
+	cp	200
+	ccf
+	rla
+	or	0xC0
+	ld	d, a
+	ld	a, c
+	cp	6
+	jp	z, tha
+	ld	a, d
+	ld	(INWK + 32), a
+	ld	a, c
+	call	NWSHP
+	jp	MLOOP
+tha:
+	scf
+	call	DORND
+	cp	200
+	jp	c, MLOOP
+	scf
+	call	GTHG
+	jp	MLOOP
+mt1:					; стая пиратов
+	and	3
+	ld	(EV), a
+	ld	(XX13), a
+	scf
+mt3:
+	call	DORND
+	and	3
+	or	1
+	call	NWSHP
+	ld	hl, XX13
+	dec	(hl)
+	jp	p, mt3
+	jp	MLOOP
 me2:
-	jp	unported		; стереть сообщение: MESS — этап P4
+	ld	a, (MCH)
+	call	MESS
+	xor	a
+	ld	(DLY), a
+	jp	me3
 
 ; M%: проход цикла полёта.
 M_:
@@ -499,9 +569,22 @@ ma62:
 	ld	a, (DELTA)
 	cp	5
 	jp	nc, DEATH
-	jp	unported		; отскок от станции: OOPS, EXNO3 — этап P4
+	ld	a, 1			; отскок от станции
+	ld	(DELTA), a
+	ld	a, 5
+	or	a			; перенос 6502 = 0
+	jp	ma63
 ma58:
-	jp	unported		; столкновение: OOPS, EXNO3 — этап P4
+	ld	hl, INWK + 31		; столкновение: корабль гибнет, нам — урон в половину его энергии
+	ld	a, (hl)
+	or	0x80
+	ld	(hl), a
+	ld	a, (INWK + 35)
+	scf
+	rra
+ma63:
+	call	OOPS
+	call	EXNO3
 	; --- часть 10: прицел и попадание ---
 ma26:
 	ld	a, (QQ11)
@@ -509,7 +592,7 @@ ma26:
 	jp	nz, ma15
 	call	PLUT
 	call	HITCH
-	jp	nc, ma8
+	jp	nc, ma8_0
 	ld	a, (MSAR)
 	or	a
 	jp	z, ma47
@@ -521,9 +604,61 @@ ma26:
 ma47:
 	ld	a, (LAS)
 	or	a
-	jp	z, ma8
-	jp	unported		; попадание лазером: EXNO, ANGRY, гибель корабля — этап P4
+	jp	z, ma8_1
+	ld	b, 15			; попали лазером
+	call	EXNO
+	ld	a, (LAS)
+	ld	d, a
+	ld	a, (INWK + 35)
+	sub	d
+	jp	nc, ma14
+	ld	a, (TYPE)
+	cp	8
+	jp	z, ma14_2		; станцию не убить
+	ld	hl, INWK + 31
+	ld	a, (hl)
+	or	0x80
+	ld	(hl), a
+	ld	a, (TYPE)
+	cp	8
+	jp	nc, ma8_1		; ракета, астероид, контейнер — без обломков
+	or	a
+	call	DORND
+	or	a
+	jp	p, ma_oh
+	ld	hl, (XX0)
+	and	(hl)
+	ld	(CNT), a
+ma_um:
+	jp	z, ma_oh
+	ld	b, 11
+	xor	a
+	call	SFS1
+	ld	hl, CNT
+	dec	(hl)
+	jp	p, ma_um
+ma_oh:
+	call	EXNO2
+	ld	a, (DNOIZ)		; на BBC в энергию корабля попадает A после звука: 7 или байт блока звука
+	or	a
+	ld	a, 7
+	jp	z, ma14
+	ld	a, (XX16)
+ma14:
+	ld	(INWK + 35), a
+ma14_2:
+	ld	a, (TYPE)
+	call	ANGRY
+	ld	a, (TYPE)		; перенос 6502 после ANGRY: тип > 8
+	cp	9
+	jp	nc, ma8_1
+ma8_0:
+	xor	a
+	jp	ma8
+ma8_1:
+	ld	a, 1
 ma8:
+	ld	(ll9_cy), a		; перенос 6502 на входе LL9 (нужен при начале взрыва)
 	call	LL9
 	; --- часть 12: сохранить блок, убрать улетевших ---
 ma15:
@@ -537,7 +672,31 @@ ma15:
 	jp	p, mac1
 	and	0x20
 	jp	z, mac1
-	jp	unported		; корабль взорвался: награда, удаление KS1 — этап P4
+	ld	a, (TYPE)		; корабль взорвался: за полицейского — в розыск, за остальных — награда
+	cp	2
+	jp	nz, ma_q2
+	ld	hl, FIST
+	ld	a, (hl)
+	or	64
+	ld	(hl), a
+ma_q2:
+	ld	a, (DLY)
+	ld	hl, MJ
+	or	(hl)
+	jp	nz, KS1
+	ld	hl, (XX0)
+	ld	de, 10
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	jp	z, KS1
+	ld	b, a
+	inc	hl
+	ld	c, (hl)
+	call	MCASH
+	xor	a
+	call	MESS
+	jp	KS1
 mac1:
 	ld	a, (TYPE)
 	or	a
@@ -721,15 +880,6 @@ ma66:
 ; unported: сюда ведут ветви, которые ещё не перенесены. Образ здесь останавливается, чтобы это было видно.
 unported:
 	jp	unported
-ABORT:
-FRMIS:
 ESCAPE:
 WARP:
-EXNO2:
-MESS:
-DEATH:
-ABORT2:
-KS1:
-Ze:
-GTHG_:
 	jp	unported

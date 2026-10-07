@@ -47,7 +47,7 @@ m3_q:					; HL = A · |Q|
 	jp	mul8
 
 ; MVT3: K(3 2 1) = K(3 2 1) + координата INWK+X.. (X = 0, 3, 6); числа со знаком в бите 7 старшего байта.
-; A = K+3. S, T — рабочие.
+; A = K+3, перенос — как на BBC (от него в TACTICS зависит случайное число). S, T — рабочие.
 MVT3:
 	ld	a, (K + 3)
 	ld	(S), a
@@ -74,9 +74,13 @@ MVT3:
 	inc	hl
 	ld	a, d
 	adc	a, (hl)
+	push	af
 	and	0x7F
 	or	e
 	ld	(K + 3), a
+	ld	e, a
+	pop	af
+	ld	a, e
 	ret
 mv13:
 	ld	a, d
@@ -109,6 +113,7 @@ mv13:
 	ld	a, (T)
 	xor	e
 	ld	(K + 3), a
+	scf
 	ret
 mv13_n:
 	or	0x80			; ушли за ноль: сменить знак
@@ -127,11 +132,16 @@ mv13_n:
 	inc	hl
 	ld	a, 0
 	sbc	a, (hl)
+	ccf
+	push	af
 	and	0x7F
 	ld	e, a
 	ld	a, (T)
 	or	e
 	ld	(hl), a
+	ld	e, a
+	pop	af
+	ld	a, e
 	ret
 
 ; MV40: движение планеты и солнца: поворот положения на крен и тангаж игрока в 24 битах, дальше — MV45

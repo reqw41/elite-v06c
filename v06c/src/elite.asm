@@ -73,6 +73,10 @@ ws_clr:
 	include	"charts.asm"
 	include	"market.asm"
 	include	"equip.asm"
+	include	"tactics.asm"
+	include	"combat.asm"
+	include	"explode.asm"
+	include	"death.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
