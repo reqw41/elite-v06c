@@ -197,6 +197,38 @@ bl5:
 	inc	(hl)
 	jp	bl7
 bl1:
+	; быстрый путь: оба конца на экране (старшие байты 0, y < 192) — LL145 только переставляет байты
+	ld	a, (K5 + 1)
+	ld	hl, K5 + 3
+	or	(hl)
+	ld	hl, K6 + 1
+	or	(hl)
+	ld	hl, K6 + 3
+	or	(hl)
+	jp	nz, bl_clip
+	ld	a, (K5 + 2)
+	cp	192
+	jp	nc, bl_clip
+	ld	a, (K6 + 2)
+	cp	192
+	jp	nc, bl_clip
+	xor	a
+	ld	(SWAP), a
+	ld	(XX13), a
+	ld	a, (K5)
+	ld	(X1), a
+	ld	a, (K5 + 2)
+	ld	(Y1), a
+	ld	a, (K6)
+	ld	(X2), a
+	ld	a, (K6 + 2)
+	ld	(Y2), a
+	ld	hl, (K6)		; как после LL145: XX15+4 = x2, XX12 = y2 (16 бит)
+	ld	(XX15 + 4), hl
+	ld	hl, (K6 + 2)
+	ld	(XX12), hl
+	jp	bl9
+bl_clip:
 	ld	hl, (K5)
 	ld	(XX15), hl
 	ld	hl, (K5 + 2)
