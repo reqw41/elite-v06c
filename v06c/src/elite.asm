@@ -35,25 +35,12 @@ ws_clr:
 	ld	hl, pal_flight
 	call	pal_set
 	call	dash_show
-	call	demo_text
-	ld	a, 7			; Кобра Mk III
-	call	title_demo
+	ld	hl, 0x94C7		; генератор случайных чисел: игра его не засевает, на BBC в нём след загрузчика
+	ld	(RAND), hl
+	ld	hl, 0x1D27
+	ld	(RAND + 2), hl
 	ei
-main_wait:				; до первой клавиши — неподвижный экран (на нём идут проверки каркаса)
-	call	wait_frame
-	ld	hl, kb_rows
-	ld	b, 8
-	xor	a
-mw_or:
-	or	(hl)
-	inc	hl
-	dec	b
-	jp	nz, mw_or
-	or	a
-	jp	z, main_wait
-main:
-	call	title_pass
-	jp	main
+	jp	TT170
 
 	include	"sys.asm"
 	include	"text.asm"
@@ -72,13 +59,14 @@ main:
 	include	"clip.asm"
 	include	"ship.asm"
 	include	"stubs.asm"
-	include	"demo.asm"
 	include	"title.asm"
+	include	"start.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
 	include	"words.asm"		; словарь QQ18
 	include	"qq16.asm"
+	include	"na.asm"		; командир по умолчанию
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)

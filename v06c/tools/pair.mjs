@@ -39,6 +39,12 @@ export function makePair(rom = 'elite') {
     for (const s of skip) { const [lab, len] = Array.isArray(s) ? s : [s, 1]; for (let k = 0; k < len; k++) off.add((typeof lab === 'number' ? lab : B[lab]) + k); }
     for (let a = 0; a < 0x100; a++) { const v = rnd(256); bbc.mem[a] = v; }   // мусор в нулевой странице: чтение лишнего всплывёт
     for (const [lo, hi] of areas) m.wr(WS + lo, bbc.mem.subarray(lo, hi));
+    if (spec.screen === 'dash') {                           // панель Вектора — как у эталона (игра в образе её уже обновляла)
+      const dash = bbcDash(bbc.mem);
+      for (let c = 0; c < 32; c++) for (let y = 0; y < 56; y++) { let p1 = 0, p0 = 0;
+        for (let i = 0; i < 8; i++) { const col = dash[y * 256 + c * 8 + i]; p1 |= (col >> 1) << (7 - i); p0 |= (col & 1) << (7 - i); }
+        m.wr(0xC000 + c * 256 + 255 - (192 + y), [p1]); m.wr(0xE000 + c * 256 + 255 - (192 + y), [p0]); }
+    }
     if (spec.screen === 'view') { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) m.wr(0xC000 + c * 256 + 64, new Uint8Array(192)); }
     for (let i = 0; i < n && !st.fail; i++) {
       const inp = spec.gen(rnd, byte, i), mem = inp.mem || {};

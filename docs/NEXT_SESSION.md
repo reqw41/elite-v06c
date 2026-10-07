@@ -39,6 +39,8 @@ BBC, исполняемым под Node.
   `v06c/tools/v06c.mjs` (кадры, вызов одной процедуры, снимок). `TT26` сверен с эталоном.
 - T05: `PIXEL`, `LOIN`, `HLOIN` (`v06c/src/line.asm`) — экран равен эталону на 12 000 случаях.
 - Q4 (локальная модель): `MU5, DVID96, TIS1, MUT1–3, DV41, DV42` — `v06c/src/arith2.asm`, тест `v06c/test/q4.mjs`.
+- T16–T18: сброс (`reset.asm`), панель (`dials.asm`), запуск и `TITLE` (`start.asm`). **Образ от включения до обеих
+  заставок равен эталону** — `sh v06c/build.sh -DSCHED && node v06c/test/t18.mjs`. Отчёт — `docs/tasks/T16-T18-report.md`.
 - T14, T15: текст из словаря (`v06c/src/tokens.asm`) и экран (`screen.asm`: `TT66`, `TTX66`, `CLYNS`) равны эталону;
   тесты `t14.mjs`, `t15.mjs`. Сборка стенда `sh v06c/build.sh -DSCHED` → `elite_t.rom` (`WSCAN` не ждёт кадра).
 - T11: быстрая сборка `sh v06c/build.sh -DFAST` (логарифмы; эталон — `tools/oracle/sp.js`, тест `t11.mjs`): 6,9 прохода
@@ -60,7 +62,7 @@ BBC, исполняемым под Node.
 node tools/oracle/scenario.js launch          # «совпало, 525 проходов»
 node tools/oracle/xcheck.mjs launch           # 425 шагов, 82 с различиями (только LASCT)
 for t in ships words dials; do python3 -I tools/convert/test_convert.py $t; done
-sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # одиннадцать «всё совпало»
+sh v06c/build.sh && for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 q4 q5; do node v06c/test/$t.mjs | tail -1; done   # двенадцать «всё совпало»
 node v06c/tools/shot.mjs                      # снимок кадра в work/v06c/elite.png
 ```
 
@@ -69,9 +71,9 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 1. **T12** — сделано. **T13** — сделано частично: остаётся `LL9` по смыслу (оценка 5–8 % прохода).
 3. **T11** — сделано. Дальше по скорости: `LL9` по смыслу (20 % прохода в обвязке), подготовка отрезка в `LOIN`
    (отрезки короткие, в среднем 14 точек).
-4. **Заставка от включения** (T16–T18 на доске): сброс и запуск корабля, панель `DIALS`, `TITLE` целиком. По покрытию
-   эталона (`node tools/oracle/coverage.js launch 0 1`) до первой заставки исполняется 56 процедур; текст и экран
-   уже есть, осталось около 30.
+4. **Заставка от включения** — сделано (T14–T18). Дальше по игре — стоянка на станции после второй заставки
+   (`BAY`, экран статуса: подстановки текста `csh, tal, ypl, cpl, cmn, fwl`, галактика) и главный цикл.
+   До полёта — переписать панель `DIALS` по смыслу (сейчас в 8,7 раза дольше BBC).
 5. При сверке состояния рабочие ячейки рисования и указатели исключаются — список в `v06c/test/t10.mjs`.
 6. **T03** — сценарии боя, стыковки, торговли, прыжка, гибели (нужны OSWORD 0 и OSFILE в стенде).
 7. Показ на MiSTer: образ `v06c/build/elite.rom` ещё не запускался на железе.

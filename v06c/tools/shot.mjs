@@ -6,6 +6,6 @@ const out = path.resolve(process.argv[4] || path.join(ROOT, 'work/v06c', name + 
 const m = createVector(name);
 m.frame(n);
 const after = +(process.argv[5] || 0);
-if (after) { m.key(7, 0x80, true); m.frame(3); m.key(7, 0x80, false); m.frame(after); }
+if (after) { m.key(7, 0x80, true); m.frame(20); m.key(7, 0x80, false); m.frame(after); }
 savePng(m.bmp(), out);
 console.log(`кадров ${n}, счётчик кадров программы ${m.rd16('v_frames')} → ${out}`);

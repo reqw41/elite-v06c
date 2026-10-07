@@ -81,6 +81,12 @@ export function createVector(name = 'elite') {
       cpu.pc = save.pc; cpu.sp = save.sp; cpu.iff = save.iff; save.regs.forEach((v, i) => { cpu.regs[i] = v; });
       return r;
     },
+    // Исполнять программу (без видео и прерываний) до прихода в метку; хотя бы одна команда. Возврат — такты.
+    runTo(label, maxInsns = 2e8) {
+      const at = m.at(label); let cycles = 0, n = 0;
+      do { cpu.instruction(); cycles += cpu.vcycles | 0; if (cpu.last_opcode === 0xd3) io.commit(); if (++n > maxInsns) throw new Error(`runTo ${label}: не дошли за ${maxInsns} команд, PC=${(cpu.pc & 0xffff).toString(16)}`); } while ((cpu.pc & 0xffff) !== at);
+      return cycles;
+    },
     bmp: () => v06c.bmp,
   };
   return m;
