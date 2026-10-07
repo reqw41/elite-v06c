@@ -72,7 +72,7 @@ class BBC {
     this.watch.set(VEC_STUB, () => { this.ifr = 0; });    // система сбрасывает запросы прерывания
     this.hooks.set(0xfff4, () => this.osbyte());
     this.hooks.set(0xfff1, () => this.osword());
-    this.hooks.set(0xffdd, () => { throw new Error('OSFILE: сохранение в эталоне не сделано'); });
+    this.hooks.set(0xffdd, () => this.osfile());
     if (this.sched) {
       // WSCAN ждёт кадра по флагу DL, который ставит обработчик: по расписанию возвращаемся сразу.
       this.hooks.set(L.WSCAN, () => { m[L.DL] = 30; this.cpu.a = 30; this.cpu.p &= ~0x82; return true; });
@@ -113,8 +113,30 @@ class BBC {
     if (c.a === 128) { c.x = 0; c.y = 0x80; }             // джойстик в середине
     return true;                                           // 15 (сброс буферов), 200 — без действия
   }
+  // OSFILE: файл командира — 256 байт с &0B00 (блок параметров по адресу Y:X). A = 0 — запись, FFh — чтение.
+  // «Носитель» — поле saved; пустой носитель при чтении память не меняет (как заглушка на Векторе).
+  osfile() {
+    const c = this.cpu;
+    if (c.a === 0) this.saved = this.mem.slice(0x0b00, 0x0c00);
+    else if (c.a === 0xff) { if (this.saved) this.mem.set(this.saved, 0x0b00); }
+    else throw new Error(`OSFILE ${c.a}: в эталоне не сделано`);
+    return true;
+  }
   osword() {
     const c = this.cpu;
+    if (c.a === 0) {                                       // ввод строки: знаки берутся из lineIn (сценарий), эхо — через TT26
+      const p = c.x | (c.y << 8), buf = this.mem[p] | (this.mem[p + 1] << 8), max = this.mem[p + 2], lo = this.mem[p + 3], hi = this.mem[p + 4];
+      const save = { a: c.a, x: c.x, pc: c.pc }, RET = 0xffa0;
+      // печать знака игрой (TT26) на текущем стеке: обычный call() занял бы вершину стека игры
+      const out = (k) => { this.mem[0x100 + c.s] = (RET - 1) >> 8; c.s = (c.s - 1) & 255; this.mem[0x100 + c.s] = (RET - 1) & 255; c.s = (c.s - 1) & 255;
+        c.a = k; c.pc = this.lab.TT26; while (c.pc !== RET) { const h = this.hooks.get(c.pc); if (h) { if (h(this)) c.rts(); } else c.step(); } };
+      let n = 0;
+      for (const ch of (this.lineIn || '')) { const k = ch.charCodeAt(0); if (k === 13) break; if (k < lo || k > hi || n >= max) continue; this.mem[buf + n++] = k; out(k); }
+      this.lineIn = '';
+      this.mem[buf + n] = 13; out(10); out(13);            // OSNEWL
+      c.a = save.a; c.x = save.x; c.y = n; c.p &= ~1; c.pc = save.pc;
+      return true;
+    }
     if (c.a === 7) {
       const p = c.x | (c.y << 8);
       this.sounds.push({ frame: this.frames, block: Array.from(this.mem.subarray(p, p + 8)) });

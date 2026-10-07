@@ -11,7 +11,13 @@ BR1:
 	ld	b, 7			; Кобра Mk III
 	ld	a, 128			; «Load New Commander (Y/N)?»
 	call	TITLE
-	; на BBC при ответе Y — ввод имени и загрузка с ленты (GTNME, LOD, TRNME); этап P6. Пока — как при N.
+	ld	a, b
+	cp	0x44			; Y — загрузить командира
+	jp	nz, QU5
+	call	GTNME
+	call	LOD
+	call	TRNME
+	call	TTX66
 ; QU5: взять командира по умолчанию, проверить контрольную сумму, вторая заставка.
 QU5:
 	ld	hl, NA_ + 8

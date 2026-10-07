@@ -1,6 +1,7 @@
 // Эталонные сценарии по расписанию кадров. Запуск: node tools/oracle/scenario.js [имя] [--write]
 // Шаг сценария: [метка, проходов, нажать, отпустить, кадров на проход, записать в память {метка: байты},
-// вызвать процедуры [[метка, {a, x, y, c}, записать в память перед вызовом], …]]. Адрес записи — «МЕТКА» или «МЕТКА+n». Результат — хеши состояния на каждом
+// вызвать процедуры [[метка, {a, x, y, c}, записать в память перед вызовом], …], строка для ввода имени].
+// Адрес записи — «МЕТКА» или «МЕТКА+n». Строку эталон получает разом (OSWORD 0), на Векторе стенд набирает её клавишами. Результат — хеши состояния на каждом
 // проходе; с --write пишется tests/golden/<имя>.json, без него сверяется с записанным.
 'use strict';
 const fs = require('fs');
@@ -8,7 +9,7 @@ const path = require('path');
 const { BBC } = require('./bbc.js');
 const K = { N: 0x55, SPACE: 0x62, F0: 0x20, A: 0x41, S: 0x51, X: 0x42, LT: 0x66, GT: 0x67, H: 0x54, F1: 0x71, F2: 0x72, F3: 0x73, F4: 0x14, F5: 0x74,
   F6: 0x75, F7: 0x16, F8: 0x76, F9: 0x77, K1: 0x30, K2: 0x31, K3: 0x11, RET: 0x49, Q: 0x10, Y: 0x44, RIGHT: 0x79, LEFT: 0x19, UP: 0x39, DOWN: 0x29, D: 0x32,
-  T: 0x23, M: 0x65, E: 0x22, J: 0x45, CTRL: 0x01, ESC: 0x70, K0: 0x27, K4: 0x12, K5: 0x13, K6: 0x34, K7: 0x24, K8: 0x15, K9: 0x26 };
+  T: 0x23, M: 0x65, E: 0x22, J: 0x45, CTRL: 0x01, ESC: 0x70, AT: 0x47, COPY: 0x69, DEL: 0x59, X: 0x42, F: 0x43, K: 0x46, CAPS: 0x40, K0: 0x27, K4: 0x12, K5: 0x13, K6: 0x34, K7: 0x24, K8: 0x15, K9: 0x26 };
 // до стоянки на станции: обе заставки и экран статуса
 const DOCK = [['TLL2', 20, [], [], 1], ['TLL2', 1, [K.N]], ['TLL2', 20, [], [K.N], 1], ['MLOOP', 1, [K.SPACE]], ['MLOOP', 5, [], [K.SPACE]]];
 // нажать и отпустить клавиши по очереди в ожидании TT217; out — последняя клавиша выводит в главный цикл
@@ -74,13 +75,27 @@ const SCN = {
     ['MLOOP', 1, [], [], 3, { 'K%': [0, 0, 0, 0, 0, 0, 0, 112, 0] }], ['MLOOP', 40, [], [], 3],
     ['MLOOP', 1, [], [], 3, { 'K%+36': station(0x60), DELTA: [3] }], ['MLOOP', 4, [], [], 3],
     ['MLOOP', 1, [], [], 3, { 'K%+36': station(0xE0) }], ['MLOOP', 6, [], [], 3],
-    ...tap('F2', 'Y'), ...out('N'), ['MLOOP', 2, [K.F8]], ['MLOOP', 3, [], [K.F8]], ['MLOOP', 2, [K.F7]], ['MLOOP', 3, [], [K.F7]]],
+    ...tap('F2', 'Y'), ...out('N'), ['MLOOP', 2, [K.F8]], ['MLOOP', 3, [], [K.F8]], ['MLOOP', 2, [K.F7]], ['MLOOP', 3, [], [K.F7]]],  // Сохранение и пауза. На станции: денег 1234,5 — сохранить под именем BORIS; взлёт; денег 0; пауза (COPY):
+  // звук выкл. (Q) и вкл. (S), настройки X, F, J, K, A; из паузы АР2 — заново; на заставке Y — имя, загрузка;
+  // дальше как обычно: деньги снова 1234,5. Второй раз: пауза и продолжение (DELETE).
+  save: [...DOCK, ['MLOOP', 0, [], [], 2, { CASH: [0, 0, 0x30, 0x39] }],
+    ['MLOOP', 1, [K.AT], [], 2, null, null, 'BORIS\r'], ['MLOOP', 3, [], [K.AT]],
+    ['MLOOP', 3, [K.F0]], ['MLOOP', 30, [], [K.F0], 3], ['MLOOP', 0, [], [], 3, { CASH: [0, 0, 0, 0] }],
+    ['FREEZE', 2, [K.COPY], [], 1], ['FREEZE', 2, [K.Q], [K.COPY], 1], ['FREEZE', 2, [K.S], [K.Q], 1],
+    ['FREEZE', 2, [K.X], [K.S], 1], ['FREEZE', 2, [K.F], [K.X], 1], ['FREEZE', 2, [K.J], [K.F], 1], ['FREEZE', 2, [K.K], [K.J], 1],
+    ['FREEZE', 2, [K.A], [K.K], 1], ['FREEZE', 2, [], [K.A], 1],
+    ['MLOOP', 1, [K.DEL], [], 3], ['MLOOP', 5, [], [K.DEL], 3],
+    ['FREEZE', 2, [K.COPY], [], 1], ['FREEZE', 2, [], [K.COPY], 1],
+    ['TLL2', 1, [K.ESC], [], 1], ['TLL2', 10, [], [K.ESC], 1],
+    ['TLL2', 1, [K.Y], [], 1, null, null, 'BORIS\r'], ['TLL2', 10, [], [K.Y], 1],
+    ['MLOOP', 1, [K.SPACE]], ['MLOOP', 5, [], [K.SPACE]]],
 };
 // адрес BBC по «МЕТКА» или «МЕТКА+n»
 const addr = (lab, k) => { const [n, o] = k.split('+'); if (!(n in lab)) throw new Error('нет метки ' + n); return lab[n] + (+o || 0); };
 // записи в память и вызовы шага — для эталона; стенд Вектора делает то же самое у себя (v06c/test/t27.mjs)
 function prep(m, step) {
-  const [, , , , , poke, calls] = step;
+  const [, , , , , poke, calls, line] = step;
+  if (line) m.lineIn = line;
   for (const [a, v] of Object.entries(poke || {})) m.mem.set(v, addr(m.lab, a));
   for (const [label, regs = {}, mem = {}] of calls || []) { for (const [a, v] of Object.entries(mem)) m.mem.set(v, addr(m.lab, a)); m.call(label, regs); }
 }

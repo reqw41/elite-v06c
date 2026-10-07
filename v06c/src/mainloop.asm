@@ -178,7 +178,7 @@ u_l:
 	ret
 
 ; DOKEY: опрос клавиш полёта в журнал KL, крен и тангаж JSTX, JSTY по клавишам, нажатая клавиша в KL.
-; Пауза (COPY) и джойстик — этап P6.
+; Пауза — в DK4 (FREEZE). Джойстик — этап P6.
 DOKEY:
 	call	U_
 	ld	c, 7
@@ -220,6 +220,34 @@ DK4:
 	call	RDKEY
 	ld	a, b
 	ld	(KL), a
+	cp	0x69			; COPY (на Векторе — СТР): пауза
+	jp	nz, dk2
+FREEZE:					; пауза: S и Q — звук, клавиши настроек, АР2 — начать заново, DELETE (ЗБ) — дальше
+	call	WSCAN
+	call	RDKEY
+	ld	a, b
+	cp	0x51
+	jp	nz, dk6
+	xor	a
+	ld	(DNOIZ), a
+dk6:
+	ld	c, 0x40
+dkl4:
+	call	DKS3
+	inc	c
+	ld	a, c
+	cp	0x47
+	jp	nz, dkl4
+	ld	a, b
+	cp	0x10
+	jp	nz, dk7
+	ld	(DNOIZ), a
+dk7:
+	cp	0x70
+	jp	z, DEATH2
+	cp	0x59
+	jp	nz, FREEZE
+dk2:
 	ld	a, (QQ11)
 	or	a
 	ret	nz
@@ -241,6 +269,29 @@ dk1:
 	ld	a, c
 	cp	7
 	jp	nz, dkl1
+	ret
+
+; DKS3: настройка номер Y (40h–46h: гашение рулей, центровка, PATG, вспышки, обратный тангаж, обратные оси,
+; джойстик): если нажата её клавиша X — переключить, гудок и пауза Y кадров. X, Y сохраняются.
+DKS3:
+	ld	a, c
+	ld	(T), a
+	cp	b
+	ret	nz
+	ld	e, b
+	ld	d, 0
+	ld	hl, DAMP - 0x40
+	add	hl, de
+	ld	a, (hl)
+	cpl
+	ld	(hl), a
+	push	bc
+	ld	a, 7
+	call	TT26
+	pop	bc
+	push	bc
+	call	DELAY
+	pop	bc
 	ret
 
 ; DKS1: клавиша полёта номер Y (KYTB+Y): нажата — KL+Y = FFh.

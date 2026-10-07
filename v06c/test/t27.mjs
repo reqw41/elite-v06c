@@ -43,7 +43,7 @@ const prof = new Float64Array(0x10000), profAll = new Float64Array(0x10000);   /
 let idx = 0, fail = null, tv = 0, tb = 0, flightV = 0, flightB = 0, flightN = 0;
 const t0 = Date.now();
 outer: for (const step of SCN[name]) {
-  const [label, n, down = [], up = [], k = 2, poke, calls] = step;
+  const [label, n, down = [], up = [], k = 2, poke, calls, line] = step;
   prep(bbc, step);                                           // записи в память и вызовы шага: эталон…
   const vput = (map) => { for (const [a, v] of Object.entries(map || {})) m.wr(WS + addr(B, a), v); };
   vput(poke);                                                // …и то же самое на Векторе
@@ -55,6 +55,13 @@ outer: for (const step of SCN[name]) {
     bbc.pass(label, k);
     let cyc;
     const inFlight = label === 'MLOOP' && bbc.mem[B.QQ12] === 0 && idx > 170;
+    if (line && i === 0) {                                   // ввод имени: эталон получил строку разом, здесь набираем клавишами
+      const keyOf = (ch) => { if (ch === '\r') return 0x49; for (let c = 0x10; c < 0x80; c++) if (bbc.mem[0xF02B + c] === ch.toLowerCase().charCodeAt(0)) return c; throw new Error('нет клавиши для ' + ch); };
+      m.runTo('rline', 3e7);                                 // клавиша шага довела игру до ввода строки
+      down.forEach((c) => setKey(c, false));
+      for (const ch of line) { const c = keyOf(ch); m.runTo('tt217_t2', 3e7); setKey(c, true); m.runTo(ch === '\r' ? 'rl_end' : 'tt217_t', 3e7); setKey(c, false); }
+      down.forEach((c) => setKey(c, true));
+    }
     try { cyc = m.runTo(VLABEL[label] || label, 3e7, inFlight ? prof : profAll); } catch (e) { fail = `проход ${idx} (${label}): ${e.message}; метка рядом: ${Object.entries(L).filter(([, a]) => a <= (m.cpu.pc & 0xffff)).sort((a, b) => b[1] - a[1])[0][0]}`; break outer; }
     for (let f = 0; f < k; f++) { m.wr('DL', [30]); const la = m.rd('LASCT'); if (la) m.wr('LASCT', [la - 1]); }   // кадры по расписанию, как tick() эталона
     tv += cyc; tb += bbc.cpu.cycles - c0;

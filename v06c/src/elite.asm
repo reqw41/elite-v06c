@@ -79,6 +79,7 @@ ws_clr:
 	include	"death.asm"
 	include	"hyper.asm"
 	include	"snd.asm"
+	include	"save.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
