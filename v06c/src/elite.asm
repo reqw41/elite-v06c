@@ -70,6 +70,7 @@ ws_clr:
 	include	"start.asm"
 	include	"mainloop.asm"
 	include	"status.asm"
+	include	"charts.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
