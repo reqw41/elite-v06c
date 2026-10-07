@@ -63,6 +63,9 @@ class BBC {
     // Векторы, которые ставит загрузчик из таблицы S%: WRCHV, IRQ1V, BRKV; VEC — прежний IRQ1V.
     w16(0x020e, L.TT26); w16(0x0204, L.IRQ1); w16(0x0202, L.BR1);
     w16(L.VEC, VEC_STUB);
+    // Таблица перевода клавиш в знаки — в ПЗУ системы; её адрес загрузчик кладёт в TRTB% (у OS 1.20 — &F02B,
+    // снято с настоящего BBC в jsbeeb). Нужна вводу числа и ответам Y/N.
+    w16(L['TRTB%'], 0xf02b);
     w16(0xfffe, IRQ_STUB);
     m.set([0x85, 0xfc, 0x6c, 0x04, 0x02], IRQ_STUB);      // STA &FC : JMP (&0204)
     m.set([0xa5, 0xfc, 0x40], VEC_STUB);                  // LDA &FC : RTI
