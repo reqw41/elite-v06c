@@ -32,8 +32,20 @@ const shot = (f) => { const bmp = new Uint32Array(576 * 288), pal = [0, 0xC00000
   for (let y = 0; y < 192; y++) for (let x = 0; x < 256; x++) { const a = 0x4000 | ((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | (x >> 3), at = mem[0x5800 + (y >> 3) * 32 + (x >> 3)];
     const on = (mem[a] >> (7 - (x & 7))) & 1, c = pal[on ? at & 7 : (at >> 3) & 7]; bmp[(y + 48) * 576 + x * 2 + 32] = c; bmp[(y + 48) * 576 + x * 2 + 33] = c; }
   savePng(bmp, f); };
+// SHIPS=n — держать в полёте n кораблей: когда их меньше, в начале прохода вызывается игровая процедура «стая»
+// (BCABh: 2–4 Sidewinder и Krait), все делаются враждебными (бит 0 байта 25h блока). Игрок не гибнет: щиты и
+// энергия не трогаются — если гибель случится, это видно по падению числа проходов.
+const OBJ0 = +(process.env.OBJ0 || 0), WANT = +(process.env.SHIPS || 0);
+const ships = () => { let n = 0; for (let i = 1; i <= 6; i++) if (mem[OBJ0 + 39 * i + 0x22]) n++; return n; };
+let inject = false, shipSum = 0, shipN = 0;
+const frame0 = frame;
+const frameS = () => { const end = T + FRAME; while (T < end) { const pc = cpu.pc; if (pc === MARK) { loops++; shipSum += ships(); shipN++;
+      if (WANT && ships() < WANT) { const st = cpu.getState(); st.sp = (st.sp - 2) & 0xffff; mem[st.sp] = pc & 255; mem[st.sp + 1] = pc >> 8; st.pc = 0xBCAB; cpu.setState(st); }
+      else if (WANT) for (let i = 1; i <= 6; i++) if (mem[OBJ0 + 39 * i + 0x22]) mem[OBJ0 + 39 * i + 0x25] |= 1; }
+    T += cpu.run_instruction() || 4; } frames++; cpu.interrupt(false, 0xff); };
 const steps = (process.argv[2] || '500').split(/\s+/), png = process.argv[3];
 steps.forEach((s, i) => { const [n, k] = s.split(':'); down.clear(); if (k) for (const ch of k) down.add(ch === '_' ? '_' : ch === '^' ? '\n' : ch);
-  const l0 = loops, t0 = T; for (let f = 0; f < +n; f++) frame();
-  console.log(`шаг ${i} (${s}): кадров ${n}, проходов ${loops - l0}, ${((loops - l0) / ((T - t0) / 3.5e6)).toFixed(2)} в секунду; pc ${cpu.pc.toString(16)}, экран ${mem[0x7124].toString(16)}`);
+  const l0 = loops, t0 = T; shipSum = 0; shipN = 0; for (let f = 0; f < +n; f++) (WANT && i >= 6 ? frameS : frame)();
+  console.log(`шаг ${i} (${s}): кадров ${n}, проходов ${loops - l0}, ${((loops - l0) / ((T - t0) / 3.5e6)).toFixed(2)} в секунду; кораблей в среднем ${shipN ? (shipSum / shipN).toFixed(1) : '-'}; pc ${cpu.pc.toString(16)}`);
+  if (process.env.DUMP && OBJ0) for (let k = 0; k < 8; k++) { const b = OBJ0 + 39 * k; if (mem[b + 0x22] || k === 0 || k === 7) console.log(`   место ${k}: занято ${mem[b + 0x22]}, модель ${(mem[b + 0x23] | (mem[b + 0x24] << 8)).toString(16)}, флаги ${mem[b + 0x25].toString(16)} ${mem[b + 0x26].toString(16)}, байты 0–8: ${Array.from(mem.subarray(b, b + 9)).map((v) => v.toString(16).padStart(2, '0')).join(' ')}`); }
   if (png) shot(png.replace('.png', `-${i}.png`)); });

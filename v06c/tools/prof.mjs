@@ -1,6 +1,7 @@
 // Профиль обычного образа в настоящих кадрах (с прерываниями и ожиданием кадра): такты по меткам и по файлам
 // исходника. Сцена: взлёт, клавиши не нажаты (как замер ZX 48K в docs/research/versions.md), после разворота от планеты
-// (SCENE=space) или там же с тремя кораблями перед игроком (Sidewinder, Mamba, Krait; выбывшие заменяются), игрок неуязвим (SCENE=fight). node v06c/tools/prof.mjs [кадров = 1500] [сколько строк = 45]
+// (SCENE=space) или там же с тремя кораблями перед игроком (Sidewinder, Mamba, Krait; выбывшие заменяются), игрок неуязвим (SCENE=fight);
+// FOUR=1 — четыре корабля, два Sidewinder и два Krait, как стая в замере ZX 48K (tools/analysis/zx48_run.mjs). node v06c/tools/prof.mjs [кадров = 1500] [сколько строк = 45]
 import fs from 'node:fs'; import path from 'node:path';
 import { createVector, ROOT } from './v06c.mjs';
 const FR = +(process.argv[2] || 1500), TOP = +(process.argv[3] || 45), IMG = process.env.IMG || 'elite';
@@ -20,7 +21,7 @@ const FIGHT = process.env.SCENE === 'fight'; let shipsSum = 0, polls = 0;
 for (let f = 0; f < FR; f += 5) { g.frame(5);
   if (FIGHT) { for (const v of ['ENERGY', 'FSH', 'ASH']) g.wr(L[v], [255]);
     if (f % 250 === 0) { let n = 0; for (let i = 2; i < 13; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128) n++; }
-      for (const t of [1, 3, 14].slice(n)) { g.call('ZINF'); g.wr(L.INWK + 7, [2]); g.wr(L.INWK + 1, [t * 9]); g.call('NWSHP', { a: t }); } } }
+      for (const t of (process.env.FOUR ? [1, 14, 1, 14] : [1, 3, 14]).slice(n)) { g.call('ZINF'); g.wr(L.INWK + 7, [2]); g.wr(L.INWK + 1, [t * 9]); g.call('NWSHP', { a: t }); } } }
   { let n = 0; for (let i = 2; i < 13; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128) n++; } shipsSum += n; polls++; }
   const m = g.rd(L.MCNT); loops += (mc - m) & 255; mc = m; }
 on = false; loops = tt;
