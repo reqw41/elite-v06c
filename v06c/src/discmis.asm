@@ -35,6 +35,8 @@ dm_dock:
 	ld	(DELTA), a
 	ld	(ALPHA), a
 	ld	(ALP1), a
+	ld	(BETA), a		; на диске тангаж не обнуляется; оставшийся от стыковки, он уводит корабль
+	ld	(BET1), a		; показа по z, и показ может не кончиться
 	ld	a, 31
 	ld	(TYPE), a
 	call	NWSHP

@@ -48,10 +48,11 @@ const spawn = (t, pre = 0) => { m.call('ZINF'); m.wr(L.INWK + 7, [5]); m.wr(L.nb
   clear(); const p = spawn(1); const b2 = m.rd16(L.UNIV + 2 * p); m.wr(b2 + 32, [0x80]); m.wr(L.K_ + 36 + 32, [0]); m.wr(L.INF, [b2 & 255, b2 >> 8]); m.call('ANGRY', { a: 1 });
   ok(!(m.rd(L.K_ + 36 + 32) & 0x80), 'пират атакован: станция не злится'); }
 
-// 5. в игре: торговец с флагом «стыкуется» у станции
-{ const g = createVector('elite'), G = g.L, c = g.cpu, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
+// 5. в игре: торговец с флагом «стыкуется» у станции — в нескольких сценах (станция на разном удалении, торговец
+// перед нами и позади): на диске условие стыковки случайное, здесь — близость к станции
+for (const WAIT of [400, 440, 500, 700]) { const g = createVector('elite'), G = g.L, c = g.cpu, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
-  g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(400);
+  g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(WAIT);
   c.iff = false; let cyc = 0;
   const pass = () => { let k = 0; do { c.instruction(); cyc += c.vcycles | 0; if (c.last_opcode === 0xd3) g.io.commit();
       if (cyc >= 59904) { cyc -= 59904; g.wr(G.DL, [30]); } if (++k > 3e7) throw new Error('проход не кончился'); } while ((c.pc & 0xffff) !== G.MLOOP); c.iff = false; };
@@ -68,7 +69,7 @@ const spawn = (t, pre = 0) => { m.call('ZINF'); m.wr(L.INWK + 7, [5]); m.wr(L.nb
   let n = 0, minD = 1e9, maxSeen = 0;
   while (fr().includes(7) && n < 2500) { g.wr(G.DELTA, [0]); g.wr(G.ENERGY, [255]); g.wr(G.EV, [50]); pass(); n++;
     const s = fr().indexOf(7); if (s > 0) { const b = G.K_ + 36 * s, d = Math.hypot(...[0, 1, 2].map((ax) => { const q = (i) => g.rd(G.K_ + i); const sg = (base) => (q(base + 3 * ax + 2) & 0x80 ? -1 : 1) * (q(base + 3 * ax) | (q(base + 3 * ax + 1) << 8)); return sg(36 * s) - sg(36); })); minD = Math.min(minD, d); } }
-  ok(r.cf === 1 && slot > 0 && !fr().includes(7), `в игре: торговец появился у станции и через ${n} проходов исчез в ней (ближе всего к центру станции — ${minD.toFixed(0)}); энергия ${g.rd(G.ENERGY)}, станция ${(g.rd(G.K_ + 36 + 32) & 0x80) ? 'злится' : 'мирная'}`);
+  ok(r.cf === 1 && slot > 0 && !fr().includes(7), `в игре (сцена через ${WAIT} кадров после взлёта): торговец появился у станции и через ${n} проходов исчез в ней (ближе всего к центру станции — ${minD.toFixed(0)}); энергия ${g.rd(G.ENERGY)}, станция ${(g.rd(G.K_ + 36 + 32) & 0x80) ? 'злится' : 'мирная'}`);
 }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'NEWB: всё как задумано');
 process.exit(bad ? 1 : 0);

@@ -105,6 +105,7 @@ STARS:
 	jp	z, STARS6
 	jp	STARS2
 
+	ifdef	SCHED
 ; STARS1: пыль в виде вперёд: каждая пылинка приближается на скорость, смещается на крен и тангаж,
 ; стирается и рисуется заново; ушедшая за край или подошедшая вплотную заменяется новой.
 ; |x|·Q и |y|·Q — через mul8 (без MLU1/MLU2); адреса таблиц без st_idx.
@@ -227,25 +228,6 @@ st_x1:
 	ld	a, (X1)
 	adc	a, (hl)
 	ld	(hl), a
-	ifndef	SCHED
-	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): все слагаемые ниже — нули
-	ld	hl, BET1
-	or	(hl)
-	jp	nz, st_rot
-	ld	b, a
-	ld	hl, SXL
-	add	hl, bc
-	ld	a, (XX)
-	ld	(hl), a
-	ld	hl, SYL
-	add	hl, bc
-	ld	a, (YY)
-	ld	(hl), a
-	call	PIXEL2			; стереть пылинку на прежнем месте
-	jp	st_norot
-st_rot:
-	ld	a, (XX + 1)
-	endif
 	ld	hl, ALP2 + 1		; y += alpha · x / 256 (mul8 вместо MLS1)
 	xor	(hl)
 	ld	d, a
@@ -310,7 +292,6 @@ st_rot:
 	ld	a, (BETA)
 	xor	0x80
 	call	PIX1			; и стереть пылинку на прежнем месте
-st_norot:
 	ld	a, (XX + 1)
 	ld	(X1), a
 	ld	hl, SX
@@ -374,6 +355,258 @@ kill1:
 	ld	(hl), a
 	ld	(ZZ), a
 	jp	stc1
+	else
+; STARS1 обычного образа: пыль в виде вперёд, свой расчёт (в образе стенда — перенос BBC, выше). Смысл тот же:
+; пылинка приближается на скорость, расходится от центра тем быстрее, чем она ближе, смещается на тангаж и
+; поворачивается на крен; ушедшая за край или подошедшая вплотную заменяется новой. Отличия от BBC: множитель
+; расхождения берётся из таблицы обратных величин (sn_tab) без деления; координаты на время расчёта переводятся
+; в дополнительный код; тангаж применяется до крена; квадратичной поправки к x при тангаже нет.
+STARS1:
+	ld	a, (NOSTM)
+	ld	c, a
+sn_l:
+	ld	b, 0
+	ld	hl, SX
+	add	hl, bc
+	ld	a, (hl)
+	ld	(X1), a
+	ld	hl, SY
+	add	hl, bc
+	ld	a, (hl)
+	ld	(Y1), a
+	ld	hl, SZ
+	add	hl, bc
+	ld	a, (hl)
+	ld	(ZZ), a
+	push	af
+	call	PIXEL2			; стереть пылинку на прежнем месте
+	pop	af
+	rrca				; Q = DELTA · sn_tab[z / 4] / 16 — примерно 64 · DELTA / z
+	rrca
+	and	0x3F
+	ld	e, a
+	ld	d, 0
+	ld	hl, sn_tab
+	add	hl, de
+	ld	e, (hl)
+	ld	a, (DELTA)
+	call	mul8
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	ld	a, h
+	or	1
+	ld	(Q), a
+	ld	b, 0
+	ld	hl, SZL			; z -= скорость · 4
+	add	hl, bc
+	ld	a, (DELT4)
+	ld	e, a
+	ld	a, (hl)
+	sub	e
+	ld	(hl), a
+	push	af			; заём: сложение адреса его портит
+	ld	hl, SZ
+	add	hl, bc
+	pop	af
+	ld	a, (DELT4 + 1)
+	ld	e, a
+	ld	a, (hl)
+	sbc	a, e
+	ld	(hl), a
+	jp	c, sn_new
+	cp	16
+	jp	c, sn_new
+	ld	(ZZ), a
+	ld	hl, SXL			; x: модуль растёт на |x| · Q
+	add	hl, bc
+	ld	a, (X1)
+	call	sn_zoom
+	jp	c, sn_new
+	ld	(sn_x), hl
+	ld	hl, SYL
+	ld	b, 0
+	add	hl, bc
+	ld	a, (Y1)
+	call	sn_zoom
+	jp	c, sn_new
+	ld	a, (BET1)		; тангаж: y -= beta · 256
+	or	a
+	jp	z, sn_roll
+	ld	e, a
+	ld	a, (BETA)
+	or	a
+	ld	a, h
+	jp	m, sn_p1
+	sub	e
+	jp	sn_p2
+sn_p1:
+	add	a, e
+sn_p2:
+	ld	h, a
+sn_roll:
+	ld	(sn_y), hl
+	ld	a, (ALP1)
+	or	a
+	jp	z, sn_back
+	ld	hl, (sn_x)		; крен: y -= alpha · x / 256
+	call	sn_term
+	ex	de, hl
+	ld	hl, ALP2 + 1
+	xor	(hl)
+	ld	hl, (sn_y)
+	call	sn_adds
+	jp	c, sn_new
+	ld	(sn_y), hl
+	call	sn_term			; x += alpha · y / 256
+	ex	de, hl
+	ld	hl, ALP2
+	xor	(hl)
+	ld	hl, (sn_x)
+	call	sn_adds
+	jp	c, sn_new
+	ld	(sn_x), hl
+sn_back:
+	ld	b, 0
+	ld	hl, (sn_y)
+	call	sn_sm
+	jp	c, sn_new
+	ld	e, l
+	ld	(Y1), a
+	ld	hl, SY
+	add	hl, bc
+	ld	(hl), a
+	ld	hl, SYL
+	add	hl, bc
+	ld	(hl), e
+	ld	hl, (sn_x)
+	call	sn_sm
+	jp	c, sn_new
+	ld	e, l
+	ld	(X1), a
+	ld	hl, SX
+	add	hl, bc
+	ld	(hl), a
+	ld	hl, SXL
+	add	hl, bc
+	ld	(hl), e
+sn_draw:
+	call	PIXEL2
+	dec	c
+	jp	nz, sn_l
+	ret
+sn_new:					; новая пылинка — как на BBC: y, x и расстояние случайные
+	call	DORND
+	or	4
+	ld	(Y1), a
+	ld	b, 0
+	ld	hl, SY
+	add	hl, bc
+	ld	(hl), a
+	call	DORND
+	or	8
+	ld	(X1), a
+	ld	b, 0
+	ld	hl, SX
+	add	hl, bc
+	ld	(hl), a
+	call	DORND
+	or	144
+	ld	(ZZ), a
+	ld	b, 0
+	ld	hl, SZ
+	add	hl, bc
+	ld	(hl), a
+	jp	sn_draw
+; sn_zoom: A — старший байт (знак в бите 7), HL -> младший. Выход: HL — координата после расхождения, в
+; дополнительном коде; перенос — модуль от 120·256 (за краем). Сохраняет BC.
+sn_zoom:
+	push	af
+	ld	l, (hl)
+	and	0x7F
+	ld	h, a
+	push	hl
+	ld	e, a
+	ld	a, (Q)
+	call	mul8
+	pop	de
+	add	hl, de
+	pop	de			; D — старший байт со знаком
+	ld	a, h
+	cp	120
+	ccf
+	ret	c
+	ld	a, d
+	or	a
+	ret	p
+sn_neg:					; HL = -HL, перенос 0
+	xor	a
+	sub	l
+	ld	l, a
+	ld	a, 0
+	sbc	a, h
+	ld	h, a
+	or	a
+	ret
+; sn_term: HL — координата. Выход: HL = |старший байт| · ALP1, A — её старший байт (знак в бите 7).
+sn_term:
+	ld	a, h
+	or	a
+	push	af
+	jp	p, sn_t1
+	cpl
+sn_t1:
+	ld	e, a
+	ld	a, (ALP1)
+	call	mul8
+	pop	af
+	ret
+; sn_adds: HL = HL + DE при бите 7 у A = 0, HL - DE при 1 (DE без знака). Перенос — переполнение.
+sn_adds:
+	or	a
+	jp	m, sn_a1
+	ld	a, h
+	add	hl, de
+	cpl
+	and	h
+	rla
+	ret
+sn_a1:
+	ld	b, h
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+	cpl
+	and	b
+	rla
+	ret
+; sn_sm: HL (дополнительный код) -> A = старший байт со знаком в бите 7, L — младший. Перенос — модуль от 120·256.
+sn_sm:
+	ld	d, 0
+	ld	a, h
+	or	a
+	jp	p, sn_s1
+	call	sn_neg
+	ld	d, 0x80
+sn_s1:
+	ld	a, h
+	cp	120
+	ccf
+	ret	c
+	or	d
+	ret
+sn_x:	dw	0
+sn_y:	dw	0
+sn_tab:					; 1024 / (4i + 2), i = z / 4 (расстояние меньше 16 не бывает)
+	db	57, 57, 57, 57, 57, 47, 39, 34, 30, 27, 24, 22, 20, 19, 18, 17
+	db	16, 15, 14, 13, 12, 12, 11, 11, 10, 10, 10, 9, 9, 9, 8, 8
+	db	8, 8, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 5
+	db	5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4
+	endif
 
 ; Как MULTS: (A P) = |A| · (P & 31) со знаком A. При |A| = 0: P(1 0) = 0, перенос как на входе.
 st_mults:
