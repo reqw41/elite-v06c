@@ -1158,6 +1158,46 @@ ll9_cy:	db	0
 ; --- помощники ---
 ll9_cp6:
 	ld	b, 6
+	ifndef	SCHED
+; Блок корабля (INF) -> INWK и обратно, 36 байт словами через стек: втрое быстрее побайтного цикла. На это время
+; прерывания запрещены — стек стоит на данных. Портят BC, DE, HL.
+blk_in:
+	di
+	ld	hl, 0
+	add	hl, sp
+	ex	de, hl
+	ld	hl, (INF)
+	ld	sp, hl
+bk_k = 0
+	dup	NI / 2
+	pop	hl
+	ld	(INWK + bk_k), hl
+bk_k = bk_k + 2
+	edup
+	ex	de, hl
+	ld	sp, hl
+	ei
+	ret
+blk_out:
+	di
+	ld	hl, 0
+	add	hl, sp
+	ex	de, hl
+	ld	hl, (INF)
+	ld	bc, NI
+	add	hl, bc
+	ld	sp, hl
+bk_k = NI - 2
+	dup	NI / 2
+	ld	hl, (INWK + bk_k)
+	push	hl
+bk_k = bk_k - 2
+	edup
+	ex	de, hl
+	ld	sp, hl
+	ei
+	ret
+	endif
 ll9_cp:					; B байт из HL в DE
 	ld	a, (hl)
 	ld	(de), a

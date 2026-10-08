@@ -164,6 +164,11 @@ mv51:
 
 ; MVS4: повернуть вектор ориентации INWK+Y.. (Y = 9, 15, 21) на крен и тангаж игрока (ALPHA, BETA).
 MVS4:
+	ifndef	SCHED
+	ld	a, (ALP1)		; нет крена — первая половина поворота тождественна
+	or	a
+	jp	z, mvs4_b
+	endif
 	ld	a, (ALPHA)
 	ld	(Q), a
 	call	mvs4_hl			; y -= alpha · x
@@ -203,6 +208,12 @@ MVS4:
 	ld	(hl), a
 	ld	a, b
 	ld	(P_), a
+mvs4_b:
+	ifndef	SCHED
+	ld	a, (BET1)		; нет тангажа — вторая половина тождественна
+	or	a
+	ret	z
+	endif
 	ld	a, (BETA)
 	ld	(Q), a
 	call	mvs4_hl			; y -= beta · z
@@ -426,10 +437,20 @@ mv_sp2:
 	xor	a
 	ld	(INWK + 28), a
 	ifndef	SCHED
-	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): поворот — умножения на ноль
-	ld	hl, BET1
-	or	(hl)
+	ld	a, (ALP1)		; без крена K2 = y; без крена и тангажа поворота нет вовсе
+	or	a
+	jp	nz, mv_a1
+	ld	a, (BET1)
+	or	a
 	jp	z, mv45
+	ld	hl, (INWK + 3)
+	ld	(K2 + 1), hl
+	ld	(P_ + 1), hl
+	ld	a, (INWK + 5)
+	ld	(K2 + 3), a
+	ld	a, l
+	jp	mv_k2
+mv_a1:
 	endif
 	ld	a, (ALP1)		; K2 = y - alpha · x
 	ld	b, a
@@ -449,6 +470,19 @@ mv_sp2:
 	ld	(K2 + 2), a
 	ld	a, (P_ + 1)
 	ld	(K2 + 1), a
+	ifndef	SCHED
+	ld	a, (BET1)		; без тангажа z прежний, y = K2
+	or	a
+	jp	nz, mv_b1
+	ld	hl, (K2 + 1)
+	ld	(INWK + 3), hl
+	ld	a, (K2 + 3)
+	ld	(INWK + 5), a
+	jp	mv44
+mv_b1:
+	ld	a, (K2 + 1)
+mv_k2:
+	endif
 	cpl
 	ld	(P_), a
 	ld	a, (BET1)		; z = z + beta · K2
@@ -511,6 +545,11 @@ mv43:
 	xor	0x80
 	ld	(hl), a
 mv44:
+	ifndef	SCHED
+	ld	a, (ALP1)
+	or	a
+	jp	z, mv45
+	endif
 	ld	a, (ALP1)		; x = x + alpha · y
 	ld	b, a
 	ld	a, (INWK + 3)
@@ -535,10 +574,16 @@ mv45:
 	ld	a, 0x80
 	ld	b, 6
 	call	MVT1
+	ifdef	PCIRC
+	ld	a, (TYPE)		; планета — окружность: её ориентация не нужна (как и у солнца)
+	or	a
+	ret	m
+	else
 	ld	a, (TYPE)
 	and	0x81
 	cp	129
 	ret	z
+	endif
 	ifndef	SCHED
 	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): поворот — умножения на ноль
 	ld	hl, BET1

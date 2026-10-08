@@ -565,10 +565,14 @@ mal1:
 	jp	z, ma18
 	ld	(TYPE), a
 	call	GINF
+	ifdef	SCHED
 	ld	hl, (INF)
 	ld	de, INWK
 	ld	b, NI
 	call	ll9_cp
+	else
+	call	blk_in
+	endif
 	ld	a, (TYPE)
 	or	a
 	jp	m, ma21
@@ -597,11 +601,15 @@ mal1:
 	call	EXNO2
 ma21:
 	call	MVEIT
+	ifdef	SCHED
 	ld	hl, (INF)
 	ex	de, hl
 	ld	hl, INWK
 	ld	b, NI
 	call	ll9_cp
+	else
+	call	blk_out
+	endif
 	ld	a, (INWK + 31)		; часть 6: столкновение, стыковка, сбор груза — только вплотную
 	and	0xA0
 	call	MAS4
