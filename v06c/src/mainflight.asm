@@ -137,13 +137,14 @@ mtt2:
 	scf
 mtt3:
 	call	DORND
+	ifdef	SCHED
 	cp	5
 	ld	a, 10
 	jp	nc, mtt3_n
 	ld	a, 11
 mtt3_n:
-	ifndef	SCHED
-	call	zx_rock			; вместо астероида иногда валун
+	else
+	call	ds_junk			; как в дисковой версии: валун, астероид, редко контейнер
 	endif
 	call	NWSHP
 	jp	mtt1
@@ -176,7 +177,7 @@ mtt4_n:
 	ld	a, c
 	ld	(nb_pre), a
 	ld	a, 7
-	call	zx_pick			; иногда Python, Boa или Anaconda
+	call	ds_trade		; Cobra, Python, Boa или Anaconda
 	call	NWSHP
 	xor	a
 	ld	(nb_pre), a
@@ -232,7 +233,7 @@ mtt1_c:
 	jp	z, label_2p		; анархия: пираты всегда; перенос — от DORND
 	pop	af
 	ld	a, d
-	cp	90
+	cp	DS_GOV
 	jp	nc, MLOOP
 	and	7
 	ld	hl, gov
@@ -244,7 +245,7 @@ label_2p:
 	pop	af
 label_2:
 	call	Ze
-	cp	200
+	cp	DS_PACK
 	jp	nc, mt1
 	ld	hl, EV
 	inc	(hl)
@@ -264,7 +265,7 @@ label_2:
 	ld	(INWK + 32), a
 	ld	a, c
 	ifndef	SCHED
-	call	zx_pick
+	call	ds_lone			; одиночный охотник — из четырёх типов диска
 	endif
 	call	mis_pick		; охота за скрывающим устройством: иногда — Asp с ним
 	ifndef	SCHED
@@ -290,7 +291,7 @@ mt3:
 	and	3
 	or	1
 	ifndef	SCHED
-	call	zx_pick
+	call	ds_pack			; стая — из восьми типов диска
 	endif
 	call	NWSHP
 	ld	hl, XX13
@@ -1084,46 +1085,54 @@ ma66:
 	ret	nz
 	jp	STARS
 
-; zx_pick: корабли версий ZX и дисковой BBC. A — тип, выбранный игрой, как в кассетной BBC (1 Sidewinder, 3 Mamba,
-; 4 Python, 5 Cobra — пираты и охотники, 7 — Cobra-торговец); в половине случаев вместо него выходит один из
-; четырёх типов строки zp_tab. Генератор случайных чисел свой (mis_rnd): ход игры и её случайные числа не
-; меняются. Перенос сохраняется (он идёт в DORND). В сборке стенда (SCHED) замены нет — там игра равна эталону.
-zx_pick:
-	push	af
-	cp	8
-	jp	nc, zp_keep
+; Появление кораблей по правилам дисковой версии (только обычный образ; случайные числа свои — mis_rnd):
+; ds_lone — одиночный охотник: Cobra (пират), Asp, Python, Fer-de-Lance поровну;
+; ds_trade — торговец: Cobra, Python, Boa, Anaconda поровну;
+; ds_pack — корабль стаи: номер = два случайных числа, сложенные по И, по модулю 8 (Sidewinder — 42 %, Mamba,
+;   Krait, Gecko — по 14 %, Adder, Cobra Mk I, Worm — по 5 %, Cobra-пират — 2 %);
+; ds_junk — мусор по случайному числу A: валун или астероид, изредка контейнер.
+; Пороги: стая вместо одиночки — при числе от 100 (в кассетной — от 200), порог правления 120 (90).
+	ifdef	SCHED
+DS_GOV		equ	90
+DS_PACK		equ	200
+	else
+DS_GOV		equ	120
+DS_PACK		equ	100
+ds_lone:
+	ld	hl, ds_tl
+	jp	ds_4
+ds_trade:
+	ld	hl, ds_tt
+ds_4:
+	call	mis_rnd
+	and	3
+ds_ix:
 	ld	e, a
 	ld	d, 0
-	ld	hl, zp_map - 1
 	add	hl, de
 	ld	a, (hl)
-	or	a
-	jp	m, zp_keep
-	ld	e, a
+	ret
+ds_pack:
 	call	mis_rnd
-	rra
-	jp	c, zp_keep
-	and	3
-	add	a, e
 	ld	e, a
-	ld	hl, zp_tab
-	add	hl, de
-	pop	af
-	ld	a, (hl)
-	ret
-zp_keep:
-	pop	af
-	ret
-; zx_rock: вместо астероида (10) в одном случае из четырёх — валун (21).
-zx_rock:
+	ld	a, (mis_seed)		; второе число — младший байт генератора: два вызова подряд дают
+	and	e			; сдвинутые копии одного числа, и часть номеров не выпадала бы
+	and	7
+	ld	hl, ds_tp
+	jp	ds_ix
+ds_junk:
+	ld	e, a
+	and	1
+	ld	d, a
+	ld	a, e
 	cp	10
-	ret	nz
-	call	mis_rnd
-	and	3
-	ld	a, 10
-	ret	nz
-	ld	a, 21
-	ret
+	ld	a, d
+	jp	c, ds_j1
+	inc	a
+ds_j1:
+	ld	hl, ds_tj
+	jp	ds_ix
+	endif
 ; zx_tact: добавки дисковой версии в тактику (B — тип, сохраняется). Anaconda (28) изредка выпускает Worm (25);
 ; мирная станция, пока рядом нет челнока, изредка выпускает Shuttle (29) или Transporter (30) — он без тактики,
 ; летит прямо из щели, к планете. Случайные числа свои.

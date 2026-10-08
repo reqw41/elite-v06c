@@ -2,13 +2,11 @@
 ; (0200h). Собраны так, чтобы занять страницу почти целиком: иначе перед таблицей остаётся пустота.
 	include	"na.asm"		; командир по умолчанию
 	include	"qq23.asm"		; товары рынка
-; замена кораблей при появлении (zx_pick, mainflight.asm): строка по типу и четыре варианта
-zp_map:	db	0, 0xFF, 4, 8, 12, 0xFF, 16
-zp_tab:	db	14, 22, 23, 25		; Sidewinder: Krait, Adder, Gecko, Worm
-	db	14, 24, 26, 23		; Mamba: Krait, Cobra Mk I, Moray, Gecko
-	db	15, 15, 4, 4		; Python: Asp Mk II
-	db	16, 16, 5, 15		; Cobra: Fer-de-Lance, Asp Mk II
-	db	27, 28, 4, 7		; торговец: Boa, Anaconda, Python
+; появление кораблей по правилам дисковой версии (ds_lone, ds_trade, ds_pack, ds_junk — mainflight.asm)
+ds_tl:	db	5, 15, 4, 16		; одиночный охотник: Cobra (пират), Asp, Python, Fer-de-Lance
+ds_tt:	db	7, 4, 27, 28		; торговец: Cobra, Python, Boa, Anaconda
+ds_tp:	db	1, 3, 14, 22, 23, 24, 25, 5	; стая: Sidewinder, Mamba, Krait, Adder, Gecko, Cobra Mk I, Worm, Cobra (пират)
+ds_tj:	db	11, 21, 10		; мусор: контейнер, валун, астероид
 ; управляющие коды текстов описаний и миссий (pd_jump, pdesc.asm)
 pd_jt:	dw	pd_mt1, pd_mt2, TT27, pd_cmn, pd_dasc, pd_dasc, pd_dasc, pd_mt8, pd_mt9, mz_nl
 	dw	mz_name, pd_dasc, pd_mt13, pd_mt14, pd_mt15, pd_dasc, pd_mt17, pd_mt18, pd_mt19, pd_dasc

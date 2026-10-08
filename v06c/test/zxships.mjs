@@ -44,17 +44,15 @@ const frin = Array.from(m.mem().subarray(WS + B.FRIN, WS + B.FRIN + 13));
 console.log(`${bad ? 'FAIL' : 'OK  '} сценарий fight с кораблями ZX: ${idx} проходов, появлялись типы ${seen.join(', ')}; побед за бой ${maxTally}`);
 if (maxTally < 2) fail(`побед ${maxTally}, ждали не меньше 2`);
 if (m.rd(WS + B.QQ12) !== 0xFF) fail('в конце не заставка');
-// статистика замены (обычный образ: в образе стенда zx_pick нет)
-{ const r = createVector('elite'); r.frame(40); const cnt = {};
-  for (const t of [1, 3, 4, 5, 7, 2, 6]) { cnt[t] = {}; for (let i = 0; i < 2000; i++) { const q = r.call('zx_pick', { a: t, cf: i & 1 }); if (q.cf !== (i & 1)) { fail('zx_pick не сохранил перенос'); break; } cnt[t][q.a] = (cnt[t][q.a] || 0) + 1; } }
-  console.log('замена типа при появлении (из 2000): ' + Object.entries(cnt).map(([t, c]) => `${t} → ` + Object.entries(c).map(([a, n]) => `${a}: ${n}`).join(', ')).join(' | '));
-  const ROW = { 1: [14, 22, 23, 25], 3: [14, 24, 26, 23], 4: [15, 15, 4, 4], 5: [16, 16, 5, 15], 7: [27, 28, 4, 7] };
-  for (const [t, row] of Object.entries(ROW)) { const c = cnt[t], other = row.filter((x) => x !== +t);
-    const n = other.reduce((q, x) => q + (new Set(other).has(x) ? 0 : 0), 0) + [...new Set(other)].reduce((q, x) => q + (c[x] || 0), 0), want = 1000 * other.length / 4;
-    if (Math.abs(n - want) > 150) fail(`тип ${t}: замен ${n}, ждали около ${want}`);
-    if (Object.keys(c).some((a) => +a !== +t && !row.includes(+a))) fail(`тип ${t}: лишняя замена`);
-    for (const x of new Set(other)) if (!c[x]) fail(`тип ${t}: замены на ${x} не было`); }
-  if (Object.keys(cnt[2]).length !== 1 || Object.keys(cnt[6]).length !== 1) fail('полицейский Viper и таргоид заменяться не должны'); }
+// появление кораблей по правилам дисковой версии (обычный образ): доли типов на 4000 вызовов
+{ const r = createVector('elite'); r.frame(40);
+  const stat = (fn, arg) => { const c = {}; for (let i = 0; i < 4000; i++) { const a = r.call(fn, arg ? arg(i) : {}).a; c[a] = (c[a] || 0) + 1; } return c; };
+  const show = (c) => Object.entries(c).map(([t, n]) => `${t}: ${(n / 40).toFixed(0)} %`).join(', ');
+  const near = (c, want) => Object.keys(c).every((t) => t in want) && Object.entries(want).every(([t, p]) => Math.abs((c[t] || 0) / 40 - p) < Math.max(3, p * 0.2));
+  let c = stat('ds_lone'); console.log('одиночный охотник: ' + show(c)); if (!near(c, { 5: 25, 15: 25, 4: 25, 16: 25 })) fail('одиночный охотник: доли не те');
+  c = stat('ds_trade'); console.log('торговец: ' + show(c)); if (!near(c, { 7: 25, 4: 25, 27: 25, 28: 25 })) fail('торговец: доли не те');
+  c = stat('ds_pack'); console.log('корабль стаи: ' + show(c)); if (!near(c, { 1: 42.2, 3: 14.1, 14: 14.1, 22: 4.7, 23: 14.1, 24: 4.7, 25: 4.7, 5: 1.6 })) fail('стая: доли не те');
+  c = stat('ds_junk', (i) => ({ a: (i * 97) & 255 })); console.log('мусор: ' + show(c)); if (!near(c, { 11: 2, 21: 50, 10: 48 })) fail('мусор: доли не те'); }
 // корабли дисковой версии (типы 21–31): каждый появляется, рисуется (снимок), гибнет как корабль; валун — как астероид
 { const NAMES = { 21: 'boulder', 22: 'adder', 23: 'gecko', 24: 'cobra1', 25: 'worm', 26: 'moray', 27: 'boa', 28: 'anaconda', 29: 'shuttle', 30: 'transporter', 31: 'constrictor' };
   const made = [];
