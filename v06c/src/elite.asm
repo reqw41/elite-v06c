@@ -14,6 +14,12 @@ DASH_H		equ	56
 
 	include	"bbc_vars.inc"
 
+	jp	entry
+	include	"front.asm"		; командир по умолчанию, товары, мелкие таблицы — до границы страницы
+	assert	$ <= 0x0200
+	align	256
+divtab:	incbin	"divtab.bin"		; наклоны коротких отрезков (tools/convert/divtab.py)
+	include	"keys.asm"		; сразу за таблицей наклонов: её конец — на границе страницы
 entry:
 	di
 	ld	sp, STACK
@@ -40,6 +46,9 @@ ws_clr:
 	ld	hl, 0x1D27
 	ld	(RAND + 2), hl
 	call	joy_init		; состояние покоя джойстиков
+	ld	a, 0xFF		; печать описаний и текстов миссий: не внутри слова, без «одной прописной»
+	ld	(pd_w2), a
+	ld	(pd_w8), a
 	ei
 	jp	TT170
 
@@ -87,6 +96,7 @@ ws_clr:
 	include	"pdesc.asm"
 	include	"dockit.asm"
 	include	"hangar.asm"
+	include	"discmis.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
@@ -95,8 +105,6 @@ ws_clr:
 	include	"tkn1.asm"		; словарь описаний планет; кончается парами букв, продолжение которых — QQ16
 	include	"qq16.asm"
 	assert	QQ16 == pd_tkn2 + 26
-	include	"na.asm"		; командир по умолчанию
-	include	"qq23.asm"		; товары рынка
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)
@@ -104,9 +112,6 @@ LOGL	equ	LOG + 0x100
 ALOG	equ	LOG + 0x200
 ALOGODD	equ	LOG + 0x300
 	endif
-	align	256
-divtab:	incbin	"divtab.bin"		; наклоны коротких отрезков (tools/convert/divtab.py)
-	include	"keys.asm"		; сразу за таблицей наклонов: её конец — на границе страницы
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
 dials:
@@ -133,7 +138,9 @@ pd_w6:		ds	1		; описание планеты (pdesc.asm): 80h — буквы 
 pd_w2:		ds	1		; FFh — не внутри слова
 pd_w8:		ds	1		; DFh — следующая буква прописная
 pd_n:		ds	1		; знаков в буфере
-pd_lc:		ds	1		; 20h — буква названия строчная
+pd_w1:		ds	1		; 20h — буквы строчные, 0 — прописные
+pd_cap:		ds	1		; <> 0 — знаки идут в буфер выравнивания
+pd_zz:		ds	1		; 256 - номер системы, найденной TT111
 auto:		ds	1		; <> 0 — автопилот стыковки ведёт корабль (dockit.asm)
 ll_sh:		ds	156		; копия прежнего списка отрезков корабля (самый длинный — 153 байта + длина + запас)
 tp_buf		equ	ll_sh		; блок с ленты: читается не во время рисования

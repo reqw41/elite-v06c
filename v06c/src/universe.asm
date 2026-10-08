@@ -128,6 +128,8 @@ tt134:
 	jp	nc, tt135
 	ld	c, a
 	push	bc
+	ld	a, b
+	ld	(pd_zz), a		; номер системы — для особых описаний планет
 	ld	hl, QQ15
 	ld	de, QQ19
 	ld	b, 6

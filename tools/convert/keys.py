@@ -58,7 +58,7 @@ def main():
          '; kb_bbc: клавиша Вектора (строка · 8 + бит) -> номер клавиши BBC, 0 — нет.\n\talign\t128\nkb_bbc:\n' + db(fwd) +
          '; kb_ss: F1..F5 при нажатой СС -> f5..f9 BBC.\nkb_ss:\n' + db(ss) +
          '; kb_rev: номер клавиши BBC -> клавиша Вектора; FFh — нет; 80h + бит — модификатор в kb_mod;\n'
-         '; 40h + клавиша — только вместе с СС.\n\talign\t128\nkb_rev:\n' + db(rev))
+         '; 40h + клавиша — только вместе с СС.\n\tinclude\t"kbgap.asm"\t\t; мелкие таблицы — в пустоту до границы (до 59 байт)\n\talign\t128\nkb_rev:\n' + db(rev))
     asc = [0] * 128
     for k, c in BBC.items():
         if k in ASCII:

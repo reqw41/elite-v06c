@@ -6,6 +6,15 @@
 ; Сохраняет все регистры, на выходе C = 0 (как на BBC). Рабочие ячейки BBC (P+1, P+2, SC, XSAV2, YSAV2)
 ; здесь не трогаются; K3 = знак, как на BBC.
 TT26:
+	ifndef	SCHED
+	push	hl			; идёт текст с выравниванием (pdesc.asm): знак — в его буфер
+	ld	hl, pd_cap
+	inc	(hl)
+	dec	(hl)
+	pop	hl
+	jp	nz, pd_hook
+	endif
+TT26R:
 	ld	(K3), a
 	push	bc
 	push	de

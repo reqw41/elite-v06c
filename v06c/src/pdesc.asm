@@ -2,24 +2,75 @@
 ; с выравниванием строк по ширине, MT17, MT18. Эталон — код дисковой версии в tools/oracle/pdesc.js, сверка —
 ; v06c/test/pdesc.mjs (знаки, приходящие в TT26, равны знакам, приходящим в CHPR на BBC).
 ; Отличия от BBC: генератор случайных чисел после описания возвращается к прежнему значению (на диске BBC в нём
-; остаются семена системы), — так ход игры остаётся как в кассетной версии; особых описаний (RUPLA) нет;
-; название системы печатается своим кодом, QQ17 не меняется. Словарь — v06c/data/tkn1.asm.
+; остаются семена системы), — так ход игры остаётся как в кассетной версии. Слова основного словаря (название
+; системы, имя командира) идут через TT27: пока включён буфер (pd_cap), TT26 отдаёт знаки сюда.
+; Этим же кодом печатаются тексты миссий дисковой версии (discmis.asm). Словарь — v06c/data/tkn1.asm.
 PD_LL		equ	30		; ширина строки описания
 pd_buf		equ	ll_sh		; буфер выравнивания (на BBC — BUF): в описании не больше 140 знаков
 
-; PDESC: описание системы с семенами QQ15, с текущей строки.
+; PDESC: описание системы с семенами QQ15, с текущей строки. Для текущей системы (QQ8 = 0) из таблицы pd_rupla —
+; особое описание (часть — только пока идёт миссия 1 дисковой версии, прописными).
 PDESC:
 	ld	hl, (RAND)
 	push	hl
 	ld	hl, (RAND + 2)
 	push	hl
+	ld	a, 0xFF
+	ld	(pd_w2), a
+	ld	hl, (QQ8)
+	ld	a, l
+	or	h
+	jp	nz, pd_pd1
+	ld	a, (pd_zz)		; номер системы: TT111 оставила 256 - номер
+	cpl
+	inc	a
+	ld	b, a
+	ld	c, PD_NRU
+	ld	hl, pd_rupla + PD_NRU - 1
+pd_pdl1:
+	ld	a, (hl)
+	cp	b
+	jp	nz, pd_pd2
+	push	hl
+	ld	de, PD_NRU
+	add	hl, de
+	ld	d, (hl)
+	pop	hl
+	ld	a, (GCNT)
+	xor	d
+	and	0x7F
+	jp	nz, pd_pd2
+	ld	a, d
+	or	a
+	ld	a, PD_OPEN
+	jp	m, pd_pd3
+	ld	a, (DTP)
+	rra
+	jp	nc, pd_pd1
+	push	bc
+	call	pd_mt14
+	pop	bc
+	ld	a, 1
+pd_pd3:
+	push	bc
+	call	pd_byte
+	pop	bc
+	ld	a, c
+	add	a, PD_RU - 1
+	call	pd_tok
+	ld	a, PD_CLOSE
+	jp	pd_pd4
+pd_pd2:
+	dec	hl
+	dec	c
+	jp	nz, pd_pdl1
+pd_pd1:
 	ld	hl, (QQ15 + 2)
 	ld	(RAND), hl
 	ld	hl, (QQ15 + 4)
 	ld	(RAND + 2), hl
-	ld	a, 0xFF
-	ld	(pd_w2), a
 	xor	a
+pd_pd4:
 	call	pd_tok
 	pop	hl
 	ld	(RAND + 2), hl
@@ -85,8 +136,8 @@ pd_dts:
 	or	a
 	jp	m, pd_d5		; начало слова — прописная
 pd_d10:
-	ld	a, c
-	or	0x20
+	ld	a, (pd_w1)
+	or	c
 	ld	c, a
 pd_d5:
 	ld	a, (pd_w8)		; DFh — одна прописная
@@ -112,7 +163,10 @@ pd_dasc:
 pd_da8:
 	ld	a, b
 	ld	(pd_w2), a		; FFh — не внутри слова
+	ld	a, (pd_cap)
+	or	a
 	ld	a, c
+	jp	z, TT26R		; буфера нет: знак сразу на экран
 	cp	12
 	jp	z, pd_flush
 	ld	a, (pd_n)
@@ -121,6 +175,16 @@ pd_da8:
 	ld	(pd_n), a
 	call	pd_ptr
 	ld	(hl), c
+	ret
+pd_hook:				; знак из TT26: регистры сохраняются, перенос 0 — как у TT26
+	push	bc
+	push	de
+	push	hl
+	call	pd_dasc
+	pop	hl
+	pop	de
+	pop	bc
+	or	a
 	ret
 pd_ptr:					; HL = pd_buf + E
 	ld	hl, pd_buf
@@ -155,43 +219,99 @@ pd_rn2:
 	ld	a, b
 	jp	pd_tok
 
-pd_jump:
-	cp	12
-	jp	z, pd_dasc
-	cp	2
-	jp	z, pd_mt2
-	cp	3
-	jp	z, pd_name
-	cp	13
-	jp	z, pd_mt13
-	cp	14
-	jp	z, pd_mt14
-	cp	15
-	ret	z			; MT15: буфер уже пуст
-	cp	17
-	jp	z, pd_mt17
-	cp	18
-	jp	z, pd_mt18
+pd_jump:				; управляющий код A: процедура из таблицы, A — код
+	cp	30
+	jp	nc, pd_dasc
+	ld	c, a
+	add	a, a
+	ld	e, a
+	ld	d, 0
+	ld	hl, pd_jt - 2
+	add	hl, de
+	ld	a, (hl)
+	inc	hl
+	ld	h, (hl)
+	ld	l, a
+	ld	a, c
+	jp	(hl)
 pd_mt19:				; следующая буква прописная
 	ld	a, 0xDF
 	ld	(pd_w8), a
 	ret
-pd_mt2:					; как в предложении
+pd_mt1:					; прописными
 	xor	a
+	ld	(pd_w1), a
 	jp	pd_mt6
+pd_mt29:				; строка 6, строчными
+	ld	a, 6
+	db	0x01			; LD BC, nn — пропустить следующую команду
+pd_mt23:				; строка 10, строчными
+	ld	a, 10
+	ld	(YC), a
 pd_mt13:				; строчными
 	ld	a, 0x80
+	db	0x01
+pd_mt2:					; как в предложении
+	ld	a, 0
+	ld	(pd_w6), a
+	ld	a, 0x20
+	ld	(pd_w1), a
+	ret
 pd_mt6:
 	ld	(pd_w6), a
 	ret
-pd_mt14:				; начать буфер
+pd_mt8:					; столбец 6, следующая буква прописная
+	ld	a, 6
+	ld	(XC), a
+	ld	a, 0xFF
+	ld	(pd_w2), a
+	ret
+pd_mt9:					; чистый экран
+	ld	a, 1
+	ld	(XC), a
+pd_tt66:				; TT66 дисковой версии: очистка, «как в предложении», «не внутри слова»
+	ld	a, 1
+	call	TT66
+	ld	a, 0x80
+	ld	(pd_w2), a
+	jp	pd_mt2
+pd_mt14:				; выравнивание по ширине: знаки идут в буфер
+	ld	a, 0x80
+	db	0x01
+pd_mt15:				; без выравнивания
+	ld	a, 0
+	ld	(pd_cap), a
 	xor	a
 	ld	(pd_n), a
 	ret
+pd_cmn:					; имя командира — как записано, прописными
+	ld	hl, NA_
+pd_cmn1:
+	ld	a, (hl)
+	cp	13
+	ret	z
+	push	hl
+	call	pd_dasc
+	pop	hl
+	inc	hl
+	jp	pd_cmn1
+pd_mt27:				; имя капитана — по номеру галактики
+	ld	a, PD_CAPT
+	db	0x01
+pd_mt28:				; где видели «Констриктор» — по номеру галактики
+	ld	a, PD_M28
+	ld	hl, GCNT
+	add	a, (hl)
+	jp	pd_tok
 
 ; pd_mt17 (MT17): название системы как прилагательное — без последней гласной, с «ian».
 pd_mt17:
-	call	pd_name
+	ld	hl, QQ17
+	ld	a, (hl)
+	and	0xBF
+	ld	(hl), a
+	ld	a, 3
+	call	TT27
 	ld	a, (pd_n)
 	ld	e, a
 	call	pd_ptr
@@ -237,52 +357,6 @@ pd_m18l:
 	or	a
 	dec	c
 	jp	p, pd_m18l
-	ret
-
-; pd_name: название системы QQ15 (как cpl): первая буква прописная, остальные строчные.
-pd_name:
-	ld	hl, QQ15
-	ld	de, QQ19
-	call	ll9_cp6
-	ld	a, (QQ15)
-	and	0x40
-	ld	a, 3
-	jp	nz, pd_nm1
-	dec	a
-pd_nm1:
-	ld	(T), a
-	xor	a
-	ld	(pd_lc), a
-pd_nm2:
-	ld	a, (QQ15 + 5)
-	and	0x1F
-	jp	z, pd_nm3
-	add	a, a
-	ld	e, a
-	ld	d, 0
-	ld	hl, QQ16
-	add	hl, de
-	call	pd_nml
-	inc	hl
-	call	pd_nml
-pd_nm3:
-	call	TT54
-	ld	hl, T
-	dec	(hl)
-	jp	p, pd_nm2
-	ld	hl, QQ19
-	ld	de, QQ15
-	jp	ll9_cp6
-pd_nml:
-	ld	a, (hl)
-	cp	'?'
-	ret	z
-	push	hl
-	ld	hl, pd_lc
-	or	(hl)
-	ld	(hl), 0x20
-	call	pd_dasc
-	pop	hl
 	ret
 
 ; pd_flush (DA1): напечатать буфер. Пока в нём больше PD_LL знаков — в первые PD_LL знаков добавляются пробелы
@@ -348,7 +422,7 @@ pd_da2:					; строка готова
 	ld	b, PD_LL
 	call	pd_das1
 	ld	a, 12
-	call	TT26
+	call	TT26R
 	ld	a, (pd_n)
 	sub	PD_LL + 1
 	ld	(pd_n), a
@@ -366,12 +440,12 @@ pd_fin:
 	xor	a
 	ld	(pd_n), a
 	ld	a, 12
-	jp	TT26
+	jp	TT26R
 pd_das1:				; B знаков буфера на экран
 	ld	hl, pd_buf
 pd_dal5:
 	ld	a, (hl)
-	call	TT26
+	call	TT26R
 	inc	hl
 	dec	b
 	jp	nz, pd_dal5

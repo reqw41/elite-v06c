@@ -270,11 +270,19 @@ ks5:
 	cp	8
 	jp	z, KS4
 	cp	NTY + 1
-	jp	nc, ks_nm		; корабли версии ZX в MANY не числятся
+	jp	nc, ks_zx		; корабли версии ZX в MANY не числятся
 	ld	e, a
 	ld	hl, MANY
 	add	hl, de
 	dec	(hl)
+	jp	ks_nm
+ks_zx:
+	cp	31
+	jp	nz, ks_nm
+	ld	hl, DTP		; «Констриктор» убит
+	ld	a, (hl)
+	or	2
+	ld	(hl), a
 ks_nm:
 	ld	hl, (XX0)
 	ld	e, 5

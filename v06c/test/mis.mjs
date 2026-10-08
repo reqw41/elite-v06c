@@ -173,6 +173,17 @@ Object.assign(TESTS, {
     g.poke({ ['K%+' + 36 * slot]: [0, 0, 0, 30, 0, 0x80, 40, 0, 0] }); g.pass(4);
     ok(g.rd('QQ20+12') >= 1, `обломок подобран: минералов в трюме ${g.rd('QQ20+12')} (трюм ${g.rd('QQ20', 17)}, объекты ${frin(g).filter((v) => v).join('.')}, место ${slot}, щит ${g.rd('FSH')})`);
   },
+  // миссия 1 дисковой версии: «Констриктора» не берёт обычный лазер, берёт военный; гибель отмечается в байте миссий
+  constrictor() {
+    const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ LASER: [15, 0, 0, 0], 'ESCP+2': [1] });
+    spawn(g, 31, 3, 0); const slot = frin(g).indexOf(31), e = 'K%+' + (36 * slot + 35), e0 = g.rd(e), t0 = g.rd('TALLY');
+    const fire = (n) => { g.key(K.A, true); let k = 0; while (frin(g).includes(31) && k < n) { full(g); g.poke({ DELTA: [0], GNTMP: [0], ['K%+' + 36 * slot]: [0, 0, 0, 0, 0, 0] }); g.pass(1); k++; } g.key(K.A, false); return k; };
+    fire(80);
+    ok(frin(g).includes(31) && g.rd(e) === e0, `импульсный лазер «Констриктора» не берёт: энергия ${g.rd(e)} из ${e0} после 80 проходов огня`);
+    g.poke({ LASER: [0x97, 0, 0, 0] }); const k = fire(3000);
+    ok(!frin(g).includes(31), `военный лазер уничтожил «Констриктор» за ${k} проходов`);
+    ok(g.rd('ESCP+2') === 3 && g.rd('TALLY') === t0 + 1, `гибель отмечена: байт миссий ${g.rd('ESCP+2')}, побед ${g.rd('TALLY')} (было ${t0})`);
+  },
 });
 const only = process.argv[2];
 for (const [name, fn] of Object.entries(TESTS)) { if (only && only !== name) continue; console.log(`--- ${name}`); try { fn(); } catch (e) { bad++; console.log('FAIL ' + e.message); } }

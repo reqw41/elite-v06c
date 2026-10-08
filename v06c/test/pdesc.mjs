@@ -21,11 +21,11 @@ for (let g = 0; g < 8; g++) {
       const pc = cpu.pc & 0xffff;
       if (pc === L.DORND) dornd++;
       const k = m.rd(L.pd_n); if (k > peak) peak = k;
-      if (pc !== L.TT26) return;
+      if (pc !== L.TT26R) return;
       got += String.fromCharCode(cpu.regs[7]);               // знак принят; сам TT26 не исполняется: RET, перенос 0
       const sp = cpu.sp & 0xffff; cpu.pc = m.rd(sp) | (m.rd(sp + 1) << 8); cpu.sp = (sp + 2) & 0xffff; cpu.cf = 0;
     };
-    const r = m.call('PDESC', { mem: { QQ15: sd, RAND: rand, QQ17: 0x80 }, tick });
+    const r = m.call('PDESC', { mem: { QQ15: sd, RAND: rand, QQ17: 0x80, QQ8: [1, 0] }, tick });
     maxCyc = Math.max(maxCyc, r.cycles); maxLen = Math.max(maxLen, got.length); lines = Math.max(lines, got.split('\f').length - 1);
     if (got !== want.text) fail(`галактика ${g}, система ${s}:\n  BBC    ${JSON.stringify(want.text)}\n  Вектор ${JSON.stringify(got)}`);
     else if (dornd !== want.dornd) fail(`галактика ${g}, система ${s}: вызовов DORND ${dornd}, на BBC ${want.dornd}`);
@@ -34,6 +34,25 @@ for (let g = 0; g < 8; g++) {
     if (q.join() !== sd.join()) fail(`галактика ${g}, система ${s}: QQ15 изменён`);
     if (verbose && g === 0 && s < 8) console.log(String(s).padStart(3) + ' ' + got.split('\f').slice(0, -1).join(' | '));
   }
+}
+// Особые описания (текущая система, QQ8 = 0): все 25 записей таблицы, без миссии и с идущей миссией 1.
+{
+  const RUPLA = Array.from({ length: 25 }, (_, i) => m.rd(L.pd_rupla + i)), RUGAL = Array.from({ length: 25 }, (_, i) => m.rd(L.pd_rugal + i));
+  let nru = 0, special = 0;
+  for (let k = 0; k < 25; k++) for (const tp of [0, 1, 2, 3]) {
+    const g = RUGAL[k] & 0x7F, s = RUPLA[k], rand = [rnd(), rnd(), rnd(), rnd()], sd = seeds(g, s);
+    const want = d.describe(g, s, rand, { here: true, tp });
+    let got = '';
+    const tick = () => { if ((cpu.pc & 0xffff) !== L.TT26R) return; got += String.fromCharCode(cpu.regs[7]);
+      const sp = cpu.sp & 0xffff; cpu.pc = m.rd(sp) | (m.rd(sp + 1) << 8); cpu.sp = (sp + 2) & 0xffff; cpu.cf = 0; };
+    m.call('PDESC', { mem: { QQ15: sd, RAND: rand, QQ17: 0x80, QQ8: [0, 0], GCNT: g, pd_zz: (256 - s) & 255, DTP: tp }, tick });
+    nru++; if (want.text !== d.describe(g, s, rand).text) special++;
+    if (got !== want.text) fail(`особое описание ${k} (галактика ${g}, система ${s}, миссия ${tp}):\n  BBC    ${JSON.stringify(want.text)}\n  Вектор ${JSON.stringify(got)}`);
+    if (m.rd(L.pd_cap)) fail(`особое описание ${k}: буфер выравнивания остался включён`);
+    if (tp === 1 && k === 1) console.log('пример (галактика 0, система ' + s + ', идёт миссия 1): ' + got.split('\f').slice(0, -1).join(' | '));
+  }
+  m.wr(L.DTP, [0]); m.wr(L.GCNT, [0]);
+  console.log(`особых описаний проверено ${nru}, из них отличных от обычного ${special}`);
 }
 const room = L.vars_end - L.ll_sh;
 if (peak > room) fail(`в буфере ${peak} знаков, отведено ${room}`);

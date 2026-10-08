@@ -56,6 +56,7 @@ GOIN:
 	call	HALL			; ангар станции, как в дисковой версии
 	ld	c, 44
 	call	DELAY
+	call	dm_dock			; миссии дисковой версии
 	endif
 	call	mis_dock		; вопросы и награды миссий
 	jp	BAY
@@ -202,6 +203,7 @@ mtt1_c:
 	dec	(hl)
 	jp	p, MLOOP
 	inc	(hl)
+	call	dm_thg			; миссия 2 дисковой версии: таргоиды чаще (молчит, пока DTP = 0)
 	ld	a, e
 	rra
 	call	DORND
@@ -247,6 +249,9 @@ label_2:
 	call	zx_pick
 	endif
 	call	mis_pick		; охота за скрывающим устройством: иногда — Asp с ним
+	ifndef	SCHED
+	call	dm_pick			; миссия 1 дисковой версии: «Констриктор»
+	endif
 	call	NWSHP
 	jp	MLOOP
 tha:
@@ -704,6 +709,17 @@ ma47:
 	jp	z, ma8_1
 	ld	b, 15			; попали лазером
 	call	EXNO
+	ld	a, (TYPE)
+	cp	31
+	jp	nz, ma47_l
+	ld	a, (LAS)		; «Констриктора» берёт только военный лазер, и то вчетверть силы
+	cp	0x17
+	jp	nz, ma8_1
+	rra
+	rra
+	and	0x3F
+	ld	(LAS), a
+ma47_l:
 	ld	a, (LAS)
 	ld	d, a
 	ld	a, (INWK + 35)
@@ -1041,12 +1057,6 @@ zx_pick:
 zp_keep:
 	pop	af
 	ret
-zp_map:	db	0, 0xFF, 4, 8, 12, 0xFF, 16
-zp_tab:	db	14, 22, 23, 25		; Sidewinder: Krait, Adder, Gecko, Worm
-	db	14, 24, 26, 23		; Mamba: Krait, Cobra Mk I, Moray, Gecko
-	db	15, 15, 4, 4		; Python: Asp Mk II
-	db	16, 16, 5, 15		; Cobra: Fer-de-Lance, Asp Mk II
-	db	27, 28, 4, 7		; торговец: Boa, Anaconda, Python
 ; zx_rock: вместо астероида (10) в одном случае из четырёх — валун (21).
 zx_rock:
 	cp	10

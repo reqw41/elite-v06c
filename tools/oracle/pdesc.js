@@ -40,12 +40,14 @@ class Disc {
     this.cpu = new CPU6502((a) => this.mem[a], (a, v) => { this.mem[a] = v; });
   }
   // Описание системы: строка знаков, как их получает CHPR (12 — перевод строки).
-  describe(galaxy, system, rand = [0, 0, 0, 0]) {
+  // here: система — текущая (QQ8 = 0), тогда проверяются особые описания RUPLA; tp — байт миссий TP.
+  describe(galaxy, system, rand = [0, 0, 0, 0], { here = false, tp = 0 } = {}) {
     const m = this.mem, L = this.lab, cpu = this.cpu, RET = 0xffa0;
     m.fill(0); m.set(this.image, LOAD);
     m.set(seeds(galaxy, system), L.QQ15);
     m.set(rand, L.RAND);
-    m[L.QQ8] = 1;               // расстояние не ноль: особые описания (RUPLA) не проверяются
+    m[L.QQ8] = here ? 0 : 1;    // расстояние не ноль: особые описания (RUPLA) не проверяются
+    m[L.TP] = tp;
     m[L.GCNT] = galaxy; m[L.ZZ] = system; m[L.QQ17] = 0x80;
     cpu.a = cpu.x = cpu.y = 0; cpu.p = FLAGS.U | FLAGS.I; cpu.s = 0xfd;
     m[0x1fe] = (RET - 1) & 0xff; m[0x1ff] = (RET - 1) >> 8;
@@ -61,6 +63,33 @@ class Disc {
     return { text: out, dornd, rand: Array.from(m.subarray(L.RAND, L.RAND + 4)), peak, cycles: cpu.cycles - start };
   }
 }
+
+// Текст миссии: слово номер token таблицы TKN1 через DETOK. Перехвачены печать знака (в журнал идут знак и
+// текстовая позиция XC, YC на этот момент), очистка экрана TT66 («{cls}»), задержка DELAY, ожидание клавиши с
+// кораблём PAUSE («{ship}») и опрос клавиш RDKEY (клавиша то отпущена, то нажата: PAUSE2 проходит, «{key}»).
+Disc.prototype.detok = function (token, { gcnt = 0, name = 'JAMESON' } = {}) {
+  const m = this.mem, L = this.lab, cpu = this.cpu, RET = 0xffa0;
+  m.fill(0); m.set(this.image, LOAD);
+  m.set(fs.readFileSync(path.join(OUT, 'WORDS.bin')), 0x0400);          // основной словарь QQ18
+  m[L.GCNT] = gcnt; m[L.QQ17] = 0x80; m[L.XC] = 1; m[L.YC] = 1;
+  const NA = 0x1181;                                                    // NA%: имя командира (метка полётной части листинга)
+  [...name].forEach((c, i) => { m[NA + i] = c.charCodeAt(0); }); m[NA + name.length] = 13;
+  cpu.a = token; cpu.x = cpu.y = 0; cpu.p = FLAGS.U | FLAGS.I; cpu.s = 0xfd;
+  m[0x1fe] = (RET - 1) & 0xff; m[0x1ff] = (RET - 1) >> 8;
+  cpu.pc = L.DETOK;
+  const out = []; let key = 0; const start = cpu.cycles;
+  while (cpu.pc !== RET) {
+    if (cpu.pc === L.CHPR) { out.push([String.fromCharCode(cpu.a), m[L.XC], m[L.YC]]); cpu.p &= ~FLAGS.C; cpu.rts(); continue; }
+    // TT66 дисковой версии, кроме очистки, возвращает печать к «как в предложении» (MT2) и ставит «не внутри слова»
+    if (cpu.pc === L.TT66) { out.push(['{cls}', m[L.XC], m[L.YC]]); m[L.DTW1] = 0x20; m[L.DTW6] = 0; m[L.DTW2] = 0x80; m[L.QQ17] = 0x80; cpu.rts(); continue; }
+    if (cpu.pc === L.DELAY) { cpu.rts(); continue; }
+    if (cpu.pc === L.PAUSE) { out.push(['{ship}', m[L.XC], m[L.YC]]); cpu.rts(); continue; }
+    if (cpu.pc === L.RDKEY) { key ^= 1; if (key === 0) out.push(['{key}', m[L.XC], m[L.YC]]); cpu.a = cpu.x = key ? 0 : 0x62; cpu.p = (cpu.p & ~0x82) | (key ? 2 : 0); cpu.rts(); continue; }
+    cpu.step();
+    if (cpu.cycles - start > 6e7) throw new Error(`DETOK ${token}: не вернулась`);
+  }
+  return out;
+};
 
 module.exports = { Disc, seeds };
 
