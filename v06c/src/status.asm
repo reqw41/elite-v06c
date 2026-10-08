@@ -112,12 +112,27 @@ st_las:
 	ld	hl, LASER
 	add	hl, de
 	ld	a, (hl)
+	cp	0x97
+	jp	z, st_mil
+	cp	50
+	jp	z, st_min
 	or	a
 	ld	a, 103
 	jp	p, st_pl
 	ld	a, 104
 st_pl:
 	call	plf2
+	jp	st1
+st_mil:					; военный и добывающий лазеры: слов в словаре BBC нет
+	ld	hl, t_mil
+	jp	st_xl
+st_min:
+	ld	hl, t_minl
+st_xl:
+	call	mis_str
+	call	TT67
+	ld	a, 6
+	ld	(XC), a
 st1:
 	ld	a, (CNT)
 	inc	a

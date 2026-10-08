@@ -130,6 +130,50 @@ Object.assign(TESTS, {
     ok(seen && g.rd('QQ12') === 0xFF, `показано «DOCKING COMPUTERS ON», мы на станции (проходов ${n})`);
   },
 });
+Object.assign(TESTS, {
+  // поиск системы по названию: на карте F, название, ВК — цель прыжка переставлена; несуществующее — «NOT FOUND»
+  find() {
+    const g = game(); g.steps(DOCK); g.hit(K.F4, 2, 2); g.pass(2, 2);
+    const type = (str) => { for (const ch of str) { const c = ch === '\r' ? 0x49 : (() => { for (let k = 0x10; k < 0x80; k++) if (g.m.rd(g.L.kb_ascii + k) === ch.toLowerCase().charCodeAt(0)) return k; throw new Error('нет клавиши ' + ch); })();
+      g.to(['tt217_t2']); g.key(c, true); g.to(ch === '\r' ? ['MLOOP'] : ['tt217_t']); g.key(c, false); } g.tick(2); g.pass(2, 2); };
+    g.key(K.F, true); g.to(['rline']); g.key(K.F, false); type('ZAONCE\r');
+    ok(g.rd('QQ9') === 33 && g.rd('QQ10') === 185 && g.rd('QQ8') === 56, `ZAONCE найдена: цель (${g.rd('QQ9')}, ${g.rd('QQ10')}), расстояние ${g.rd('QQ8') / 10} св. года`); g.shot('find');
+    g.key(K.F, true); g.to(['rline']); g.key(K.F, false); type('QQQQ\r');
+    ok(g.rd('QQ9') === 33 && g.rd('QQ10') === 185, 'несуществующее название: цель прежняя');
+    g.key(K.F, true); g.to(['rline']); g.key(K.F, false); type('LAVE\r');
+    ok(g.rd('QQ9') === 20 && g.rd('QQ10') === 173 && g.rd('QQ8') === 0, 'LAVE найдена: цель — своя система');
+  },
+});
+const keys = (g, list) => { for (const c of list) { g.to(['tt217_t2']); g.key(c, true); g.to(['tt217_t', 'MLOOP']); g.key(c, false); } };
+const cash = (g) => g.rd('CASH', 4).reduce((a, v) => a * 256 + v, 0);
+Object.assign(TESTS, {
+  // военный и добывающий лазеры в магазине: цена, зачёт прежнего лазера, «Laser Present»
+  lasers() {
+    const g = game(); g.steps(DOCK); g.poke({ CASH: [0, 3, 0, 0], tek: [12] });
+    g.key(K.F3, true); g.to(['tt217_t']); g.key(K.F3, false); g.to(['tt217_t2']); g.shot('lasers');
+    keys(g, [K.K1, K.K3, K.RET, K.K0]);
+    ok(g.rd('LASER') === 0x97 && cash(g) === 196608 - 60000 + 4000, `военный лазер вперёд: значение ${g.rd('LASER').toString(16)}, денег ${cash(g) / 10} (6000 уплачено, 400 за импульсный возвращено)`);
+    keys(g, [K.K1, K.K4, K.RET, K.K1]);
+    ok(g.rd('LASER+1') === 50 && cash(g) === 140608 - 8000, `добывающий лазер назад: значение ${g.rd('LASER+1')}, денег ${cash(g) / 10}`);
+    keys(g, [K.K1, K.K3, K.RET, K.K0]); g.pass(2, 2);
+    ok(g.rd('LASER') === 0x97 && cash(g) === 132608 && g.rd('QQ12') === 0xFF, `повторная покупка военного: «Laser Present», деньги не тронуты (${cash(g) / 10})`);
+    g.hit(K.F8, 2, 2); g.pass(2, 2); g.shot('lasers-status'); ok(g.viewBits() > 500, 'экран статуса с новыми лазерами печатается');
+  },
+  // добывающий лазер: астероид даёт обломки, обломок подбирается заборником — минералы
+  mining() {
+    const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ LASER: [50, 0, 0, 0], BST: [255], QQ20: new Array(17).fill(0) });
+    // обломок появляется на месте астероида; если тот был точно в перекрестии, обломок гибнет от того же выстрела
+    const alive = () => frin(g).findIndex((t, i) => t === 20 && !(g.rd('K%+' + (36 * i + 31)) & 0xA0));
+    let tries = 0, slot = -1, seen = 0;
+    while (slot < 0 && tries < 20) { tries++; spawn(g, 10, 3, 0); g.poke({ ['K%+' + 36 * frin(g).indexOf(10)]: [40, 0, 0, 30, 0, 0] });   // не по центру прицела: в астероид попадаем, обломки остаются в стороне
+      g.key(K.A, true); let n = 0;
+      while (frin(g).includes(10) && !frin(g).includes(20) && n < 200) { full(g); g.poke({ DELTA: [0], GNTMP: [0] }); g.pass(1); n++; } g.key(K.A, false);
+      if (frin(g).includes(20)) seen++; slot = alive(); if (slot < 0) { let k = 0; while (frin(g).slice(2).some((v) => v) && k < 200) { g.pass(1); k++; } } }
+    ok(seen > 0 && slot >= 0, `астероид разбит добывающим лазером — есть обломки (попыток ${tries}, с обломками ${seen}; объекты: ${frin(g).filter((v) => v).join('.')})`);
+    g.poke({ ['K%+' + 36 * slot]: [0, 0, 0, 30, 0, 0x80, 40, 0, 0] }); g.pass(4);
+    ok(g.rd('QQ20+12') >= 1, `обломок подобран: минералов в трюме ${g.rd('QQ20+12')} (трюм ${g.rd('QQ20', 17)}, объекты ${frin(g).filter((v) => v).join('.')}, место ${slot}, щит ${g.rd('FSH')})`);
+  },
+});
 const only = process.argv[2];
 for (const [name, fn] of Object.entries(TESTS)) { if (only && only !== name) continue; console.log(`--- ${name}`); try { fn(); } catch (e) { bad++; console.log('FAIL ' + e.message); } }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'MIS: всё как задумано');

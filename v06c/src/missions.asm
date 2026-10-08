@@ -308,6 +308,19 @@ zx_leak:
 zl_x:
 	pop	af
 	ret
+; zx_plate: при гибели корабля в половине случаев остаётся пластина обшивки (тип 19). Случайное число — своё.
+; Блок гибнущего корабля — в INWK, как для SFS1. Сохраняет A и флаги.
+zx_plate:
+	push	af
+	call	mis_rnd
+	rra
+	jp	nc, zpl_x
+	ld	b, 19
+	xor	a
+	call	SFS1
+zpl_x:
+	pop	af
+	ret
 ; mis_rnd: свой генератор случайных чисел (игровой не трогаем): A.
 mis_rnd:
 	push	hl

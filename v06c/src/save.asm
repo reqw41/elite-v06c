@@ -54,7 +54,8 @@ rl_up:
 	jp	nc, rl_key
 	ld	d, a
 	ld	a, c
-	cp	7
+	ld	hl, rl_max
+	cp	(hl)
 	jp	nc, rl_key
 	ld	hl, INWK
 	ld	b, 0
@@ -72,6 +73,7 @@ rl_del:
 	ld	a, 127
 	call	TT26
 	jp	rl_key
+rl_max:	db	7			; наибольшая длина строки (имя командира — 7, название планеты — 8)
 rl_end:
 	ld	hl, INWK
 	ld	b, 0

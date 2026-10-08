@@ -57,5 +57,10 @@ if (m.rd(WS + B.QQ12) !== 0xFF) fail('в конце не заставка');
     if (r.rd(WS2 + B.QQ14) === 0) { leaks++; if (r.rd(r.L.mch_x) === 6) msg++; } }
   console.log(`утечка топлива: ${leaks} из 3000 ударов, сообщение «FUEL LEAK» показано ${msg} раз`);
   if (leaks < 25 || leaks > 75) fail(`утечек ${leaks}, ждали около 47`); if (msg < leaks - 3) fail('утечка без сообщения'); }
+// пластина обшивки при гибели корабля (обычный образ): за 12 гибелей хотя бы одна
+{ const r = createVector('elite'); r.frame(40); const WS2 = r.L.WS; r.call('ZINF'); r.wr(WS2 + B.INWK + 7, [5]); r.call('NWSHP', { a: 1 }); r.wr(WS2 + B.TYPE, [1]);
+  let n = 0; const has = () => Array.from(r.mem().subarray(WS2 + B.FRIN, WS2 + B.FRIN + 13)).includes(19);
+  while (!has() && n < 12) { r.call('zx_plate'); n++; }
+  console.log(`пластина обшивки: появилась после ${n} гибелей`); if (!has()) fail('пластина не появилась'); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'ZXSHIPS: всё как задумано');
 process.exit(bad ? 1 : 0);

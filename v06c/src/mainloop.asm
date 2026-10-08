@@ -92,6 +92,8 @@ label_3:
 	jp	z, hyp
 	cp	0x32
 	jp	z, t95_d
+	cp	0x43			; F на картах — поиск системы по названию
+	jp	z, hme_key
 	ld	(T1), a
 	ld	a, (QQ11)
 	and	0xC0
@@ -132,6 +134,7 @@ t95_d:
 	and	0xC0
 	ret	z
 	call	hm
+t95_p:
 	ld	(QQ17), a
 	call	cpl_
 	ld	a, 0x80

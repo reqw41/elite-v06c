@@ -24,9 +24,9 @@ EQSHP:
 	ld	a, (tek)
 	or	a				; CLC
 	adc	a, 3
-	cp	12
-	jp	c, eqshp1
-	ld	a, 12
+	cp	14				; 12 предметов кассетной BBC и два лазера дисковой и ZX: военный
+	jp	c, eqshp1			; (техника от 10) и добывающий (от 11)
+	ld	a, 14
 eqshp1:
 	ld	(Q), a
 	ld	(QQ25), a
@@ -49,9 +49,12 @@ eql1:
 	call	pr2
 	call	TT162
 	ld	a, (XX13)
+	cp	13
+	jp	nc, eq_xname			; для двух новых лазеров слов в словаре BBC нет
 	or	a				; CLC
 	adc	a, 104
 	call	TT27
+eq_named:
 	ld	a, (XX13)
 	call	prx_m1			; JSR prx-3
 	scf					; SEC: цена с десятичной точкой
@@ -250,7 +253,7 @@ etA:
 etB:
 	inc	c
 	cp	11
-	jp	nz, et9
+	jp	nz, et_ml
 	ld	a, (GHYP)
 	ld	b, a
 	or	a
@@ -258,9 +261,65 @@ etB:
 	jp	nz, pres
 	ld	hl, GHYP
 	dec	(hl)
+	jp	et9
+et_ml:					; военный лазер (12) и добывающий (13)
+	ld	d, 0x97
+	ld	e, 12
+	cp	12
+	jp	z, eq_las
+	ld	d, 50
+	inc	e
+	cp	13
+	jp	nz, et9
+eq_las:					; поставить лазер D (предмет E) на выбранный вид; прежний лазер — в зачёт
+	push	de
+	call	qv
+	pop	de
+	ld	hl, LASER
+	ld	a, b
+	add	a, l
+	ld	l, a
+	ld	a, (hl)
+	cp	d
+	jp	nz, el_1
+	ld	c, 187			; такой уже стоит: «Laser Present», деньги назад
+	ld	a, e
+	jp	pres
+el_1:
+	or	a
+	jp	z, el_fit
+	push	hl
+	push	de
+	ld	c, 4			; цена прежнего: импульсный 4, лучевой 5, военный 12, добывающий 13
+	cp	15
+	jp	z, el_r
+	inc	c
+	cp	0x8F
+	jp	z, el_r
+	ld	c, 12
+	cp	0x97
+	jp	z, el_r
+	inc	c
+el_r:
+	ld	a, c
+	call	prx
+	call	MCASH
+	pop	de
+	pop	hl
+el_fit:
+	ld	(hl), d
 et9:
 	call	dn
 	jp	EQSHP
+eq_xname:
+	ld	hl, t_mil
+	jp	z, eq_xn
+	ld	hl, t_minl
+eq_xn:
+	call	mis_str
+	jp	eq_named
+t_mil:	db	"Military Laser", 0
+t_minl:	db	"Mining Laser", 0
 
 ; eq: купить предмет A. Хватает денег — возврат с A = номер предмета (BCS c, а c — просто ret);
 ; не хватает — печать «Cash?» и уход в err, не возвращаясь (стек правит MLOOP, как на BBC).
@@ -336,3 +395,5 @@ PRXS:
 	dw	15000			; 9  блок энергии
 	dw	10000			; 10 стыковочный компьютер
 	dw	50000			; 11 галактический прыжок
+	dw	60000			; 12 военный лазер
+	dw	8000			; 13 добывающий лазер

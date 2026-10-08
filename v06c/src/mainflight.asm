@@ -568,8 +568,8 @@ ma21:
 	cp	NTY + 1
 	jp	c, ma_sc
 	cp	18
-	jp	nz, ma58		; корабли версии ZX не подбираются заборником; 18 — контейнер с устройством
-ma_sc:
+	jp	c, ma58			; корабли версии ZX не подбираются; 18 — контейнер с устройством,
+ma_sc:					; 19 — пластина, 20 — обломок
 	ld	hl, INWK + 5
 	ld	a, (BST)
 	and	(hl)
@@ -580,6 +580,14 @@ ma_sc:
 	call	mis_cloakgot		; контейнер со скрывающим устройством
 	jp	ma60
 ma_std:
+	ld	a, b
+	cp	19
+	ld	a, 9			; пластина — сплавы
+	jp	z, ma_slvy2
+	ld	a, b
+	cp	20
+	ld	a, 12			; обломок — минералы
+	jp	z, ma_slvy2
 	ld	a, b			; сбор груза заборником: контейнер — случайный товар, таргон — чужие
 	cp	12			; изделия, капсула — рабы
 	ld	a, 3
@@ -686,8 +694,29 @@ ma47:
 	or	0x80
 	ld	(hl), a
 	ld	a, (TYPE)
+	cp	19
+	jp	nc, ma8_1		; пластина, обломок — без обломков и счёта
 	cp	NTY + 1
 	jp	nc, ma_zx		; корабли версии ZX гибнут как корабли: обломки и счёт побед
+	cp	10
+	jp	nz, ma_nast
+	ld	a, (LAS)		; астероид, разбитый добывающим лазером, даёт до трёх обломков
+	cp	50
+	jp	nz, ma8_1
+	or	a
+	call	DORND
+	and	3
+	jp	z, ma8_1
+	ld	(CNT), a
+ma_spl:
+	ld	b, 20
+	xor	a
+	call	SFS1
+	ld	hl, CNT
+	dec	(hl)
+	jp	nz, ma_spl
+	jp	ma8_1
+ma_nast:
 	cp	8
 	jp	nc, ma8_1		; ракета, астероид, контейнер — без обломков
 ma_zx:
@@ -698,6 +727,9 @@ ma_zx:
 	call	SFS1
 	jp	ma_oh
 ma_deb:
+	ifndef	SCHED
+	call	zx_plate		; версия ZX: иногда — пластина обшивки (в сборке стенда нет: там игра равна BBC)
+	endif
 	or	a
 	call	DORND
 	or	a
