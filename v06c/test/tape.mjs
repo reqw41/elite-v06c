@@ -15,16 +15,16 @@ const secs = rs.cycles / 3e6;
 console.log(`запись: ${ev.length} перепадов, ${secs.toFixed(2)} с, бит ${(ev[20][0] - ev[18][0])} тактов (${(3e6 / (ev[20][0] - ev[18][0])).toFixed(0)} бит/с)`);
 const levelAt = (t) => { let lo = 0, hi = ev.length - 1; if (t < ev[0][0]) return 0; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (ev[mid][0] <= t) lo = mid; else hi = mid - 1; } return ev[lo][1]; };
 let bad = 0;
-function read(name, { inv = false, speed = 1, corrupt = false, silent = false, start = 200000, slot = false, want }) {
+function read(name, { inv = false, speed = 1, corrupt = false, silent = false, start = 200000, slot = false, want, key = null, maxSec = 0 }) {
   const m = mk(); m.wr(WSB(m), new Array(N).fill(0x55));
   if (slot) { m.wr('save_slot', data.map((v) => v ^ 1)); m.wr('save_used', [1]); }
   let t = 0;
   const gap = corrupt ? ev[Math.floor(ev.length * 0.97)][0] : -1;      // «выпадение» ленты на 3 мс внутри данных
   m.io.tape_player = { get sample() { if (silent) return 0; const tt = (t - start) * speed; if (corrupt && tt > gap && tt < gap + 9000) return 0; return levelAt(tt) ^ (inv ? 1 : 0); } };
-  const r = m.call('QUS1', { a: 0xFF, tick: (c) => { t = c; } }, 2e8);
+  const r = m.call('QUS1', { a: 0xFF, tick: (c) => { t = c; if (key && c > key.at && !key.done) { key.done = true; if (key.ss) m.keyboard.ss = true; else m.key(7, 0x80, true); } } }, 2e8);
   const got = Array.from(m.mem().subarray(WSB(m), WSB(m) + N));
   const exp = want === 'tape' ? data : want === 'slot' ? data.map((v) => v ^ 1) : new Array(N).fill(0x55);
-  const ok = got.every((v, i) => v === exp[i]);
+  const ok = got.every((v, i) => v === exp[i]) && (!maxSec || r.cycles / 3e6 < maxSec);
   if (!ok) bad++;
   console.log(`${ok ? 'OK  ' : 'FAIL'} ${name}: ${(r.cycles / 3e6).toFixed(1)} с, в &0B00 — ${want === 'tape' ? 'блок с ленты' : want === 'slot' ? 'сохранение из памяти' : 'без изменений'}${ok ? '' : ' — НЕ ТАК: ' + got.slice(0, 8)}`);
 }
@@ -37,5 +37,8 @@ read('выпадение сигнала в блоке, памяти нет', { c
 read('выпадение сигнала в блоке, в памяти есть сохранение', { corrupt: true, slot: true, want: 'slot' });
 read('нет сигнала, памяти нет', { silent: true, want: 'none' });
 read('нет сигнала, в памяти есть сохранение', { silent: true, slot: true, want: 'slot' });
+read('нет сигнала, через 2 с нажат пробел — ожидание прервано', { silent: true, key: { at: 6e6 }, maxSec: 2.2, want: 'none' });
+read('нет сигнала, через 1 с нажата СС — ожидание прервано', { silent: true, key: { at: 3e6, ss: true }, maxSec: 1.2, want: 'none' });
+read('лента идёт, пробел нажат заранее, в памяти есть сохранение — берётся оно', { key: { at: 1 }, slot: true, maxSec: 0.5, want: 'slot' });
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'TAPE: всё как задумано');
 process.exit(bad ? 1 : 0);

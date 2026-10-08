@@ -1,6 +1,7 @@
 // T05: точка, отрезок, горизонтальная линия — экран Вектора = экран эталона; замер тактов и размера.
 // node v06c/test/t05.mjs [число случаев на процедуру = 4000]
 import path from 'node:path';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { createVector, ROOT } from '../tools/v06c.mjs';
 import { bbcView, firstDiff, VIEW } from '../tools/screen.mjs';
@@ -10,6 +11,9 @@ const N = +(process.argv[2] || 4000);
 let bad = 0;
 const m = createVector('elite'), L = m.L, bbc = new BBC({ sched: true }), B = bbc.lab;
 m.frame(30);
+// таблица наклонов строится при запуске (div_init): сверка с tools/convert/divtab.py
+{ const t = fs.readFileSync(path.join(ROOT, 'v06c/data/divtab.bin')); let d = 0; for (let i = 0; i < 1024; i++) if (m.rd(L.divtab + i) !== t[i]) d++;
+  if (d) { bad++; console.log(`FAIL таблица наклонов: ${d} байт не как в divtab.bin`); } else console.log('OK   таблица наклонов (div_init): 1024 байта как в divtab.bin'); }
 let seed = 2026; const rnd = (n) => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return (((t ^ (t >>> 14)) >>> 0) % n); };
 const view = () => { const v = new Uint8Array(32 * 192); for (let y = 0; y < 192; y++) for (let c = 0; c < 32; c++) v[y * 32 + c] = m.rd(VIEW + c * 256 + 255 - y); return v; };
 const clear = () => { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) m.wr(VIEW + c * 256 + 64, new Uint8Array(192)); };

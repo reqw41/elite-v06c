@@ -272,10 +272,13 @@ pal_flight:
 ; Очистить обе плоскости целиком.
 cls_all:
 	ld	hl, SCR_VIEW
+	xor	a
 ca_lp:
-	ld	(hl), 0
-	inc	hl
-	ld	a, h
-	or	l
+	dup	4
+	ld	(hl), a
+	inc	l
+	edup
+	jp	nz, ca_lp
+	inc	h
 	jp	nz, ca_lp
 	ret
