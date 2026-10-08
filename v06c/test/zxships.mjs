@@ -50,5 +50,12 @@ if (m.rd(WS + B.QQ12) !== 0xFF) fail('в конце не заставка');
   console.log('замена типа при появлении (из 2000): ' + Object.entries(cnt).map(([t, c]) => `${t} → ` + Object.entries(c).map(([a, n]) => `${a}: ${n}`).join(', ')).join(' | '));
   for (const [t, to] of [[1, 14], [3, 14], [4, 15], [5, 16]]) { const n = cnt[t][to] || 0; if (n < 350 || n > 650) fail(`тип ${t}: замен ${n}, ждали около 500`); if (Object.keys(cnt[t]).some((a) => +a !== +t && +a !== to)) fail(`тип ${t}: лишняя замена`); }
   if (Object.keys(cnt[2]).length !== 1) fail('полицейский Viper заменяться не должен'); }
+// утечка топлива при уроне (обычный образ): из 3000 ударов по энергии около 47 раз топливо обнуляется
+{ const r = createVector('elite'); r.frame(40); const WS2 = r.L.WS; let leaks = 0, msg = 0;
+  for (let i = 0; i < 3000; i++) { r.wr(WS2 + B.QQ14, [70]); r.wr(WS2 + B.ENERGY, [255]); r.wr(WS2 + B.FSH, [0]); r.wr(WS2 + B.ASH, [0]); r.wr(WS2 + B.DLY, [0]); r.wr(r.L.mch_x, [0]);
+    r.wr(WS2 + B.INF, [(WS2 + 0x900) & 255, (WS2 + 0x900) >> 8]); r.call('OOPS', { a: 5, cf: 1 });
+    if (r.rd(WS2 + B.QQ14) === 0) { leaks++; if (r.rd(r.L.mch_x) === 6) msg++; } }
+  console.log(`утечка топлива: ${leaks} из 3000 ударов, сообщение «FUEL LEAK» показано ${msg} раз`);
+  if (leaks < 25 || leaks > 75) fail(`утечек ${leaks}, ждали около 47`); if (msg < leaks - 3) fail('утечка без сообщения'); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'ZXSHIPS: всё как задумано');
 process.exit(bad ? 1 : 0);

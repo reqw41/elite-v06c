@@ -91,6 +91,7 @@ mar_1:					; «Сверхновая»: топлива нет, со станци�
 	ld	(hl), a
 	ld	a, 1
 	ld	(M1ST), a
+	ld	(leak_say), a		; «FUEL LEAK» — на первом проходе полёта
 	xor	a
 	ld	(QQ14), a
 	ret
@@ -141,6 +142,14 @@ mf_x:
 	ret
 ; «Сверхновая»
 mf_nova:
+	ld	hl, leak_say
+	ld	a, (hl)
+	or	a
+	jp	z, mfn_1
+	ld	(hl), 0
+	ld	a, 6
+	call	messx
+mfn_1:
 	ld	a, (M1ST)
 	and	0x7F
 	ret	z
@@ -276,6 +285,29 @@ mis_cloakgot:
 	ld	(hl), a
 	ld	a, 3
 	jp	messx
+; zx_leak: утечка топлива, как на ZX Spectrum: при уроне по энергии в одном случае из 64 топливо пропадает целиком.
+; Случайное число — своё. Сохраняет все регистры и флаги.
+zx_leak:
+	push	af
+	call	mis_rnd
+	and	63
+	jp	nz, zl_x
+	ld	a, (QQ14)
+	or	a
+	jp	z, zl_x
+	xor	a
+	ld	(QQ14), a
+	push	bc
+	push	de
+	push	hl
+	ld	a, 6
+	call	messx
+	pop	hl
+	pop	de
+	pop	bc
+zl_x:
+	pop	af
+	ret
 ; mis_rnd: свой генератор случайных чисел (игровой не трогаем): A.
 mis_rnd:
 	push	hl
@@ -470,9 +502,10 @@ mes9x:
 	ld	l, a
 	jp	mis_str
 mx_tab:
-	dw	t_mayday, t_invaded, t_cloak, t_clon, t_cloff
+	dw	t_mayday, t_invaded, t_cloak, t_clon, t_cloff, t_leak, t_dock
 mch_x:	db	0			; номер своего сообщения на экране (0 — на экране слово игры MCH)
 mf_cnt:	db	0
+leak_say:	db	0
 cloak_on:	db	0		; скрывающее устройство включено
 cloak_key:	db	0
 asp_out:	db	0			; Asp со скрывающим устройством уже выходил в этой системе
@@ -502,4 +535,7 @@ t_brief:
 	db	"YOUR MISSION: TO DESTROY IT.", 13, "TAKE THIS E.C.M. JAMMER", 13, "(YOU WILL NEED IT!) GOOD LUCK!", 0
 t_award:
 	db	"IN APPRECIATION OF YOUR", 13, "EXCEPTIONAL COURAGE THE", 13, "INHABITANTS OF ", 1, 13, "AWARD YOU THEIR HIGHEST", 13, "HONOUR. LIVE LONG AND PROSPER!", 0
-
+t_leak:
+	db	"FUEL LEAK!", 0
+t_dock:
+	db	"DOCKING COMPUTERS ON", 0

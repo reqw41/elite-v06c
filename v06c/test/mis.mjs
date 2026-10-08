@@ -47,6 +47,7 @@ const TESTS = {
     const g = game(); g.steps(DOCK); g.poke({ 'QQ20': [5, 0, 3] }); g.steps(LAUNCH);
     g.poke({ TP: [0x80] }); jump(g, 13, 186);
     ok(g.rd('LASER+4') === 1 && g.rd('QQ14') === 0 && g.rd('TP') === 1, `после прыжка миссия выдана: состояние ${g.rd('LASER+4')}, топливо ${g.rd('QQ14')}, флаги ${g.rd('TP')}`);
+    ok(g.rd('mch_x') === 6 && g.rd('DLY') > 0, 'в полёте показано «FUEL LEAK!»');
     toStation(g); g.to(['tt217_t2']);
     ok(g.viewBits() > 300, `на станции вопрос на экране (точек ${g.viewBits()})`); g.shot('nova-ask');
     g.answer(K.Y);
@@ -119,6 +120,14 @@ Object.assign(TESTS, {
     ok(g.rd('LASER+5') === 5, 'после прыжка из системы — ждёт награда');
     toStation(g); g.to(['tt217_t2']); g.shot('m3-award'); g.answer(K.SPACE);
     ok(g.rd('LASER+5') === 0 && g.rd('QQ12') === 0xFF, 'награда вручена, задание закрыто');
+  },
+});
+Object.assign(TESTS, {
+  // стыковочный компьютер: в зоне станции клавиша C — сообщение и стыковка
+  dockComp() {
+    const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ DKCMP: [255] });
+    g.key(0x52, true); let n = 0, seen = false; while (g.rd('QQ12') === 0 && n < 20) { g.to(['MLOOP', 'DELAY']); if (g.rd('mch_x') === 7) seen = true; if ((g.m.cpu.pc & 0xffff) === g.L.MLOOP) g.tick(3); else g.to(['MLOOP']); n++; } g.key(0x52, false);
+    ok(seen && g.rd('QQ12') === 0xFF, `показано «DOCKING COMPUTERS ON», мы на станции (проходов ${n})`);
   },
 });
 const only = process.argv[2];

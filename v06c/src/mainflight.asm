@@ -432,7 +432,12 @@ ma64:
 	jp	z, ma68
 	ld	a, (K_ + NI + 32)
 	or	a
-	jp	p, GOIN
+	jp	m, ma68
+	ld	a, 7			; стыковочный компьютер: сообщение, как на ZX, и секунда на прочтение
+	call	messx
+	ld	c, 50
+	call	DELAY
+	jp	GOIN
 ma68:
 	xor	a
 	ld	(LAS), a

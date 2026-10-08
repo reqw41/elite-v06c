@@ -1,11 +1,11 @@
 // T36: бой — парные тесты 6502 ↔ i8080 на случайных входах (ветви, которых нет в сценарии fight).
-// sh v06c/build.sh && node v06c/test/t36.mjs [случаев = 1500]
+// sh v06c/build.sh -DSCHED && node v06c/test/t36.mjs [случаев = 1500]
 import fs from 'node:fs';
 import path from 'node:path';
 import { makePair } from '../tools/pair.mjs';
 import { ROOT } from '../tools/v06c.mjs';
 const N = +(process.argv[2] || 1500);
-const P = makePair(), { B, bbc, m } = P;
+const P = makePair('elite_t'), { B, bbc, m } = P;       // образ стенда: в обычном в OOPS добавлена утечка топлива версии ZX
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const K = 0x900, NI = 36, TOP = 0x0D40;

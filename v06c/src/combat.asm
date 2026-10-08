@@ -38,6 +38,9 @@ oo_n:
 	jp	z, DEATH
 	jp	nc, DEATH
 	call	EXNO3
+	ifndef	SCHED
+	call	zx_leak			; версия ZX: изредка — утечка топлива (в сборке стенда нет: там игра равна BBC)
+	endif
 ; OUCH: при уроне по энергии иногда гибнет груз или прибор.
 OUCH:
 	call	DORND2
