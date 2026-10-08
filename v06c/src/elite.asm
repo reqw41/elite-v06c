@@ -91,7 +91,6 @@ ws_clr:
 	include	"words.asm"		; словарь QQ18
 	include	"qq16.asm"
 	include	"na.asm"		; командир по умолчанию
-	include	"keys.asm"
 	include	"qq23.asm"		; товары рынка
 	ifdef	FAST
 	align	256
@@ -102,10 +101,12 @@ ALOGODD	equ	LOG + 0x300
 	endif
 	align	256
 divtab:	incbin	"divtab.bin"		; наклоны коротких отрезков (tools/convert/divtab.py)
+	include	"keys.asm"		; сразу за таблицей наклонов: её конец — на границе страницы
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
 dials:
-	incbin	"dials.bin"		; панель: плоскость бита 0, затем бита 1; по столбцам, 56 байт сверху вниз
+	incbin	"dials.rle"		; панель, сжатая (tools/convert/dials_rle.py): плоскость бита 0, затем бита 1;
+					; по столбцам, 56 байт сверху вниз. Нужна один раз, при запуске
 rom_end:
 
 ; --- переменные слоя Вектора ---
@@ -115,8 +116,27 @@ kb_rows:	ds	8		; матрица клавиатуры, 1 — нажата; стр
 kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ
 pal_dirty:	ds	1		; <> 0: прерывание запишет pal_regs в палитру
 pal_regs:	ds	16
+ds_n:		ds	1		; распаковка панели: осталось байт в группе, признак повтора, повторяемый байт
+ds_rep:		ds	1
+ds_v:		ds	1
+snd_v0:		ds	8		; голоса звука (snd.asm)
+snd_v1:		ds	8
+snd_v2:		ds	8
+m3_keep:	ds	6		; семена QQ15 на время работы с системой-целью миссии
+hm_buf:		ds	10		; название системы при поиске
+ll_sh:		ds	156		; копия прежнего списка отрезков корабля (самый длинный — 153 байта + длина + запас)
+tp_buf		equ	ll_sh		; блок с ленты: читается не во время рисования
 vars_end:
 	assert	vars_end <= WS + 0x0300
+; свободные байты рабочих областей: за переменными пилота и за настройками
+	org	WS + 0x0372
+save_used:	ds	1		; в памяти есть сохранение этого сеанса
+save_slot:	ds	NT + 2		; файл командира
+	assert	$ <= WS + 0x0400
+	org	WS + 0x0F51
+wp_sx:		ds	80		; копия прежней окружности планеты
+wp_sy:		ds	80
+	assert	$ <= WS + 0x1000
 	assert	rom_end <= WS
 
 	ifdef	FAST

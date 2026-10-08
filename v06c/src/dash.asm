@@ -12,13 +12,50 @@ ds_col:
 	ld	l, 255 - DASH_Y
 	ld	b, DASH_H
 ds_b:
-	ld	a, (de)
+	call	ds_get
 	ld	(hl), a
-	inc	de
 	dec	l
 	dec	b
 	jp	nz, ds_b
 	inc	h
 	dec	c
 	jp	nz, ds_col
+	ret
+; ds_get: следующий байт картинки панели из сжатого потока (tools/convert/dials_rle.py): байт n < 80h — дальше
+; n + 1 байт как есть; n >= 80h — следующий байт повторить (n - 80h) + 2 раза. DE — поток. Сохраняет BC, HL.
+ds_get:
+	push	hl
+	ld	hl, ds_n
+	ld	a, (hl)
+	or	a
+	jp	nz, dg_have
+	ld	a, (de)
+	inc	de
+	or	a
+	jp	m, dg_run
+	inc	a
+	ld	(hl), a
+	xor	a
+	ld	(ds_rep), a
+	jp	dg_have
+dg_run:
+	and	0x7F
+	add	a, 2
+	ld	(hl), a
+	ld	(ds_rep), a
+	ld	a, (de)
+	inc	de
+	ld	(ds_v), a
+dg_have:
+	dec	(hl)
+	ld	a, (ds_rep)
+	or	a
+	jp	z, dg_lit
+	ld	a, (ds_v)
+	pop	hl
+	ret
+dg_lit:
+	ld	a, (de)
+	inc	de
+	pop	hl
 	ret

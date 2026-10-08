@@ -198,7 +198,3 @@ qus_mem:
 	ld	de, WS + 0x0B00
 	ld	b, NT + 2
 	jp	ll9_cp
-save_used:
-	db	0
-save_slot:
-	ds	NT + 2

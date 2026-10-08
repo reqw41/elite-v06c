@@ -103,7 +103,6 @@ hme_put:
 	ld	(de), a
 	inc	de
 	ret
-hm_buf:	ds	10
 t_pname:
 	db	"PLANET NAME? ", 0
 t_nfound:

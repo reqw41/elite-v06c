@@ -523,7 +523,6 @@ cloak_on:	db	0		; скрывающее устройство включено
 cloak_key:	db	0
 asp_out:	db	0			; Asp со скрывающим устройством уже выходил в этой системе
 mis_seed:	dw	0x3C91
-m3_keep:	ds	6
 pal_cloak:
 	db	0x00, 0x07, 0xF8, 0x38	; белое — голубым
 nova_t:	dw	0

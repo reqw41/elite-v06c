@@ -187,4 +187,3 @@ tp_quiet:				; остановить счётчики ВИ53: при закрыт
 	out	(0x08), a
 	ret
 tp_inv:	db	0
-tp_buf:	ds	NT + 2
