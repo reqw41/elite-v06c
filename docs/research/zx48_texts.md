@@ -423,3 +423,21 @@
 ASP_MK_2@0x61e3 ASTEROID@0x6323 CANISTER@0x63fc COBRA_MK_3@0x64be COBRA_MK_3_P@0x64be CORIOLIS@0x6ab4 ESCAPE_POD@0x6649 FER_DE_LANCE@0x66a0 KRAIT@0x6d49 MISSILE@0x67bd PLATE@0x68be PYTHON_P@0x6914 ROCK_HERMIT@0x6323 SIDEWINDER@0x6a09 SPLINTER@0x6bd3 THARGOID@0x6c2a THARGON@0x6f0f VIPER@0x6e32
 нет 16 ADDER ANACONDA BOA BOULDER COBRA_MK_1 CONSTRICTOR COUGAR DODO GECKO LOGO MAMBA MORAY PYTHON SHUTTLE TRANSPORTER WORM
 ```
+
+## Проверка по коду: есть ли поиск планеты по названию (08.10.2026)
+
+Доказано разбором снимка (z80dasm):
+
+- `0xD45F` — печать расширенного текста номер A (указатель таблицы — в `0xF11C`); `0xD421` — печать слова основной
+  таблицы, номер — байтом сразу после команды вызова (`CALL D421 : DB n`), поэтому поиском «LD A,n : CALL» такие
+  места не находятся.
+- `0xE398`: `LD A,14 : LD B,8 : LD HL,DED0 : CALL E3CC` — запрос «PLANET NAME?» (расширенный текст 14) и ввод строки
+  до 8 знаков; затем `CALL DF24` (поиск) и две ветви — найдено / не найдено. Слово « NOT FOUND» (65) печатается в коде
+  ровно один раз.
+- Вход в эту процедуру — запись номер 15 таблицы переходов модуля по `0xD000` (`JP E398` по адресу `0xD02D`).
+  Таблица вызывается диспетчером `0x813E` (адрес = D000 + 3·A); номера 9–16 получаются из номера бита нажатой клавиши
+  (`0x7209…0x7216`). То есть функция привязана к клавише.
+
+Не выяснено: какой именно клавише; показываются ли в игре «FUEL LEAK» и «DOCKING COMPUTERS ON» — сообщения полёта
+идут через механизм, который не разобран (даже заведомо существующие «INCOMING MISSILE» и «ENERGY LOW» простым
+поиском по коду не находятся).
