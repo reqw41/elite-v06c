@@ -439,11 +439,21 @@ ma64:
 	ld	a, (K_ + NI + 32)
 	or	a
 	jp	m, ma68
+	ifdef	SCHED
 	ld	a, 7			; стыковочный компьютер: сообщение, как на ZX, и секунда на прочтение
 	call	messx
 	ld	c, 50
 	call	DELAY
 	jp	GOIN
+	else
+	ld	hl, auto		; обычный образ: автопилот ведёт корабль в станцию, как в дисковой версии
+	ld	a, (hl)
+	or	a
+	jp	nz, ma68
+	ld	(hl), 0xFF
+	ld	a, 7
+	call	messx
+	endif
 ma68:
 	xor	a
 	ld	(LAS), a

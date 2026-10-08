@@ -49,6 +49,7 @@ TAS1:
 TAS3:
 	push	bc
 	ld	hl, INWK
+tas3_hl:				; вход TAS4: HL — блок станции
 	ld	b, 0
 	add	hl, bc
 	push	hl

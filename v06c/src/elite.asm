@@ -85,6 +85,7 @@ ws_clr:
 	include	"missions.asm"
 	include	"find.asm"
 	include	"pdesc.asm"
+	include	"dockit.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
@@ -132,6 +133,7 @@ pd_w2:		ds	1		; FFh — не внутри слова
 pd_w8:		ds	1		; DFh — следующая буква прописная
 pd_n:		ds	1		; знаков в буфере
 pd_lc:		ds	1		; 20h — буква названия строчная
+auto:		ds	1		; <> 0 — автопилот стыковки ведёт корабль (dockit.asm)
 ll_sh:		ds	156		; копия прежнего списка отрезков корабля (самый длинный — 153 байта + длина + запас)
 tp_buf		equ	ll_sh		; блок с ленты: читается не во время рисования
 vars_end:

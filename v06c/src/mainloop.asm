@@ -189,6 +189,11 @@ dkl2:
 	call	DKS1
 	dec	c
 	jp	nz, dkl2
+	ifndef	SCHED
+	ld	a, (auto)		; автопилот стыковки дисковой версии «нажимает» клавиши
+	or	a
+	call	nz, dk_auto
+	endif
 	ld	a, (JSTX)
 	ld	b, a
 	ld	a, 7
