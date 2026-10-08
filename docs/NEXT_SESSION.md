@@ -64,6 +64,9 @@ BBC, исполняемым под Node.
   Эталон — код дисковой версии: `tools/oracle/disc.js` (одна процедура полётной части или стоянки) и
   `tools/oracle/pdesc.js`. Тесты `dockit.mjs`, `hangar.mjs`, `discmis.mjs`, расширенные `zxships.mjs`, `mis.mjs`,
   `pdesc.mjs`. Всё только в обычном образе. Отчёт — `docs/tasks/T52-T55-report.md`.
+- Долгий прогон на «нестёртые» точки (`node v06c/test/soak.mjs`, 3 минуты): 20 минут игры обычного образа с частым
+  появлением кораблей и взрывами; ищет точки, горящие на одном месте дольше 24 с. 08.10: 17 типов объектов, до 9
+  кораблей разом, 57 взрывов — залипших точек нет (самая долгая — 13 с).
 - T51: расширенные описания планет на экране данных о системе (СС+F2) — из дисковой версии BBC: `pdesc.asm`,
   словарь `v06c/data/tkn1.asm`. Эталон — настоящий код дисковой версии, `tools/oracle/pdesc.js`; тест
   `node v06c/test/pdesc.mjs`: 2048 описаний равны знак в знак. Только в обычном образе (в образе стенда экран
@@ -179,7 +182,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 ```sh
 sh v06c/build.sh && sh v06c/build.sh -DSCHED
 for s in equip save launch trade fight jump voyage; do node v06c/test/t27.mjs $s | grep "T27\|FAIL"; done
-for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis; do node v06c/test/$t.mjs | tail -1; done
+for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis soak; do node v06c/test/$t.mjs | tail -1; done
 ```
 
 Заливка на MiSTer — см. память `mister-deploy` и `elite-v06c` (ключи scp: только пароль). Рабочие каталоги
