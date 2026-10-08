@@ -1,6 +1,7 @@
 ; Сброс и запуск корабля: ZERO, RESET, RES2, ZINF, GINF, NWSHP, WPSHPS, FLFLLS. Перенесено близко к тексту BBC;
 ; сверка с эталоном — v06c/test/t16.mjs.
 NI		equ	36		; байт в блоке корабля
+NTY		equ	13		; типов объектов в кассетной версии BBC; 14–16 — корабли версии ZX
 NOSH		equ	12		; мест под корабли
 NOST		equ	18		; пылинок
 
@@ -130,7 +131,7 @@ nw1:
 	add	a, a
 	ld	e, a
 	ld	d, 0
-	ld	hl, XX21 - 2
+	ld	hl, XX21X - 2
 	add	hl, de
 	ld	a, (hl)
 	inc	hl
@@ -189,6 +190,8 @@ nw2:
 	ld	b, a
 	or	a
 	jp	m, nw_cp
+	cp	NTY + 1
+	jp	nc, nw_cp		; корабли версии ZX (типы 14–16) в счётчиках MANY не числятся
 	ld	e, a
 	ld	hl, MANY
 	add	hl, de

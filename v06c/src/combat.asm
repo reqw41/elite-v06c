@@ -252,10 +252,13 @@ ks5:
 	ld	a, (hl)
 	cp	8
 	jp	z, KS4
+	cp	NTY + 1
+	jp	nc, ks_nm		; корабли версии ZX в MANY не числятся
 	ld	e, a
 	ld	hl, MANY
 	add	hl, de
 	dec	(hl)
+ks_nm:
 	ld	hl, (XX0)
 	ld	e, 5
 	add	hl, de
@@ -285,7 +288,7 @@ ksl1:
 	jp	z, KS2
 	add	a, a
 	ld	e, a
-	ld	hl, XX21 - 2
+	ld	hl, XX21X - 2
 	add	hl, de
 	ld	a, (hl)
 	inc	hl

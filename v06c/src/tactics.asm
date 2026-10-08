@@ -222,8 +222,11 @@ TA13:
 	ret
 TA14:
 	ld	a, b
+	cp	NTY + 1
+	jp	nc, ta14_p		; корабли версии ZX — пираты
 	cp	7
 	jp	nc, TA62
+ta14_p:
 	cp	2
 	jp	z, TA62
 	ld	a, (SSPR)
@@ -486,12 +489,18 @@ fr1:
 ; ANGRY: корабль типа A (блок по адресу INF) становится враждебным; станция — тоже (AN2).
 ; Перенос на выходе — как на BBC: 1 при типе больше 8.
 ANGRY:
+	cp	NTY + 1
+	jp	c, an_bbc
+	cp	NTY + 4
+	jp	c, an_ship		; корабли версии ZX (14–16) злятся, как все
+an_bbc:
 	cp	8
 	jp	z, AN2
 	ccf
 	ret	c			; не корабль: перенос 1, как на BBC
 	cp	7
 	call	z, AN2
+an_ship:
 	ld	hl, (INF)
 	ld	de, 32
 	add	hl, de

@@ -230,6 +230,9 @@ label_2:
 	ld	a, d
 	ld	(INWK + 32), a
 	ld	a, c
+	ifndef	SCHED
+	call	zx_pick
+	endif
 	call	NWSHP
 	jp	MLOOP
 tha:
@@ -249,6 +252,9 @@ mt3:
 	call	DORND
 	and	3
 	or	1
+	ifndef	SCHED
+	call	zx_pick
+	endif
 	call	NWSHP
 	ld	hl, XX13
 	dec	(hl)
@@ -495,7 +501,7 @@ mal1:
 	add	a, a
 	ld	e, a
 	ld	d, 0
-	ld	hl, XX21 - 2
+	ld	hl, XX21X - 2
 	add	hl, de
 	ld	a, (hl)
 	inc	hl
@@ -547,6 +553,8 @@ ma21:
 	jp	z, ma26
 	cp	11
 	jp	c, ma58
+	cp	NTY + 1
+	jp	nc, ma58		; корабли версии ZX не подбираются заборником
 	ld	hl, INWK + 5
 	ld	a, (BST)
 	and	(hl)
@@ -657,8 +665,11 @@ ma47:
 	or	0x80
 	ld	(hl), a
 	ld	a, (TYPE)
+	cp	NTY + 1
+	jp	nc, ma_zx		; корабли версии ZX гибнут как корабли: обломки и счёт побед
 	cp	8
 	jp	nc, ma8_1		; ракета, астероид, контейнер — без обломков
+ma_zx:
 	or	a
 	call	DORND
 	or	a
@@ -914,3 +925,43 @@ ma66:
 	or	a
 	ret	nz
 	jp	STARS
+
+; zx_pick: корабли версии для ZX Spectrum. A — тип пирата или охотника, выбранный игрой, как на BBC (1 Sidewinder,
+; 3 Mamba, 4 Python, 5 Cobra); в одном случае из четырёх вместо него выходит Krait (вместо 1 и 3), Asp Mk II
+; (вместо 4) или Fer-de-Lance (вместо 5). Генератор случайных чисел свой: ход игры и её случайные числа не
+; меняются. Перенос сохраняется (он идёт в DORND). В сборке стенда (SCHED) замены нет — там игра равна эталону.
+zx_pick:
+	push	af
+	ld	hl, (zx_rnd)
+	add	hl, hl
+	jp	nc, zp_1
+	ld	a, l
+	xor	0x2D
+	ld	l, a
+zp_1:
+	ld	(zx_rnd), hl
+	ld	a, h
+	and	3
+	jp	nz, zp_keep
+	pop	af
+	push	af
+	ld	d, 14
+	cp	1
+	jp	z, zp_set
+	cp	3
+	jp	z, zp_set
+	inc	d
+	cp	4
+	jp	z, zp_set
+	inc	d
+	cp	5
+	jp	nz, zp_keep
+zp_set:
+	pop	af
+	ld	a, d
+	ret
+zp_keep:
+	pop	af
+	ret
+zx_rnd:	dw	0x5A17
+

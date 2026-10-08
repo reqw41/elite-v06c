@@ -85,6 +85,7 @@ ws_clr:
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
+	include	"ships_zx.asm"		; корабли версии ZX: Krait, Asp Mk II, Fer-de-Lance; XX21X
 	include	"words.asm"		; словарь QQ18
 	include	"qq16.asm"
 	include	"na.asm"		; командир по умолчанию

@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Корабли версии для ZX Spectrum, которых нет в кассетной BBC: Krait, Asp Mk II, Fer-de-Lance.
+Модели берутся из файлов кораблей дисковой версии BBC (D.MO?.bin: таблица адресов по &5600 и модели), формат
+модели тот же, смещения внутри неё относительные. Пишет v06c/data/ships_zx.asm.
+Запуск: python3 -I tools/convert/ships_zx.py"""
+import glob
+import os
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+ORIG = os.environ.get('ELITE_ORIG', '/Users/boris/projects/elite-v06c/orig')
+DISC = os.path.join(ORIG, 'bbc/disc/3-assembled-output')
+BASE = 0x5600
+WANT = [(19, 'krait', 'Krait'), (25, 'asp', 'Asp Mk II'), (27, 'fer', 'Fer-de-Lance')]   # номера типов дисковой версии
+
+
+def model(typ):
+    for f in sorted(glob.glob(os.path.join(DISC, 'D.MO?.bin'))):
+        d = open(f, 'rb').read()
+        a = d[2 * (typ - 1)] | (d[2 * (typ - 1) + 1] << 8)
+        if not a:
+            continue
+        o = a - BASE
+        h = d[o:o + 20]
+        edges, faces = h[3] | (h[16] << 8), h[4] | (h[17] << 8)
+        size = max(20 + h[8], edges + 4 * h[9], faces + h[12])
+        return os.path.basename(f), d[o:o + size]
+    raise SystemExit(f'тип {typ}: модели нет ни в одном файле')
+
+
+def main():
+    base = [l.split()[1] for l in open(os.path.join(ROOT, 'v06c/data/ships.asm')) if l.startswith('\tdw ')]
+    assert len(base) == 13, base
+    out = ['; создано tools/convert/ships_zx.py, руками не править',
+           '; Корабли версии для ZX Spectrum (модели дисковой версии BBC): типы 14, 15, 16.',
+           '; XX21X: таблица адресов моделей всех типов — 13 кассетных (как XX21) и три новых.',
+           'XX21X:'] + ['\tdw ' + l for l in base] + ['\tdw ship_' + lab for _, lab, _ in WANT]
+    for typ, lab, name in WANT:
+        f, m = model(typ)
+        out.append(f'ship_{lab}:\t\t\t\t; {name}: {len(m)} байт, вершин {m[8] // 6}, рёбер {m[9]}, граней {m[12] // 4}, '
+                   f'отрезков в куче {m[5]}, энергия {m[14]}, награда {(m[10] | (m[11] << 8)) / 10:g} ({f})')
+        for i in range(0, len(m), 16):
+            out.append('\tdb ' + ', '.join('0x%02X' % b for b in m[i:i + 16]))
+    open(os.path.join(ROOT, 'v06c/data/ships_zx.asm'), 'w').write('\n'.join(out) + '\n')
+    print('v06c/data/ships_zx.asm:', ', '.join(l for l in out if l.startswith('ship_')))
+
+
+if __name__ == '__main__':
+    main()
