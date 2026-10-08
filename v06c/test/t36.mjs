@@ -49,7 +49,7 @@ const SPECS = [
   { name: 'TAS1', skip: PTR, gen: (r, b) => { const s = r(13); return { y: [2, 5, 8][r(3)], mem: { [K + NI * s]: shipw(r, b), INWK: shipw(r, b), K3: arr(b, 9) },
     bmem: { V: w16(K + NI * s) }, vmem: { V: w16(WS + K + NI * s) } }; } },
   { name: 'TAS3', skip: ADD, gen: (r, b) => ({ y: [10, 16, 22][r(3)], mem: { INWK: shipw(r, b), XX15: arr(() => r(97) | (r(2) << 7), 3) } }) },
-  { name: 'ANGRY', noreg: 'axy', skip: PTR, gen: (r, b) => { const u = universe(r, b, 1 + r(6)), s = r(u.types.length); pick(u, s); let t = r(6) ? u.types[s] & 15 : b(); if (t >= 14 && t <= 16) t = 17;   // типы 14–16 — корабли ZX, на BBC их нет
+  { name: 'ANGRY', noreg: 'axy', skip: PTR, gen: (r, b) => { const u = universe(r, b, 1 + r(6)), s = r(u.types.length); pick(u, s); let t = r(6) ? u.types[s] & 15 : b(); if ((t >= 14 && t <= 16) || (t >= 22 && t <= 31)) t = 17;   // типы 14–16 и 22–31 — корабли ZX и дисковой версии, в кассетной их нет
     return { a: t, ...u }; } },
   { name: 'Ze', gen: (r, b) => ({ c: r(2), mem: { RAND: arr(b, 4), INWK: arr(b, 36) } }) },
   { name: 'EXNO', noreg: 'axyc', gen: (r, b) => ({ x: [7, 15, b()][r(3)], mem: { [B.INWK + 7]: b(), DNOIZ: r(2) * 255 } }) },
