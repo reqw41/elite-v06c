@@ -155,9 +155,10 @@ LOD:
 	jp	ll9_cp
 
 ; QUS1: файл командира: A = 0 — записать 256 байт с &0B00, A = FFh — прочитать их туда. Имя файла — в INWK.
-; Файл хранится в памяти (save_slot) и на ленте (tape.asm): запись — в память и на ленту; чтение — с ленты,
-; а если блок не прочитан — из памяти (последнее сохранение этого сеанса). Пусто и там — &0B00 не меняется.
-; В сборке стенда (SCHED) ленты нет: только память.
+; Обычный образ: носитель — лента (tape.asm). Перед записью — подсказка и ожидание клавиши; перед чтением —
+; подсказка, ожидание сигнала прерывается пробелом или СС. Если блок не прочитан или чтение отменено, в &0B00
+; ставится FFh — «файл негодный»: LOD командира не трогает, а заставка снова спрашивает о загрузке.
+; В сборке стенда (SCHED) ленты нет: файл хранится в памяти (save_slot).
 QUS1:
 	ld	c, a
 	ld	a, low (INWK - WS)
@@ -172,6 +173,9 @@ QUS1:
 	ld	a, 1
 	ld	(save_used), a
 	ifndef	SCHED
+	ld	hl, t_tsave		; подсказка: включить запись и нажать клавишу
+	call	mis_str
+	call	TT217
 	ld	hl, save_slot
 	ld	b, NT + 2
 	call	tp_save
@@ -179,17 +183,22 @@ QUS1:
 	ret
 qus_load:
 	ifndef	SCHED
+	ld	hl, t_tload		; подсказка: пустить ленту; пробел или СС — отмена
+	call	mis_str
 	ld	hl, tp_buf
 	ld	b, NT + 2
 	call	tp_load
-	jp	c, qus_mem
+	jp	nc, qus_got
+	ld	a, 0xFF			; не прочитано или отменено: файл негодный — командир остаётся прежним
+	ld	(WS + 0x0B00), a
+	ret
+qus_got:
 	ld	hl, tp_buf
 	ld	de, save_slot
 	ld	b, NT + 2
 	call	ll9_cp
 	ld	a, 1
 	ld	(save_used), a
-qus_mem:
 	endif
 	ld	a, (save_used)
 	or	a
@@ -198,3 +207,7 @@ qus_mem:
 	ld	de, WS + 0x0B00
 	ld	b, NT + 2
 	jp	ll9_cp
+	ifndef	SCHED
+t_tsave:	db	"START TAPE, THEN PRESS ANY KEY", 13, 0
+t_tload:	db	"START TAPE (SPACE - CANCEL)", 13, 0
+	endif

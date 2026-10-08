@@ -16,6 +16,11 @@ BR1:
 	jp	nz, QU5
 	call	GTNME
 	call	LOD
+	ifndef	SCHED
+	ld	a, (WS + 0x0B00)	; с ленты не прочитано или отменено: командир прежний, вопрос — заново
+	or	a
+	jp	m, BR1
+	endif
 	call	TRNME
 	call	TTX66
 ; QU5: взять командира по умолчанию, проверить контрольную сумму, вторая заставка.
