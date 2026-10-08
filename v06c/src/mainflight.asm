@@ -440,6 +440,19 @@ ma76:
 	dec	(hl)
 	call	ECBLB2
 ma64:
+	ifndef	SCHED
+	ld	a, (auto)		; клавиша P выключает автопилот стыковки, как в дисковой версии (KY20)
+	or	a
+	jp	z, ma64_c
+	push	de
+	ld	b, 0x37
+	call	DKS4
+	pop	de
+	jp	p, ma64_c
+	xor	a
+	ld	(auto), a
+ma64_c:
+	endif
 	ld	hl, DKCMP
 	ld	a, (KY19)
 	and	(hl)

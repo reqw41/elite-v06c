@@ -56,5 +56,16 @@ for (const wait of [150, 600]) {
   console.log(`в игре: автопилот через ${wait} кадров после взлёта — ${ok ? 'стыковка' : 'НЕ пристыковался'} за ${f} кадров (${(f / 50).toFixed(0)} с), энергия не ниже ${minE}, скорость до ${Math.max(...speeds)}, автопилот после стыковки ${g.rd(g.L.auto) ? 'включён' : 'выключен'}`);
   if (!ok) fail('стыковки нет'); if (minE < 255) fail('по дороге был урон'); if (g.rd(g.L.auto)) fail('автопилот не выключился');
 }
+// Отмена автопилота клавишей P (как в дисковой версии): автопилот выключается, корабль остаётся в полёте.
+{
+  const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08], P: [6, 0x01] };
+  const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
+  g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(600);
+  g.wr(g.L.DKCMP, [0xFF]); press('C'); const on = g.rd(g.L.auto); g.frame(200);
+  press('P'); const off = g.rd(g.L.auto); g.frame(1500);
+  console.log(`отмена: после C автопилот ${on ? 'включён' : 'выключен'}, после P — ${off ? 'включён' : 'выключен'}; через 30 с ${g.rd(g.L.QQ12) === 0 ? 'всё ещё в полёте' : 'пристыкованы'}`);
+  if (!on || off) fail('клавиша P автопилот не выключила'); if (g.rd(g.L.QQ12) !== 0) fail('после отмены корабль пристыковался');
+  press('C'); if (!g.rd(g.L.auto)) fail('после отмены автопилот снова не включается');
+}
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'DOCKIT: всё совпало');
 process.exit(bad ? 1 : 0);
