@@ -11,6 +11,7 @@
 | `jsbeeb_dump.mjs` | настоящий BBC (jsbeeb, `orig/tools/jsbeeb`) до входа в игру, память в файл |
 | `scenario.js` | эталонные сценарии по расписанию кадров, запись и сверка `tests/golden/*.json` |
 | `xcheck.mjs` | сверка стенда с jsbeeb: оба идут по сценарию, память сравнивается на каждом проходе цикла |
+| `pdesc.js` | **дисковая** версия (стоянка, `T.CODE`): одна процедура `PDESC`, печать знака перехвачена — эталон расширенных описаний планет (`node tools/oracle/pdesc.js [галактика [система]]`) |
 
 Нужны (в git не входят): `orig/bbc/cassette`, `orig/bbc/mos/os120.rom` (ПЗУ системы — ради шрифта),
 `orig/tools/jsbeeb` с `npm install --omit=dev --ignore-scripts` (только для сверки).

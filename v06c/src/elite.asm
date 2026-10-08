@@ -84,12 +84,15 @@ ws_clr:
 	include	"tape.asm"
 	include	"missions.asm"
 	include	"find.asm"
+	include	"pdesc.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
 	include	"ships_zx.asm"		; корабли версии ZX: Krait, Asp Mk II, Fer-de-Lance; XX21X
 	include	"words.asm"		; словарь QQ18
+	include	"tkn1.asm"		; словарь описаний планет; кончается парами букв, продолжение которых — QQ16
 	include	"qq16.asm"
+	assert	QQ16 == pd_tkn2 + 26
 	include	"na.asm"		; командир по умолчанию
 	include	"qq23.asm"		; товары рынка
 	ifdef	FAST
@@ -124,6 +127,11 @@ snd_v1:		ds	8
 snd_v2:		ds	8
 m3_keep:	ds	6		; семена QQ15 на время работы с системой-целью миссии
 hm_buf:		ds	10		; название системы при поиске
+pd_w6:		ds	1		; описание планеты (pdesc.asm): 80h — буквы строчные
+pd_w2:		ds	1		; FFh — не внутри слова
+pd_w8:		ds	1		; DFh — следующая буква прописная
+pd_n:		ds	1		; знаков в буфере
+pd_lc:		ds	1		; 20h — буква названия строчная
 ll_sh:		ds	156		; копия прежнего списка отрезков корабля (самый длинный — 153 байта + длина + запас)
 tp_buf		equ	ll_sh		; блок с ленты: читается не во время рисования
 vars_end:

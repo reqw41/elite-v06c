@@ -30,7 +30,12 @@ tt63:
 	scf
 	call	pr5
 	ld	a, 195
+	ifdef	SCHED
 	jp	TT60
+	else
+	call	TT27			; без пустой строки: экономика на той же строке, что и при нулевом расстоянии
+	jp	TT69
+	endif
 
 ; TT25: экран «Data on система» (f6).
 TT25:
@@ -42,8 +47,10 @@ TT25:
 	call	TT27
 	call	NLIN
 	call	TTX69
-	ld	hl, YC
+	ifdef	SCHED			; в обычном образе экран на две строки плотнее кассетного: под ним описание
+	ld	hl, YC			; планеты, до шести строк (эта пустая строка убрана и в дисковой версии BBC)
 	inc	(hl)
+	endif
 	call	TT146
 	ld	a, 194			; экономика
 	call	TT68
@@ -90,7 +97,12 @@ tt72:
 	scf
 	call	pr2
 	ld	a, 198
+	ifdef	SCHED
 	call	TT60
+	else
+	call	TT27			; жители — строкой ниже населения, без пустой строки
+	call	TT69
+	endif
 	ld	a, '('
 	call	TT27
 	ld	a, (QQ15 + 4)
@@ -169,7 +181,13 @@ tt76:
 	ld	a, 'k'
 	call	TT26
 	ld	a, 'm'
-	jp	TT26
+	ifdef	SCHED
+	jp	TT26			; образ стенда: экран как в кассетной версии
+	else
+	call	TT26			; расширенное описание — как в дисковой версии BBC
+	call	TTX69
+	jp	PDESC
+	endif
 
 ; TT22: дальняя карта (f4): все 256 систем точками, круг дальности прыжка, перекрестие выбранной системы.
 TT22:
