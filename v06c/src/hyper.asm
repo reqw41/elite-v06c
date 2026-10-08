@@ -15,6 +15,9 @@ hyp:
 	ld	a, (QQ22 + 1)
 	or	a
 	ret	nz			; отсчёт уже идёт
+	ld	a, (M1ST)		; из системы сверхновой любой прыжок уносит в соседнюю галактику
+	and	0x7F
+	jp	nz, ghy_go
 	call	CTRL
 	jp	m, Ghy
 	call	hm
@@ -71,6 +74,7 @@ Ghy:
 	inc	a
 	ld	(GHYP), a
 	ld	(FIST), a
+ghy_go:
 	call	wW
 	ld	hl, GCNT
 	ld	a, (hl)
@@ -87,6 +91,7 @@ g1:
 	dec	b
 	jp	nz, g1
 zZ:
+	call	mis_gal
 	ld	a, 96
 	ld	(QQ9), a
 	ld	(QQ10), a
@@ -136,6 +141,7 @@ ee5:
 	call	GVL
 	call	RES2
 	call	SOLAR
+	call	mis_arrive		; миссии: выдать очередную, если пора
 	ld	a, (QQ11)
 	and	0x3F
 	ret	nz
@@ -296,6 +302,8 @@ esl1:
 	pop	af
 	or	a
 	jp	nz, DEATH		; в межзвёздном пространстве капсула не спасает
+	call	mis_pod
+	xor	a
 	ld	hl, QQ20
 	ld	b, 17
 esl2:

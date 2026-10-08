@@ -601,6 +601,7 @@ TT110:
 	ld	a, (QQ12)
 	or	a
 	jp	z, nlunch
+	call	mis_launch
 	call	LAUN
 	call	RES2
 	call	TT111

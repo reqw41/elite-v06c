@@ -52,11 +52,13 @@ GOIN:
 	ld	(QQ22 + 1), a
 	call	LAUN
 	call	RES4
+	call	mis_dock		; вопросы и награды миссий
 	jp	BAY
 
 ; TT100: проход главного цикла в полёте: M%, счётчик сообщения, раз в 256 проходов — новые корабли.
 TT100:
 	call	M_
+	call	mis_fly			; миссии: сохраняет A и флаги
 	ld	hl, DLY
 	dec	(hl)
 	jp	z, me2
@@ -265,6 +267,7 @@ me2:
 	call	MESS
 	xor	a
 	ld	(DLY), a
+	ld	(mch_x), a
 	jp	me3
 
 ; M%: проход цикла полёта.

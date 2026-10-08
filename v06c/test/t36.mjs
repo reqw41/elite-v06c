@@ -11,7 +11,8 @@ const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array
 const K = 0x900, NI = 36, TOP = 0x0D40;
 const ADD = ['T', 'T1', 'U'];                               // ADD на Векторе их не пишет (liveness launch, fight)
 const DRAW = ['SC', 'SCH', 'X1', 'YSAV', 'SWAP'];
-const TEXT = [...DRAW, 'YSAV2', 'XSAV2', ['P', 3], ['V', 2], 'Q', 'R', 'S', ...ADD, ['XX15', 6]];
+const TEXT = [...DRAW, 'YSAV2', 'XSAV2', ['P', 3], ['V', 2], 'Q', 'R', 'S', ...ADD, ['XX15', 6],
+  0x300];                                                   // TP: при 256-й победе Вектор ставит в нём «пора выдавать миссию» (миссии ZX), на BBC байт всегда 0
 const PTR = [['SLSP', 2], ['INF', 2], ['XX0', 2], ['XX19', 2], ['V', 2], ['SC', 2], [B.INWK + 33, 2], [0x121, 2]];   // &121 — указатель в копии блока (XX3)
 for (let i = 0; i < 13; i++) PTR.push([K + NI * i + 33, 2]);
 const bpB = (t) => bbc.mem[B.XX21 + 2 * (t - 1)] | (bbc.mem[B.XX21 + 2 * t - 1] << 8);

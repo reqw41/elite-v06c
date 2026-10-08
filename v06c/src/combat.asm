@@ -93,6 +93,11 @@ MESS:
 	ld	a, d
 	ld	(MCH), a
 mes9:
+	ld	e, a
+	ld	a, (mch_x)		; на экране своё сообщение миссии — печатать (стирать) его
+	or	a
+	jp	nz, mes9x
+	ld	a, e
 	call	TT27
 	ld	hl, de_
 	ld	a, (hl)
@@ -108,6 +113,8 @@ me1:
 	push	de
 	ld	a, (MCH)
 	call	mes9
+	xor	a
+	ld	(mch_x), a
 	pop	de
 	ld	a, d
 	jp	MESS
@@ -125,6 +132,7 @@ EXNO2:
 	jp	nz, exno_7
 	inc	hl
 	inc	(hl)
+	call	mis_due			; 256 побед — пора выдавать миссию
 	ld	a, 101
 	call	MESS
 exno_7:

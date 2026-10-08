@@ -82,6 +82,7 @@ ws_clr:
 	include	"snd.asm"
 	include	"save.asm"
 	include	"tape.asm"
+	include	"missions.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
