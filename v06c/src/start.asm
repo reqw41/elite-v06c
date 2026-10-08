@@ -53,7 +53,11 @@ qu5_tz:
 	ld	(COK), a
 	call	msblob
 	ld	a, 147			; «Press Fire Or Space,Commander.»
-	ld	b, 3
+	ifdef	SCHED
+	ld	b, 3			; Mamba, как в кассетной версии
+	else
+	ld	b, 14			; Krait, как в дисковой
+	endif
 	call	TITLE
 	call	ping
 	call	hyp1

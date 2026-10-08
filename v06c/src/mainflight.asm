@@ -663,6 +663,11 @@ ma60:
 	or	0x80
 	ld	(hl), a
 	jp	ma26
+	ifdef	SCHED
+	define	MA_JUNK	ma8_1
+	else
+	define	MA_JUNK	ma_jk
+	endif
 isdk:
 	ld	a, (K_ + NI + 32)	; стыковка: станция не злится, мы носом в щель, щель горизонтальна
 	or	a
@@ -670,11 +675,17 @@ isdk:
 	ld	a, (INWK + 14)
 	cp	214
 	jp	c, ma62
+	ifdef	SCHED
 	call	SPS4
 	ld	a, (XX15 + 2)
 	or	a
 	jp	m, ma62
 	cp	89
+	else
+	call	SPS1			; проверки дисковой версии: направление на планету, порог 86
+	ld	a, (XX15 + 2)
+	cp	86
+	endif
 	jp	c, ma62
 	ld	a, (INWK + 16)
 	and	0x7F
@@ -749,18 +760,18 @@ ma47_l:
 	cp	22
 	jp	nc, ma_zx		; корабли дисковой версии гибнут как корабли
 	cp	19
-	jp	nc, ma8_1		; пластина, обломок, валун — без обломков и счёта
+	jp	nc, MA_JUNK		; пластина, обломок, валун — без обломков
 	cp	NTY + 1
 	jp	nc, ma_zx		; корабли версии ZX гибнут как корабли: обломки и счёт побед
 	cp	10
 	jp	nz, ma_nast
 	ld	a, (LAS)		; астероид, разбитый добывающим лазером, даёт до трёх обломков
 	cp	50
-	jp	nz, ma8_1
+	jp	nz, MA_JUNK
 	or	a
 	call	DORND
 	and	3
-	jp	z, ma8_1
+	jp	z, MA_JUNK
 	ld	(CNT), a
 ma_spl:
 	ld	b, 20
@@ -769,10 +780,10 @@ ma_spl:
 	ld	hl, CNT
 	dec	(hl)
 	jp	nz, ma_spl
-	jp	ma8_1
+	jp	MA_JUNK
 ma_nast:
 	cp	8
-	jp	nc, ma8_1		; ракета, астероид, контейнер — без обломков
+	jp	nc, MA_JUNK		; ракета, астероид, контейнер, таргон, капсула — без обломков
 ma_zx:
 	cp	17
 	jp	nz, ma_deb
@@ -817,6 +828,10 @@ ma14_2:
 ma8_0:
 	xor	a
 	jp	ma8
+	ifndef	SCHED
+ma_jk:					; как в дисковой версии: победа засчитывается и за мусор — астероид,
+	call	EXNO2			; контейнер, капсулу, таргон, ракету, обломки
+	endif
 ma8_1:
 	ld	a, 1
 ma8:
@@ -976,6 +991,17 @@ ma93_e:
 	jp	nz, ma23
 	jp	DEATH
 ma29:
+	ifndef	SCHED
+	cp	15			; как в дисковой версии: пока идёт автопилот, сообщение о нём повторяется
+	jp	nz, ma29_t
+	ld	a, (auto)
+	or	a
+	jp	z, ma23
+	ld	a, 7
+	call	messx
+	jp	ma23
+ma29_t:
+	endif
 	cp	20
 	jp	nz, ma23
 	ld	a, 30

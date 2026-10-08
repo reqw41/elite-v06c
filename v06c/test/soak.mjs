@@ -31,7 +31,7 @@ for (let f = 0; f < FRAMES; f += STEP) {
     g.wr(L.LASER, [0x97, 0x97, 0x97, 0x97]); g.wr(L.FIST, [0xFF]); streak.fill(0); continue; }
   // чаще новые корабли: счётчик появления почти истёк, анархия; раз в 10 с один из кораблей взрывается (как от бомбы)
   g.wr(L.EV, [0]); g.wr(L.gov, [0]); if (f % 60 === 0) g.wr(L.MCNT, [1]);
-  if (f % 500 === 0) { const live = []; for (let i = 2; i < 12; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128 && t !== 8) live.push(i); }
+  if (f % 500 === 0) { const live = []; for (let i = 2; i < 12; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128 && t !== 8 && !(g.rd(L.K_ + 36 * i + 31) & 0xA0)) live.push(i); }   // как бомба: уже взрывающиеся не трогаем
     if (live.length) { const i = live[rnd(live.length)], a = L.K_ + 36 * i + 31; g.wr(a, [g.rd(a) | 0x80]); blown++; } }
   g.wr(L.ENERGY, [255]); g.wr(L.FSH, [255]); g.wr(L.ASH, [255]); g.wr(L.GNTMP, [0]); g.wr(L.CABTMP, [0]); g.wr(L.ALTIT, [255]);
   if (g.rd(L.QQ11) !== 0 || g.rd(L.MJ) !== 0) { streak.fill(0); continue; }

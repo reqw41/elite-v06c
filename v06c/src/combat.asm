@@ -407,7 +407,11 @@ Ze:
 	ld	a, b
 	and	0x80
 	ld	(INWK + 5), a
+	ifdef	SCHED
 	ld	a, 32
+	else
+	ld	a, 25			; враги появляются ближе, как в дисковой версии
+	endif
 	ld	(INWK + 1), a
 	ld	(INWK + 4), a
 	ld	(INWK + 7), a
