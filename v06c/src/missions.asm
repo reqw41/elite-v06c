@@ -365,8 +365,8 @@ mis_dock:
 	or	a
 	ret	z
 	jp	m, md_ref
-	ld	hl, t_nova		; в системе сверхновой: возьмём беженцев?
-	call	mis_scr
+	ld	a, MZ_NOVA		; в системе сверхновой: возьмём беженцев?
+	call	mz_scr
 	call	ask_yn
 	ret	nc
 	ld	hl, M1ST
@@ -388,8 +388,8 @@ md_ref:					; беженцы на борту
 	ld	(M1ST), a
 	ld	a, 100			; награда — 100 г драгоценных камней
 	ld	(QQ20 + 15), a
-	ld	hl, t_saved
-	call	mis_scr
+	ld	a, MZ_SAVED
+	call	mz_scr
 	jp	TT217
 
 ; «Захват станции» на станции: предложение (состояние 1) и награда (состояние 5).
@@ -401,12 +401,12 @@ md_m3:
 	ret	nz
 	xor	a
 	ld	(M3ST), a
-	ld	hl, t_award
-	call	mis_scr
+	ld	a, MZ_AWARD
+	call	mz_scr
 	jp	TT217
 md_offer:
-	ld	hl, t_wanted
-	call	mis_scr
+	ld	a, MZ_WANTED
+	call	mz_scr
 	call	ask_yn
 	jp	c, md_take
 	xor	a
@@ -419,8 +419,8 @@ md_take:
 	ld	a, (hl)
 	or	0x10
 	ld	(hl), a
-	ld	hl, t_brief
-	call	mis_scr
+	ld	a, MZ_BRIEF
+	call	mz_scr
 	jp	TT217
 
 ; mis_pod: спасательная капсула: беженцы остались на корабле.
@@ -431,45 +431,32 @@ mis_pod:
 	ld	(hl), a
 	ret
 
-; mis_scr: чистый экран и текст с адреса HL (13 — новая строка, 0 — конец).
-mis_scr:
-	push	hl
+; mz_scr: чистый экран и текст номер A второй таблицы словаря (tkn1.asm). mz_str: текст номер A с текущего места.
+mz_scr:
+	push	af
 	ld	a, 1
 	call	TT66
 	ld	a, 8
 	ld	(YC), a
 	ld	a, 2
 	ld	(XC), a
-	pop	hl
-mis_str:
-	ld	a, (hl)
-	or	a
-	ret	z
-	inc	hl
-	cp	13
-	jp	nz, ms_ch
-	push	hl
+	pop	af
+mz_str:
+	ld	hl, mz_tkn
+	jp	pd_tok_hl
+mz_nl:					; управляющий код 10: новая строка текста миссии — через строку, со столбца 2
 	ld	hl, YC
 	inc	(hl)
 	inc	(hl)
 	ld	a, 2
 	ld	(XC), a
-	pop	hl
-	jp	mis_str
-ms_ch:
-	cp	1
-	jp	z, ms_name
-	call	TT26
-	jp	mis_str
-ms_name:				; название системы-цели миссии 3
-	push	hl
+	ret
+mz_name:				; управляющий код 11: название системы-цели миссии 3
 	call	m3_seeds
 	xor	a
 	ld	(QQ17), a
 	call	cpl_
-	call	m3_back
-	pop	hl
-	jp	mis_str
+	jp	m3_back
 ; ask_yn: ждать клавишу; перенос 1 — Y.
 ask_yn:
 	call	TT217
@@ -504,18 +491,8 @@ mes9x:
 	ld	a, 22
 	ld	(YC), a
 	ld	a, (mch_x)
-	add	a, a
-	ld	e, a
-	ld	d, 0
-	ld	hl, mx_tab - 2
-	add	hl, de
-	ld	a, (hl)
-	inc	hl
-	ld	h, (hl)
-	ld	l, a
-	jp	mis_str
-mx_tab:
-	dw	t_mayday, t_invaded, t_cloak, t_clon, t_cloff, t_leak, t_dock
+	add	a, MZ_MAYDAY - 1
+	jp	mz_str
 mch_x:	db	0			; номер своего сообщения на экране (0 — на экране слово игры MCH)
 mf_cnt:	db	0
 leak_say:	db	0
@@ -526,28 +503,3 @@ mis_seed:	dw	0x3C91
 pal_cloak:
 	db	0x00, 0x07, 0xF8, 0x38	; белое — голубым
 nova_t:	dw	0
-t_mayday:
-	db	"MAYDAY * CORIOLIS IN DANGER *", 0
-t_nova:
-	db	"THE SUN IS GOING NOVA!", 13, 13, "WILL YOU SAVE US (Y/N)?", 0
-t_saved:
-	db	"YOU HAVE SAVED OUR LIVES!", 13, 13, "THANK YOU, COMMANDER.", 0
-t_invaded:
-	db	"MAYDAY * ", 1, " INVADED *", 0
-t_cloak:
-	db	"CLOAKING DEVICE", 0
-t_clon:
-	db	"CLOAKING DEVICE ON", 0
-t_cloff:
-	db	"CLOAKING DEVICE OFF", 0
-t_wanted:
-	db	"WANTED BY GALCOP:", 13, " A BRAVE COMMANDER", 13, " FOR A SPECIAL MISSION", 13, 13, "ARE YOU INTERESTED (Y/N)?", 0
-t_brief:
-	db	"THE THARGONS ARE USING THE", 13, "SPACE STATION AT ", 1, 13, "AS A BASE FOR THEIR INVASION.", 13
-	db	"YOUR MISSION: TO DESTROY IT.", 13, "TAKE THIS E.C.M. JAMMER", 13, "(YOU WILL NEED IT!) GOOD LUCK!", 0
-t_award:
-	db	"IN APPRECIATION OF YOUR", 13, "EXCEPTIONAL COURAGE THE", 13, "INHABITANTS OF ", 1, 13, "AWARD YOU THEIR HIGHEST", 13, "HONOUR. LIVE LONG AND PROSPER!", 0
-t_leak:
-	db	"FUEL LEAK!", 0
-t_dock:
-	db	"DOCKING COMPUTERS ON", 0

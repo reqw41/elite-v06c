@@ -124,12 +124,12 @@ st_pl:
 	call	plf2
 	jp	st1
 st_mil:					; военный и добывающий лазеры: слов в словаре BBC нет
-	ld	hl, t_mil
+	ld	a, MZ_MIL
 	jp	st_xl
 st_min:
-	ld	hl, t_minl
+	ld	a, MZ_MINL
 st_xl:
-	call	mis_str
+	call	mz_str
 	call	TT67
 	ld	a, 6
 	ld	(XC), a

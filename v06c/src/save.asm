@@ -173,8 +173,8 @@ QUS1:
 	ld	a, 1
 	ld	(save_used), a
 	ifndef	SCHED
-	ld	hl, t_tsave		; подсказка: включить запись и нажать клавишу
-	call	mis_str
+	ld	a, MZ_TSAVE		; подсказка: включить запись и нажать клавишу
+	call	mz_str
 	call	TT217
 	ld	hl, save_slot
 	ld	b, NT + 2
@@ -183,8 +183,8 @@ QUS1:
 	ret
 qus_load:
 	ifndef	SCHED
-	ld	hl, t_tload		; подсказка: пустить ленту; пробел или СС — отмена
-	call	mis_str
+	ld	a, MZ_TLOAD		; подсказка: пустить ленту; пробел или СС — отмена
+	call	mz_str
 	ld	hl, tp_buf
 	ld	b, NT + 2
 	call	tp_load
@@ -207,7 +207,3 @@ qus_got:
 	ld	de, WS + 0x0B00
 	ld	b, NT + 2
 	jp	ll9_cp
-	ifndef	SCHED
-t_tsave:	db	"START TAPE, THEN PRESS ANY KEY", 13, 0
-t_tload:	db	"START TAPE (SPACE - CANCEL)", 13, 0
-	endif

@@ -81,6 +81,7 @@ pd_pd4:
 ; pd_tok (DETOK): напечатать слово номер A.
 pd_tok:
 	ld	hl, pd_tkn
+pd_tok_hl:				; вход для второй таблицы: HL — её начало
 	or	a
 	jp	z, pd_t2
 	ld	b, a

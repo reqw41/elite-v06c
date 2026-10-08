@@ -7,8 +7,8 @@ hme_key:
 	ret	z			; не карта
 HME2:
 	call	CLYNS
-	ld	hl, t_pname
-	call	mis_str
+	ld	a, MZ_PNAME
+	call	mz_str
 	ld	a, 8
 	ld	(rl_max), a
 	call	rline
@@ -85,8 +85,8 @@ hme_next:
 	ld	a, 40
 	call	NOISE
 	call	CLYNS
-	ld	hl, t_nfound
-	jp	mis_str
+	ld	a, MZ_NFOUND
+	jp	mz_str
 hme5:
 	ld	a, (QQ15 + 3)
 	ld	(QQ9), a
@@ -103,7 +103,3 @@ hme_put:
 	ld	(de), a
 	inc	de
 	ret
-t_pname:
-	db	"PLANET NAME? ", 0
-t_nfound:
-	db	"NOT FOUND", 0

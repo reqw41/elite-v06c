@@ -312,14 +312,12 @@ et9:
 	call	dn
 	jp	EQSHP
 eq_xname:
-	ld	hl, t_mil
+	ld	a, MZ_MIL
 	jp	z, eq_xn
-	ld	hl, t_minl
+	ld	a, MZ_MINL
 eq_xn:
-	call	mis_str
+	call	mz_str
 	jp	eq_named
-t_mil:	db	"Military Laser", 0
-t_minl:	db	"Mining Laser", 0
 
 ; eq: купить предмет A. Хватает денег — возврат с A = номер предмета (BCS c, а c — просто ret);
 ; не хватает — печать «Cash?» и уход в err, не возвращаясь (стек правит MLOOP, как на BBC).

@@ -43,9 +43,33 @@ def labels():
 MISSION = [10, 11, 15, 216, 222, 223]        # брифинги и награды двух миссий дисковой версии
 CAPT, M28 = [217, 218, 219], [220, 221]      # имя капитана и «последний раз видели…» — по номеру галактики
 NRU = 25                                     # особых описаний систем (RUPLA, RUGAL, RUTOK)
-JUMPS = (1, 2, 3, 4, 8, 9, 12, 13, 14, 15, 17, 18, 19, 22, 23, 24, 25, 27, 28, 29)
+JUMPS = (1, 2, 3, 4, 8, 9, 12, 13, 14, 15, 17, 18, 19, 22, 23, 24, 25, 27, 28, 29)   # 10 и 11 — свои, для второй таблицы
 # слова основного словаря игры внутри текста ({6}[n]{5}) — буквами: в кассетном словаре у них другие номера
 STD = {117: 'MILITARY  LASER', 108: 'E.C.M.SYSTEM', 114: 'ENERGY UNIT'}
+
+
+EXTRA = ['CLOAKING DEVICE', 'MAYDAY * ', ' (Y/N)?', 'START TAPE']   # общие куски своих текстов
+# Свои тексты (вторая таблица): имя для ассемблера и текст. Первые семь — сообщения полёта, по порядку номеров messx.
+MZ = [('MAYDAY', '{1}MAYDAY * CORIOLIS IN DANGER *'),
+      ('INVADED', '{1}MAYDAY * {11} INVADED *'),
+      ('CLOAK', '{1}CLOAKING DEVICE'),
+      ('CLON', '{1}CLOAKING DEVICE ON'),
+      ('CLOFF', '{1}CLOAKING DEVICE OFF'),
+      ('LEAK', '{1}FUEL LEAK!'),
+      ('DOCK', '{1}DOCKING COMPUTERS ON'),
+      ('NOVA', '{1}THE SUN IS GOING NOVA!{10}{10}WILL YOU SAVE US (Y/N)?'),
+      ('SAVED', '{1}YOU HAVE SAVED OUR LIVES!{10}{10}THANK YOU, COMMANDER.'),
+      ('WANTED', '{1}WANTED BY GALCOP:{10} A BRAVE COMMANDER{10} FOR A SPECIAL MISSION{10}{10}ARE YOU INTERESTED (Y/N)?'),
+      ('BRIEF', '{1}THE THARGONS ARE USING THE{10}SPACE STATION AT {11}{10}AS A BASE FOR THEIR INVASION.{10}'
+                'YOUR MISSION: TO DESTROY IT.{10}TAKE THIS E.C.M. JAMMER{10}(YOU WILL NEED IT!) GOOD LUCK!'),
+      ('AWARD', '{1}IN APPRECIATION OF YOUR{10}EXCEPTIONAL COURAGE THE{10}INHABITANTS OF {11}{10}AWARD YOU THEIR HIGHEST{10}'
+                'HONOUR. LIVE LONG AND PROSPER!'),
+      ('MIL', '{2}{19}MILITARY LASER'),
+      ('MINL', '{2}{19}MINING LASER'),
+      ('PNAME', '{1}PLANET NAME? '),
+      ('NFOUND', '{1}NOT FOUND'),
+      ('TSAVE', '{1}START TAPE, THEN PRESS ANY KEY{10}'),
+      ('TLOAD', '{1}START TAPE (SPACE - CANCEL){10}')]
 
 
 def split(at, start, n):
@@ -85,11 +109,29 @@ def main():
     lab = labels()
     img = open(os.path.join(OUT, 'T.CODE.unprot.bin'), 'rb').read()
     at = lambda a: img[a - LOAD]
+    tkn2x = bytes(at(lab['TKN2'] + i) for i in range(2 + 2 * 44))
     toks = [unstd(t) for t in split(at, lab['TKN1'], 256)]
     ru = [unstd(t) for t in split(at, lab['RUTOK'], NRU + 1)]
     for k in range(1, NRU + 1):                  # особые описания — словами 256…
         toks.append(ru[k])
     RU0 = 256
+    # общие куски своих текстов — словами основной таблицы (до 256 слов всего), чтобы на них ссылались строки второй
+    XT0 = len(toks)
+    pr0 = {}
+    for k in range(1, 41):
+        w = chr(tkn2x[2 * k]) + chr(tkn2x[2 * k + 1])
+        if w.isalpha():
+            pr0.setdefault(w, 215 + k)
+    for text in EXTRA:
+        e, i = [], 0
+        while i < len(text):
+            if text[i:i + 2] in pr0:
+                e.append(pr0[text[i:i + 2]])
+                i += 2
+            else:
+                e.append(ord(text[i]))
+                i += 1
+        toks.append(e)
     mtin = [at(lab['MTIN'] + i) for i in range(38)]
     tkn2 = bytes(at(lab['TKN2'] + i) for i in range(2 + 2 * 44))
     assert lab['QQ16'] == lab['TKN2'] + 26
@@ -116,6 +158,9 @@ def main():
     code_only = [ROOT_TOKEN, IAN] + MISSION + CAPT + M28 + list(range(RU0, RU0 + NRU))
     for n in code_only:
         visit(n)
+    for k in range(len(EXTRA)):
+        visit(XT0 + k)
+        refs.add(XT0 + k)
     refs.add(IAN)                                # MT17 зовёт его из кода, номер нужен маленький
     member = {mtin[g - 91] + k: g for g in groups for k in range(5)}
     assert not any(n in member for n in code_only)
@@ -181,10 +226,68 @@ def main():
         lines.append('; %d: %s' % (new[n], text(n)[:400]))
         for i in range(0, len(e), 24):
             lines.append('\tdb ' + ', '.join('0x%02X' % b for b in e[i:i + 24]))
+    # --- вторая таблица: тексты миссий версии ZX и прочие свои строки, тем же кодом (pd_tok с другой базой)
+    plain = {}                                   # слова основной таблицы с малым номером, состоящие только из букв и пар
+    for n, i in new.items():
+        if i < 86 and n not in member and toks[n]:
+            t, okay = '', True
+            for b in toks[n]:
+                if b == 19:
+                    continue
+                if 32 <= b < 91:
+                    t += chr(b)
+                elif b >= 215:
+                    t += chr(tkn2[(b - 215) * 2]) + chr(tkn2[(b - 215) * 2 + 1])
+                else:
+                    okay = False
+            if okay and len(t) >= 3:
+                plain[t] = 129 + i
+    pairs = {}
+    for k in range(1, 41):
+        pr = chr(tkn2[2 * k]) + chr(tkn2[2 * k + 1])
+        if pr.isalpha():
+            pairs.setdefault(pr, 215 + k)
+
+    def pack(text):
+        out, i = [], 0
+        while i < len(text):
+            if text[i] == '{':
+                j = text.index('}', i)
+                out.append(int(text[i + 1:j]))
+                i = j + 1
+                continue
+            best = max((w for w in plain if text.startswith(w, i)), key=len, default=None)
+            if best:
+                out.append(plain[best])
+                i += len(best)
+            elif text[i:i + 2] in pairs:
+                out.append(pairs[text[i:i + 2]])
+                i += 2
+            else:
+                assert 32 <= ord(text[i]) < 91, text[i]
+                out.append(ord(text[i]))
+                i += 1
+        return out
+
+    lines.append('; Вторая таблица: тексты миссий версии ZX, сообщения, подсказки. {1} — прописными, {2}{19} — как в предложении,')
+    lines.append('; {10} — новая строка текста миссии (через строку, со столбца 2), {11} — название системы-цели миссии 3.')
+    raw = packed = 0
+    body = []
+    for i, (name, text) in enumerate(MZ):
+        e = pack(text) + [0]
+        raw += len(re.sub(r'\{\d+\}', '?', text)) + 1
+        packed += len(e)
+        lines.append('MZ_%s\t\tequ\t%d' % (name, i))
+        body.append('; %d: %s' % (i, text))
+        for k in range(0, len(e), 24):
+            body.append('\tdb ' + ', '.join('0x%02X' % b for b in e[k:k + 24]))
+    lines.append('mz_tkn:')
+    lines += body
     lines.append('; пары букв TKN2 с номера 1; пары с 13-й — QQ16, поэтому файл стоит прямо перед qq16.asm')
     lines.append('pd_tkn2\t\tequ\t$ - 2')
     lines.append('\tdb ' + ', '.join('0x%02X' % b for b in tkn2[2:26]) + '\t; ' + tkn2[2:26].decode())
     open(ASM, 'w').write('\n'.join(lines) + '\n')
+    print('вторая таблица: строк %d, простым текстом %d Б, в словаре %d Б' % (len(MZ), raw, packed))
     print('tkn1: слов %d (одиночных %d, групп %d, из кода %d), %d Б + 24 Б пар + %d Б таблиц → %s' % (len(old), len(first), len(groups), len(last), size, 2 * NRU, os.path.relpath(ASM, ROOT)))
 
 
