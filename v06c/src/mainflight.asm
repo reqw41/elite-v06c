@@ -235,6 +235,7 @@ label_2:
 	ifndef	SCHED
 	call	zx_pick
 	endif
+	call	mis_pick		; охота за скрывающим устройством: иногда — Asp с ним
 	call	NWSHP
 	jp	MLOOP
 tha:
@@ -409,6 +410,9 @@ ma76:
 	ld	a, (KY18)
 	or	a
 	call	nz, WARP
+	ld	a, (M3ST)		; в системе, захваченной таргонами, ECM не работает ни у кого (глушилка)
+	cp	4
+	jp	z, ma64
 	ld	hl, ECM
 	ld	a, (KY17)
 	and	(hl)
@@ -557,11 +561,20 @@ ma21:
 	cp	11
 	jp	c, ma58
 	cp	NTY + 1
-	jp	nc, ma58		; корабли версии ZX не подбираются заборником
+	jp	c, ma_sc
+	cp	18
+	jp	nz, ma58		; корабли версии ZX не подбираются заборником; 18 — контейнер с устройством
+ma_sc:
 	ld	hl, INWK + 5
 	ld	a, (BST)
 	and	(hl)
 	jp	p, ma58
+	ld	a, b
+	cp	18
+	jp	nz, ma_std
+	call	mis_cloakgot		; контейнер со скрывающим устройством
+	jp	ma60
+ma_std:
 	ld	a, b			; сбор груза заборником: контейнер — случайный товар, таргон — чужие
 	cp	12			; изделия, капсула — рабы
 	ld	a, 3
@@ -673,6 +686,13 @@ ma47:
 	cp	8
 	jp	nc, ma8_1		; ракета, астероид, контейнер — без обломков
 ma_zx:
+	cp	17
+	jp	nz, ma_deb
+	ld	b, 18			; Asp со скрывающим устройством: контейнер с ним
+	xor	a
+	call	SFS1
+	jp	ma_oh
+ma_deb:
 	or	a
 	call	DORND
 	or	a

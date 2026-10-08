@@ -28,6 +28,38 @@ mis_due:
 
 ; mis_arrive: прибытие после прыжка в ту же галактику: выдать очередную миссию, если пора.
 mis_arrive:
+	xor	a
+	ld	(asp_out), a
+	ld	a, (M3ST)		; «Захват станции»: 6 — станция взорвана, после прыжка 5 (ждёт награда);
+	or	a			; 4 — улетели из системы цели, не выполнив; 3 — прилетели в систему цели?
+	jp	z, mar_due
+	cp	6
+	jp	z, mar_35
+	cp	4
+	jp	nz, mar_t
+	dec	a
+	ld	(M3ST), a
+mar_t:
+	cp	3
+	jp	nz, mar_due
+	call	m3_seeds		; семена системы-цели — в QQ15 (прежние — на стеке)
+	ld	a, (QQ15 + 3)
+	ld	hl, QQ0
+	cp	(hl)
+	jp	nz, mar_r
+	ld	a, (QQ15 + 1)
+	inc	hl
+	cp	(hl)
+	jp	nz, mar_r
+	ld	a, 4
+	ld	(M3ST), a
+mar_r:
+	call	m3_back
+	jp	mar_due
+mar_35:
+	dec	a
+	ld	(M3ST), a
+mar_due:
 	ld	hl, MISF
 	ld	a, (hl)
 	or	a
@@ -36,6 +68,22 @@ mis_arrive:
 	ld	(hl), a
 	rra
 	jp	nc, mar_1
+	rra
+	jp	nc, mar_2
+	rra
+	ret	c
+	ld	a, (hl)			; «Захват станции»: цель — случайная система галактики
+	or	4
+	ld	(hl), a
+	ld	a, 1
+	ld	(M3ST), a
+	call	mis_rnd
+	ld	(M3PL), a
+	ret
+mar_2:					; «Скрывающее устройство»: где-то рядом бродит Asp с ним
+	ld	a, (hl)
+	or	0x22
+	ld	(hl), a
 	ret
 mar_1:					; «Сверхновая»: топлива нет, со станции просят о помощи
 	ld	a, (hl)
@@ -53,10 +101,15 @@ mis_gal:
 	ld	a, (hl)
 	and	0x80
 	ld	(hl), a
+	xor	a
+	ld	(M3ST), a
 	ret
 
 ; mis_launch: взлёт со станции: в системе сверхновой с этого момента растёт солнце.
 mis_launch:
+	xor	a
+	ld	(cloak_on), a
+	ld	(asp_out), a
 	ld	hl, 0
 	ld	(nova_t), hl
 	ld	hl, M1ST
@@ -67,15 +120,33 @@ mis_launch:
 	inc	(hl)
 	ret
 
-; mis_fly: проход цикла полёта. Сохраняет A и флаги (перенос дальше идёт в генератор случайных чисел).
+; mis_fly: проход цикла полёта. Сохраняет все регистры и флаги (перенос дальше идёт в генератор случайных чисел).
 mis_fly:
 	push	af
+	ld	a, (MISF)
+	ld	hl, M1ST
+	or	(hl)
+	inc	hl
+	or	(hl)			; M3ST — следом за M1ST
+	jp	z, mf_x			; миссий нет и не было: дальше ничего не трогаем
+	push	bc
+	push	de
+	call	mf_nova
+	call	mf_m3
+	call	mf_cloak
+	pop	de
+	pop	bc
+mf_x:
+	pop	af
+	ret
+; «Сверхновая»
+mf_nova:
 	ld	a, (M1ST)
 	and	0x7F
-	jp	z, mf_x
+	ret	z
 	cp	2
 	jp	nz, mf_may
-	ld	hl, (nova_t)		; сверхновая: около 770 проходов до взрыва, солнце надвигается
+	ld	hl, (nova_t)		; около 770 проходов до взрыва, солнце надвигается
 	inc	hl
 	ld	(nova_t), hl
 	ld	a, h
@@ -83,39 +154,168 @@ mis_fly:
 	jp	nc, mf_dead
 	ld	a, l
 	and	7
-	jp	nz, mf_x
+	ret	nz
 	ld	a, (FRIN + 1)
 	cp	129
-	jp	nz, mf_x
+	ret	nz
 	ld	hl, K_ + NI + 8		; расстояние до солнца — 24 бита, знак в бите 7 старшего байта
 	ld	a, (hl)
 	and	0x7F
 	jp	z, mf_near
 	dec	(hl)
-	jp	mf_x
+	ret
 mf_near:
 	dec	hl
 	ld	a, (hl)
 	cp	0x30
-	jp	c, mf_x
+	ret	c
 	sub	8
 	ld	(hl), a
-	jp	mf_x
+	ret
 mf_may:					; до взлёта: раз в 256 проходов — призыв о помощи
+	ld	a, 1
+mf_say:					; сообщение A раз в 256 проходов
 	ld	hl, mf_cnt
 	inc	(hl)
-	jp	nz, mf_x
-	ld	a, 1
-	call	messx
-mf_x:
-	pop	af
-	ret
+	ret	nz
+	jp	messx
 mf_dead:
+	pop	hl			; адрес возврата в mis_fly
+	pop	de
+	pop	bc
 	pop	af
 	jp	DEATH
+; «Захват станции»: до принятия — призыв о помощи; в системе цели станция враждебна
+mf_m3:
+	ld	a, (M3ST)
+	cp	1
+	ld	a, 2
+	jp	z, mf_say
+	ld	a, (M3ST)
+	cp	4
+	ret	nz
+	ld	a, (FRIN + 1)
+	cp	8
+	ret	nz
+	ld	hl, K_ + NI + 32
+	ld	a, (hl)
+	or	0x80
+	ld	(hl), a
+	ret
+; Скрывающее устройство: клавиша Y включает и выключает; пока включено — энергия убывает на единицу за проход,
+; экран голубой, противники не стреляют. Включается при энергии от 160, само выключается ниже 64.
+mf_cloak:
+	ld	a, (MISF)
+	and	8
+	ret	z
+	ld	b, 0x44			; клавиша Y
+	call	DKS4
+	ld	hl, cloak_key
+	ld	b, (hl)
+	ld	(hl), a
+	or	a
+	jp	p, mc_run		; не нажата
+	ld	a, b
+	or	a
+	jp	m, mc_run		; держат с прошлого прохода
+	ld	a, (cloak_on)
+	or	a
+	jp	nz, mc_off
+	ld	a, (ENERGY)
+	cp	160
+	jp	c, mc_run
+	ld	a, 1
+	ld	(cloak_on), a
+	ld	a, 4
+	call	messx
+mc_run:
+	ld	a, (cloak_on)
+	or	a
+	ret	z
+	ld	hl, ENERGY
+	ld	a, (hl)
+	cp	64
+	jp	c, mc_off
+	dec	(hl)
+	ld	hl, pal_cloak
+	ld	a, 3
+	jp	pal_fx
+mc_off:
+	xor	a
+	ld	(cloak_on), a
+	ld	a, 5
+	jp	messx
+
+; mis_pick: A — тип охотника, выбранный игрой. Пока идёт охота за скрывающим устройством и Asp ещё не выходил
+; в этой системе, в одном случае из восьми вместо охотника появляется он (тип 17). Перенос сохраняется.
+mis_pick:
+	push	af
+	ld	a, (MISF)
+	and	0x20
+	jp	z, mp_keep
+	ld	a, (asp_out)
+	or	a
+	jp	nz, mp_keep
+	call	mis_rnd
+	and	7
+	jp	nz, mp_keep
+	inc	a
+	ld	(asp_out), a
+	pop	af
+	ld	a, 17
+	ret
+mp_keep:
+	pop	af
+	ret
+; mis_cloakgot: подобран контейнер со скрывающим устройством.
+mis_cloakgot:
+	ld	hl, MISF
+	ld	a, (hl)
+	or	8
+	and	0xDF
+	ld	(hl), a
+	ld	a, 3
+	jp	messx
+; mis_rnd: свой генератор случайных чисел (игровой не трогаем): A.
+mis_rnd:
+	push	hl
+	ld	hl, (mis_seed)
+	add	hl, hl
+	jp	nc, mr_1
+	ld	a, l
+	xor	0x2D
+	ld	l, a
+mr_1:
+	ld	(mis_seed), hl
+	ld	a, h
+	pop	hl
+	ret
+; m3_seeds: QQ15 = семена системы номер M3PL (прежние QQ15 — в m3_keep). m3_back: вернуть QQ15.
+m3_seeds:
+	ld	hl, QQ15
+	ld	de, m3_keep
+	ld	b, 6
+	call	ll9_cp
+	call	TT81
+	ld	a, (M3PL)
+	or	a
+	ret	z
+m3s_l:
+	push	af
+	call	TT20
+	pop	af
+	dec	a
+	jp	nz, m3s_l
+	ret
+m3_back:
+	ld	hl, m3_keep
+	ld	de, QQ15
+	ld	b, 6
+	jp	ll9_cp
 
 ; mis_dock: стыковка: вопросы и награды миссий.
 mis_dock:
+	call	md_m3
 	ld	a, (M1ST)
 	or	a
 	ret	z
@@ -144,6 +344,37 @@ md_ref:					; беженцы на борту
 	ld	a, 100			; награда — 100 г драгоценных камней
 	ld	(QQ20 + 15), a
 	ld	hl, t_saved
+	call	mis_scr
+	jp	TT217
+
+; «Захват станции» на станции: предложение (состояние 1) и награда (состояние 5).
+md_m3:
+	ld	a, (M3ST)
+	cp	1
+	jp	z, md_offer
+	cp	5
+	ret	nz
+	xor	a
+	ld	(M3ST), a
+	ld	hl, t_award
+	call	mis_scr
+	jp	TT217
+md_offer:
+	ld	hl, t_wanted
+	call	mis_scr
+	call	ask_yn
+	jp	c, md_take
+	xor	a
+	ld	(M3ST), a
+	ret
+md_take:
+	ld	a, 3
+	ld	(M3ST), a
+	ld	hl, MISF
+	ld	a, (hl)
+	or	0x10
+	ld	(hl), a
+	ld	hl, t_brief
 	call	mis_scr
 	jp	TT217
 
@@ -181,7 +412,18 @@ mis_str:
 	pop	hl
 	jp	mis_str
 ms_ch:
+	cp	1
+	jp	z, ms_name
 	call	TT26
+	jp	mis_str
+ms_name:				; название системы-цели миссии 3
+	push	hl
+	call	m3_seeds
+	xor	a
+	ld	(QQ17), a
+	call	cpl_
+	call	m3_back
+	pop	hl
 	jp	mis_str
 ; ask_yn: ждать клавишу; перенос 1 — Y.
 ask_yn:
@@ -228,9 +470,16 @@ mes9x:
 	ld	l, a
 	jp	mis_str
 mx_tab:
-	dw	t_mayday
+	dw	t_mayday, t_invaded, t_cloak, t_clon, t_cloff
 mch_x:	db	0			; номер своего сообщения на экране (0 — на экране слово игры MCH)
 mf_cnt:	db	0
+cloak_on:	db	0		; скрывающее устройство включено
+cloak_key:	db	0
+asp_out:	db	0			; Asp со скрывающим устройством уже выходил в этой системе
+mis_seed:	dw	0x3C91
+m3_keep:	ds	6
+pal_cloak:
+	db	0x00, 0x07, 0xF8, 0x38	; белое — голубым
 nova_t:	dw	0
 t_mayday:
 	db	"MAYDAY * CORIOLIS IN DANGER *", 0
@@ -238,3 +487,19 @@ t_nova:
 	db	"THE SUN IS GOING NOVA!", 13, 13, "WILL YOU SAVE US (Y/N)?", 0
 t_saved:
 	db	"YOU HAVE SAVED OUR LIVES!", 13, 13, "THANK YOU, COMMANDER.", 0
+t_invaded:
+	db	"MAYDAY * ", 1, " INVADED *", 0
+t_cloak:
+	db	"CLOAKING DEVICE", 0
+t_clon:
+	db	"CLOAKING DEVICE ON", 0
+t_cloff:
+	db	"CLOAKING DEVICE OFF", 0
+t_wanted:
+	db	"WANTED BY GALCOP:", 13, " A BRAVE COMMANDER", 13, " FOR A SPECIAL MISSION", 13, 13, "ARE YOU INTERESTED (Y/N)?", 0
+t_brief:
+	db	"THE THARGONS ARE USING THE", 13, "SPACE STATION AT ", 1, 13, "AS A BASE FOR THEIR INVASION.", 13
+	db	"YOUR MISSION: TO DESTROY IT.", 13, "TAKE THIS E.C.M. JAMMER", 13, "(YOU WILL NEED IT!) GOOD LUCK!", 0
+t_award:
+	db	"IN APPRECIATION OF YOUR", 13, "EXCEPTIONAL COURAGE THE", 13, "INHABITANTS OF ", 1, 13, "AWARD YOU THEIR HIGHEST", 13, "HONOUR. LIVE LONG AND PROSPER!", 0
+

@@ -129,7 +129,13 @@ TA18:
 	pop	af
 	ld	a, (INWK + 32)
 	cp	0x82
-	jp	z, ta35_c1
+	jp	nz, ta_nst
+	ld	a, (M3ST)		; станцию ракета не берёт — кроме захваченной таргонами (миссия, глушилка)
+	cp	4
+	jp	nz, ta35_c1
+	ld	a, 0x82
+	cp	0x82
+ta_nst:
 	ccf				; перенос 6502: INWK+32 >= 82h
 	push	af
 	ld	hl, (V)
@@ -180,6 +186,9 @@ TA64:
 	ld	a, (hl)
 	rra
 	jp	nc, TA19
+	ld	a, (M3ST)
+	cp	4
+	jp	z, TA19			; глушилка: ECM цели не срабатывает
 	jp	ECBLB2
 
 ; --- TACTICS: X (регистр B) = тип корабля, блок — в INWK ---
@@ -202,6 +211,11 @@ ta_nesc:
 	cp	4
 	ret	nc
 	ld	b, 2
+	ld	a, (M3ST)		; станция, захваченная таргонами, выпускает их
+	cp	4
+	jp	nz, ta_cop
+	ld	b, 6
+ta_cop:
 	ld	a, 0xF1
 	jp	SFS1
 TA13:
@@ -315,6 +329,9 @@ ta3:					; перенос = перенос 6502
 	ld	hl, T
 	cp	(hl)
 	jp	nc, TA3
+	ld	a, (cloak_on)
+	or	a
+	jp	nz, TA3			; нас не видно — ракету не пускают
 	ld	a, (ECMA)
 	or	a
 	jp	nz, TA3
@@ -344,6 +361,9 @@ TA3:
 	ld	a, b
 	cp	163
 	jp	c, TA4
+	ld	a, (cloak_on)
+	or	a
+	jp	nz, TA4			; нас не видно
 	ld	hl, (XX0)		; HIT: попали в нас
 	ld	de, 19
 	add	hl, de
@@ -588,8 +608,12 @@ sfs_rx:
 	and	0xFE
 	ld	(hl), a
 	ld	a, b
+	cp	18
+	jp	z, sfs_oil		; контейнер со скрывающим устройством — как обычный
 	cp	11
 	jp	nz, sfs_noil
+sfs_oil:
+	push	af
 	scf				; контейнер кувыркается и медленно летит
 	call	DORND
 	add	a, a
@@ -600,7 +624,7 @@ sfs_rx:
 	ld	a, b
 	and	15
 	ld	(INWK + 27), a
-	ld	a, 11
+	pop	af
 sfs_noil:
 	call	NWSHP
 	pop	hl

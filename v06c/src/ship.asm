@@ -72,6 +72,15 @@ LL9:
 	ld	a, (TYPE)
 	or	a
 	jp	m, PLANET
+	cp	17
+	jp	nz, ll9_vis
+	ld	a, (XX1 + 31)		; Asp со скрывающим устройством: пока цел (энергия от 52), не взрывается
+	and	0xE0			; и не стреляет — его не видно
+	jp	nz, ll9_vis
+	ld	a, (XX1 + 35)
+	cp	52
+	jp	nc, EE51
+ll9_vis:
 	ld	a, 31
 	ld	(XX4), a
 	ld	a, (XX1 + 31)

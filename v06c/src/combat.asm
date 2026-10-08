@@ -177,6 +177,12 @@ KS1:
 	jp	mal1
 ; KS4: убрана станция: вместо неё снова солнце.
 KS4:
+	ld	a, (M3ST)		; захваченная станция уничтожена: задание выполнено
+	cp	4
+	jp	nz, ks4_g
+	ld	a, 6
+	ld	(M3ST), a
+ks4_g:
 	call	ZINF
 	call	FLFLLS
 	xor	a

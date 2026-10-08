@@ -33,7 +33,8 @@ def main():
     out = ['; создано tools/convert/ships_zx.py, руками не править',
            '; Корабли версии для ZX Spectrum (модели дисковой версии BBC): типы 14, 15, 16.',
            '; XX21X: таблица адресов моделей всех типов — 13 кассетных (как XX21) и три новых.',
-           'XX21X:'] + ['\tdw ' + l for l in base] + ['\tdw ship_' + lab for _, lab, _ in WANT]
+           'XX21X:'] + ['\tdw ' + l for l in base] + ['\tdw ship_' + lab for _, lab, _ in WANT] + [
+           '\tdw ship_asp\t\t; 17: Asp со скрывающим устройством (миссия)', f'\tdw {base[10]}\t\t; 18: контейнер со скрывающим устройством']
     for typ, lab, name in WANT:
         f, m = model(typ)
         out.append(f'ship_{lab}:\t\t\t\t; {name}: {len(m)} байт, вершин {m[8] // 6}, рёбер {m[9]}, граней {m[12] // 4}, '

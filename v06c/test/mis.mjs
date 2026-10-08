@@ -71,6 +71,56 @@ const TESTS = {
     ok(where === 'death_d2' && n > 650 && n < 750, `без прыжка солнце взрывается: гибель на ${n}-м проходе после взлёта`);
   },
 };
+const spawn = (g, t, z, ai) => { g.m.call('ZINF'); g.poke({ 'INWK+7': [z], 'INWK+32': [ai] }); const r = g.m.call('NWSHP', { a: t }); if (!r.cf) throw new Error('NWSHP: нет места'); };
+const full = (g) => g.poke({ ENERGY: [255], FSH: [255], ASH: [255] });
+const frin = (g) => g.rd('FRIN', 13);
+Object.assign(TESTS, {
+  // «Скрывающее устройство»: Asp не виден, сбит лазером — остаётся контейнер, подобран заборником — устройство наше
+  cloakHunt() {
+    const vis = game(); vis.steps(DOCK); vis.steps(LAUNCH); spawn(vis, 15, 5, 0x80); vis.pass(4); const bitsVis = vis.viewBits();
+    const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ TP: [0x22] }); spawn(g, 17, 5, 0x80); g.pass(4);
+    ok(g.viewBits() < bitsVis - 30, `Asp со скрывающим устройством не виден (точек в обзоре ${g.viewBits()} против ${bitsVis} с обычным Asp)`);
+    g.key(K.A, true); let n = 0; while (!frin(g).includes(18) && n < 300) { full(g); g.poke({ DELTA: [0] }); g.pass(1); n++; } g.key(K.A, false);
+    ok(frin(g).includes(18), `сбит лазером за ${n} проходов — остался контейнер (корабли: ${frin(g).filter((v) => v).join('.')})`);
+    n = 0; while (frin(g).includes(17) && n < 120) { g.pass(1); n++; }
+    const slot = frin(g).indexOf(18);
+    g.poke({ BST: [255], ['K%+' + 36 * slot]: [0, 0, 0, 30, 0, 0x80, 40, 0, 0] }); g.pass(4); const got = g.rd('TP'); n = 0; while (frin(g).includes(18) && n < 120) { g.pass(1); n++; }
+    ok((got & 0x28) === 0x08 && !frin(g).includes(18), `контейнер подобран: устройство есть, охота окончена (флаги ${g.rd('TP').toString(16)})`);
+  },
+  // Скрывающее устройство в деле: противник не стреляет, энергия убывает, при малой энергии устройство выключается
+  cloakUse() {
+    const run = (cloak) => { const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ TP: [8] }); spawn(g, 1, 3, 0xFF); g.pass(3);
+      if (cloak) g.hit(K.Y, 2); const on = g.rd('cloak_on'); const e0 = g.rd('ENERGY'); g.pass(40); return { g, on, e0 }; };
+    const a = run(false), b = run(true);
+    ok(a.g.rd('FSH') < 255 && a.on === 0, `без устройства Sidewinder попадает по нам (передний щит ${a.g.rd('FSH')})`);
+    ok(b.on === 1 && b.g.rd('FSH') === 255, `с включённым устройством не попадает (щит ${b.g.rd('FSH')})`);
+    ok(b.e0 - b.g.rd('ENERGY') >= 35, `энергия убывает: ${b.e0} → ${b.g.rd('ENERGY')}`);
+    b.g.poke({ ENERGY: [60] }); b.g.pass(2);
+    ok(b.g.rd('cloak_on') === 0, 'при энергии ниже 64 устройство выключается');
+  },
+  // «Захват станции»: выдача, предложение на станции, глушилка, станция-цель враждебна, сбита ракетой, награда
+  station() {
+    const g = game(); g.steps(DOCK); g.steps(LAUNCH); g.poke({ TP: [0x83] }); jump(g, 13, 186);
+    ok(g.rd('LASER+5') === 1 && g.rd('TP') === 0x07, `после прыжка миссия выдана (состояние ${g.rd('LASER+5')}, флаги ${g.rd('TP').toString(16)})`);
+    g.poke({ 'ESCP+1': [7] }); g.m.call('m3_seeds'); const xy = [g.rd('QQ15+3'), g.rd('QQ15+1')]; g.m.call('m3_back');
+    ok(xy[0] === 20 && xy[1] === 173, `цель — система номер 7, Лейв: координаты ${xy}`);
+    toStation(g); g.to(['tt217_t2']); g.shot('m3-offer');
+    g.key(K.Y, true); g.to(['tt217_t']); g.key(K.Y, false); g.to(['tt217_t2']); g.shot('m3-brief'); g.answer(K.SPACE);
+    ok(g.rd('LASER+5') === 3 && (g.rd('TP') & 0x10), 'согласились: задание принято, глушилка выдана');
+    g.poke({ QQ14: [70] }); g.steps(LAUNCH); jump(g, 20, 173);
+    ok(g.rd('LASER+5') === 4, `прилетели в систему цели (состояние ${g.rd('LASER+5')})`);
+    g.poke(NEAR); g.pass(40);
+    ok(frin(g)[1] === 8 && (g.rd('K%+68') & 0x80), 'станция появилась и враждебна');
+    g.poke({ 'K%+36': [0, 0, 0, 0, 0, 0, 0, 6, 0] }); g.hit(K.T, 3); let n = 0; while (g.rd('MSTG') === 0xFF && n < 60) { full(g); g.poke({ 'K%+36': [0, 0, 0, 0, 0, 0, 0, 6, 0] }); g.pass(1); n++; }
+    ok(g.rd('MSTG') === 1, `ракета захватила станцию за ${n} проходов`);
+    g.hit(K.M, 3); n = 0; while (g.rd('LASER+5') !== 6 && n < 300) { full(g); g.pass(1); n++; }
+    ok(g.rd('LASER+5') === 6 && frin(g)[1] !== 8, `станция уничтожена ракетой за ${n} проходов (состояние ${g.rd('LASER+5')})`);
+    g.poke({ QQ14: [70] }); jump(g, 13, 186);
+    ok(g.rd('LASER+5') === 5, 'после прыжка из системы — ждёт награда');
+    toStation(g); g.to(['tt217_t2']); g.shot('m3-award'); g.answer(K.SPACE);
+    ok(g.rd('LASER+5') === 0 && g.rd('QQ12') === 0xFF, 'награда вручена, задание закрыто');
+  },
+});
 const only = process.argv[2];
 for (const [name, fn] of Object.entries(TESTS)) { if (only && only !== name) continue; console.log(`--- ${name}`); try { fn(); } catch (e) { bad++; console.log('FAIL ' + e.message); } }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'MIS: всё как задумано');
