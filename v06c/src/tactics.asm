@@ -99,6 +99,9 @@ TA18:
 	or	a
 	rra
 	ld	e, a			; место цели · 2
+	ifndef	SCHED
+	ld	(ex_s), a
+	endif
 	ld	d, 0
 	ld	hl, UNIV
 	add	hl, de
@@ -149,6 +152,17 @@ ta_nst:
 	ld	a, d
 	or	0x80
 	ld	(hl), a
+	ifndef	SCHED
+	ld	a, (ex_s)		; очки — за цель, а не за ракету
+	or	a
+	rra
+	ld	e, a
+	ld	d, 0
+	ld	hl, FRIN
+	add	hl, de
+	ld	a, (hl)
+	ld	(ex_t), a
+	endif
 ta35_p:
 	pop	af
 	jp	TA35
@@ -169,7 +183,14 @@ TA35:					; перенос = перенос 6502
 ta87_p:
 	pop	af
 TA87:
+	ifdef	SCHED
 	call	EXNO2
+	else
+	ld	hl, ex_t		; ракета взорвалась: очки только за сбитую ею цель
+	ld	a, (hl)
+	ld	(hl), 0
+	call	ex_add
+	endif
 ta87_3:
 	ld	hl, INWK + 31
 	ld	a, (hl)

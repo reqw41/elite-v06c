@@ -50,28 +50,28 @@ console.log(`тексты миссий: ${TEXTS.reduce((q, t) => q + t[2].length
   const TOK = { 10: 'BRIEF1', 11: 'BRIEF2', 15: 'DEBRIEF1', 222: 'BRIEF3', 223: 'DEBRIEF2', 216: 'INCOMING' };
   let n = 0, shown = 0;
   const places = [[20, 173], [215, 84], [63, 72], [144, 33]];
-  for (let tp = 0; tp < 16; tp++) for (const tally of [0, 1, 4, 5, 9]) for (let gcnt = 0; gcnt < 4; gcnt++) for (const [q0, q1] of places) {
+  for (let tp = 0; tp < 16; tp++) for (const [tally, vt] of [[0, 0], [0, 2], [1, 3], [4, 5], [5, 6], [9, 12]]) for (let gcnt = 0; gcnt < 4; gcnt++) for (const [q0, q1] of places) {
     dk.reset(); const seenB = [];
     for (const l of ['DEEOR', 'RES2', 'HFS1', 'HALL', 'DELAY', 'BAY', 'NWSHP', 'LL9', 'MVEIT', 'TT66', 'ZINF']) dk.hooks.set(dk.lab[l], () => true);
     dk.hooks.set(dk.lab.DETOK, (o) => { seenB.push(TOK[o.cpu.a] || o.cpu.a); return true; });
     dk.poke('TP', tp); dk.poke(dk.lab.TALLY + 1, tally); dk.poke('GCNT', gcnt); dk.poke('QQ0', q0); dk.poke('QQ1', q1); dk.poke('ENGY', 1); dk.poke('CASH', [0, 0, 3, 232]);
     dk.poke(dk.lab.INWK + 6, 250);                                    // «Констриктор» на задании быстро уходит вдаль
     dk.call('DOENTRY', {}, 4e6);
-    const want = [dk.peek('TP') & 15, dk.peek(dk.lab.TALLY + 1), dk.peek('ENGY'), dk.peek('CASH', 4).join('.'), seenB.join('+')].join(' / ');
+    const want = [dk.peek('TP') & 15, dk.peek(dk.lab.TALLY + 1) - tally, dk.peek('ENGY'), dk.peek('CASH', 4).join('.'), seenB.join('+')].join(' / ');
     const seenV = [];
     const tick = () => { const pc = cpu.pc & 0xffff;
       if (pc === L.pd_tok) { const a = cpu.regs[7]; seenV.push(Object.values(TOK).find((nm) => L['PD_' + nm] === a) || a); ret(); }
       else if (pc === L.DELAY || pc === L.NWSHP || pc === L.LL9 || pc === L.MVEIT || pc === L.TT66 || pc === L.ZINF) ret(); };
-    m.wr(L.TALLY + 1, [tally]); m.wr(L.CASH, [0, 0, 3, 232]); m.wr(L.INWK + 6, [250]);
+    m.wr(L.TALLY + 1, [vt]); m.wr(L.CASH, [0, 0, 3, 232]); m.wr(L.INWK + 6, [250]);
     m.call('dm_dock', { mem: { DTP: tp, GCNT: gcnt, QQ0: q0, QQ1: q1, ENGY: 1, M1ST: 0, M3ST: 0 }, tick }, 2e6);
-    const got = [m.rd(L.DTP) & 15, m.rd(L.TALLY + 1), m.rd(L.ENGY), [0, 1, 2, 3].map((k) => m.rd(L.CASH + k)).join('.'), seenV.join('+')].join(' / ');
+    const got = [m.rd(L.DTP) & 15, m.rd(L.TALLY + 1) - vt, m.rd(L.ENGY), [0, 1, 2, 3].map((k) => m.rd(L.CASH + k)).join('.'), seenV.join('+')].join(' / ');
     n++; if (seenB.length) shown++;
-    if (want !== got) fail(`стыковка: миссии ${tp.toString(2)}, побед ${tally * 256}, галактика ${gcnt}, система ${q0},${q1}:\n  BBC    ${want}\n  Вектор ${got}`);
+    if (want !== got) fail(`стыковка: миссии ${tp.toString(2)}, счёт ${vt} (BBC ${tally}), галактика ${gcnt}, система ${q0},${q1}:\n  BBC    ${want}\n  Вектор ${got}`);
   }
   console.log(`логика стыковки: состояний ${n}, из них с текстом ${shown}`);
   // пока идёт миссия версии ZX, дисковые не предлагаются
   let t = 0; m.call('dm_dock', { mem: { DTP: 0, GCNT: 0, M1ST: 1, M3ST: 0 }, tick: () => { if ((cpu.pc & 0xffff) === L.pd_tok) t++; } }, 2e6);
-  m.wr(L.TALLY + 1, [1]); m.call('dm_dock', { mem: { DTP: 0, GCNT: 0, M1ST: 1, M3ST: 0 }, tick: () => { if ((cpu.pc & 0xffff) === L.pd_tok) t++; } }, 2e6);
+  m.wr(L.TALLY + 1, [3]); m.call('dm_dock', { mem: { DTP: 0, GCNT: 0, M1ST: 1, M3ST: 0 }, tick: () => { if ((cpu.pc & 0xffff) === L.pd_tok) t++; } }, 2e6);
   if (t || m.rd(L.DTP)) fail('миссия дисковой версии предложена при идущей миссии ZX');
   m.wr(L.M1ST, [0]); m.wr(L.TALLY + 1, [0]); m.wr(L.DTP, [0]); m.wr(L.ENGY, [0]);
 }
@@ -100,7 +100,7 @@ console.log(`тексты миссий: ${TEXTS.reduce((q, t) => q + t[2].length
   const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08] };
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(600);
-  g.wr(g.L.DKCMP, [0xFF]); g.wr(g.L.TALLY + 1, [1]); press('C');
+  g.wr(g.L.DKCMP, [0xFF]); g.wr(g.L.TALLY + 1, [3]); press('C');
   let f = 0; while (g.rd(g.L.DTP) === 0 && f < 30000) { g.frame(25); f += 25; }
   if (g.rd(g.L.DTP) !== 1) fail('в игре: задание миссии 1 не выдано');
   g.frame(450); savePng(g.bmp(), path.join(ROOT, 'work/v06c/discmis-ship.png'));

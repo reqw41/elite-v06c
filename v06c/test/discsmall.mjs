@@ -25,7 +25,8 @@ const mk = () => { const g = createVector('elite'); g.press = (k, n = 20) => { g
       if (cyc >= 59904) { cyc -= 59904; g.wr(L.DL, [30]); const la = g.rd(L.LASCT); if (la) g.wr(L.LASCT, [la - 1]); }
       if (++k > 3e7) throw new Error('проход не кончился'); } while ((cpu.pc & 0xffff) !== L.MLOOP); cpu.iff = false; } };
   const keyA = (d) => { const rows = new Array(8).fill(0); if (d) { const i = g.rd(L.kb_rev + 0x41); rows[i >> 3] |= 1 << (i & 7); } g.wr(L.kb_rows, rows); };
-  const tally = () => g.rd(L.TALLY) | (g.rd(L.TALLY + 1) << 8);
+  const tally = () => g.rd(L.ESCP + 4) | (g.rd(L.TALLY) << 8) | (g.rd(L.TALLY + 1) << 16);   // счёт очками
+  const PTS = { 10: 0, 11: 16, 13: 24 };
   const frin = () => Array.from({ length: 13 }, (_, i) => g.rd(L.FRIN + i));
   pass(3); g.wr(L.LASER, [15, 0, 0, 0]);
   for (const [type, name] of [[11, 'контейнер'], [10, 'астероид'], [13, 'капсула']]) {
@@ -34,7 +35,7 @@ const mk = () => { const g = createVector('elite'); g.press = (k, n = 20) => { g
     const slot = frin().indexOf(type); keyA(true); let n = 0;
     while (frin().includes(type) && n < 400) { g.wr(L.K_ + 36 * slot, [0, 0, 0, 0, 0, 0]); g.wr(L.DELTA, [0]); g.wr(L.GNTMP, [0]); g.wr(L.ENERGY, [255]); pass(1); n++; }
     keyA(false); pass(2);
-    ok(!frin().includes(type) && tally() === t0 + 1, `${name} уничтожен лазером за ${n} проходов: побед ${t0} → ${tally()}`);
+    ok(!frin().includes(type) && tally() === t0 + PTS[type], `${name} уничтожен лазером за ${n} проходов: очков ${t0} → ${tally()}`);
   }
   // каменный отшельник: астероид с флагами 21h под огнём выпускает два корабля стаи, затем ведёт себя как астероид
   { g.call('ZINF'); g.wr(L.INWK + 7, [3]); g.wr(L.nb_pre, [0xA1]); const r = g.call('NWSHP', { a: 10 }); const slot = frin().indexOf(10);

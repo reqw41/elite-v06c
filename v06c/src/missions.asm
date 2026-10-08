@@ -14,6 +14,7 @@ M1ST	equ	LASER + 4
 M3ST	equ	LASER + 5
 M3PL	equ	ESCP + 1
 
+TFR	equ	ESCP + 4	; младший байт счёта очков
 MJC	equ	ESCP + 3	; счётчик прибытий после прыжка (вне первой галактики)
 
 ; mis_count: выдача миссий как в ZX 48K и Elite Legend — по счётчику прибытий: «Сверхновая» — с 32-го прибытия,
@@ -557,6 +558,16 @@ mes9x:
 	ld	a, (mch_x)
 	add	a, MZ_MAYDAY - 1
 	jp	mz_str
+; Очки за объект, делённые на 4 (половина числа из заголовка модели ZX 48K; для типов, которых там нет, — из
+; Elite Legend). Камни (астероид, осколок, валун) и станция — 0. Таргоид: 1020 вместо 1024.
+ex_pts:	db	0
+	db	32, 10, 112, 112, 112, 255, 64		; Sidewinder, Viper, Mamba, Python, Cobra, Thargoid, Cobra-торговец
+	db	0, 56, 0, 4, 12, 6			; станция, ракета, астероид, контейнер, таргон, капсула
+	db	32, 104, 96, 104, 4, 4, 0, 0		; Krait, Asp, Fer-de-Lance, Asp с устройством, контейнер, пластина, осколок, валун
+	db	34, 72, 96, 48, 112, 124, 144		; Adder, Gecko, Cobra Mk I, Worm, Moray, Boa, Anaconda
+	db	48, 32, 74				; Shuttle, Transporter, Constrictor
+ex_t:	db	0			; тип цели, сбитой ракетой (для счёта очков)
+ex_s:	db	0			; место цели ракеты · 2
 mch_x:	db	0			; номер своего сообщения на экране (0 — на экране слово игры MCH)
 mf_cnt:	db	0
 leak_say:	db	0

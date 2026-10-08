@@ -6,6 +6,10 @@
 ;   биты 2–3: миссия 2 — бит 2: вызваны на Ceerdi, биты 3 и 1: планы получены, 1110 — закончена.
 ; Пока DTP = 0 и побед меньше 256, вставки молчат. Сверка — v06c/test/discmis.mjs.
 DTP	equ	ESCP + 2
+; Пороги выдачи по старшему байту счёта очков (счёт ZX 48K): миссия 1 — с ранга Dangerous (196 608 очков),
+; миссия 2 — с 393 216. На BBC — 256 и 1280 побед.
+DM_T1	equ	3
+DM_T2	equ	6
 
 ; dm_dock (DOENTRY): при стыковке — задание или награда, если пора. Пока идёт миссия версии ZX — ничего.
 dm_dock:
@@ -17,8 +21,8 @@ dm_dock:
 	and	3
 	jp	nz, dm_en1
 	ld	a, (TALLY + 1)
-	or	a
-	ret	z
+	cp	DM_T1
+	ret	c
 	ld	a, (GCNT)
 	cp	2
 	ret	nc
@@ -100,7 +104,7 @@ dm_en2:
 	cp	2
 	jp	nz, dm_en3
 	ld	a, (TALLY + 1)
-	cp	5
+	cp	DM_T2
 	ret	c
 	ld	a, (hl)			; BRIEF2: вызов на Ceerdi
 	or	4

@@ -51,6 +51,10 @@ st5:
 	jp	nz, st4
 	ld	b, a
 	ld	a, (TALLY)
+	ifndef	SCHED
+	sub	1			; границы ZX 48K: 9, 17, 33, 65, 129
+	adc	a, 0
+	endif
 	rrca
 	rrca
 	and	0x3F
@@ -140,15 +144,24 @@ st1:
 	jp	c, st_las
 	ret
 ; рейтинг при старшем байте счёта не ноль: на BBC — st4
+	ifdef	SCHED
+RK_E	equ	25			; старший байт счёта: Elite, Deadly, Dangerous
+RK_D	equ	10
+RK_G	equ	2
+	else
+RK_E	equ	26			; как в ZX 48K: 1A0000h, 0B0000h, 030000h очков
+RK_D	equ	11
+RK_G	equ	3
+	endif
 st4:
 	ld	b, 9			; ELITE
-	cp	25
+	cp	RK_E
 	jp	nc, st3
 	dec	b
-	cp	10
+	cp	RK_D
 	jp	nc, st3
 	dec	b
-	cp	2
+	cp	RK_G
 	jp	nc, st3
 	dec	b
 	jp	st3

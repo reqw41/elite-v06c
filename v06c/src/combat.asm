@@ -130,9 +130,35 @@ EXNO3:
 	ld	a, 24
 	jp	NOISE
 EXNO2:
+	ifdef	SCHED
 	ld	hl, TALLY
 	inc	(hl)
 	jp	nz, exno_7
+	else
+; Счёт очками, как в ZX 48K: [TFR, TALLY, TALLY+1] — 24 разряда, за объект — ex_pts[тип] · 4 очка; ранги и
+; «Right on, Commander!» — по двум старшим байтам. ex_add: A — тип (0 — ничего).
+	ld	a, (TYPE)
+ex_add:
+	and	0x1F
+	ld	e, a
+	ld	d, 0
+	ld	hl, ex_pts
+	add	hl, de
+	ld	l, (hl)
+	ld	h, d
+	add	hl, hl
+	add	hl, hl
+	ex	de, hl
+	ld	hl, TFR
+	ld	a, (hl)
+	add	a, e
+	ld	(hl), a
+	ld	hl, TALLY
+	ld	a, (hl)
+	adc	a, d
+	ld	(hl), a
+	jp	nc, exno_7
+	endif
 	inc	hl
 	inc	(hl)
 	ld	a, 101
