@@ -3,6 +3,11 @@
 ; Сверка — v06c/test/t25.mjs. По умолчанию планета — простая окружность (как на ZX Spectrum); меридианы и
 ; кратер BBC собираются с -DMERID.
 
+	ifndef	SCHED
+	ifndef	MERID
+	define	PCIRC			; окружность планеты точками (pcirc)
+	endif
+	endif
 	ifdef	MERID			; меридианы и кратер планеты — только в сборке -DMERID (как на BBC)
 ; Арктангенс: ACT+n = 128 / pi · atan(n / 32), округлённо, n = 0..31.
 ACT:
@@ -201,6 +206,10 @@ pl82:
 	ld	a, (TYPE)
 	rrca
 	jp	c, sun_red
+	ifdef	PCIRC
+	call	pc_try			; окружность целиком в обзоре — рисуется точками (pcirc)
+	ret	z
+	endif
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
 	ifndef	MERID
@@ -458,6 +467,9 @@ wpls_red:
 ; WPLS2: стереть окружность планеты по списку LSX2, LSY2. WP1: список пуст.
 ; HL → LSY2, DE → LSX2: без пересчёта адреса на каждую точку.
 WPLS2:
+	ifdef	PCIRC
+	call	pc_erase
+	endif
 	ld	a, (LSX2)
 	or	a
 	jp	nz, WP1
@@ -618,6 +630,304 @@ ws_brk:					; разрыв: следующая запись — начало н�
 	ld	hl, (wp_x1)
 	ld	(X1), hl
 	jp	ws_l
+	ifdef	PCIRC
+; Окружность планеты точками (обычный образ; в образе стенда и с меридианами — отрезками, как на BBC).
+; Алгоритм средней точки с восьмикратной симметрией и отсечением по обзору, без списка отрезков. На экране такая
+; окружность отмечена LSX2 = 1, её данные — pc_s (x центра — слово, младший байт y, радиус); стирание — повтор.
+; Та же окружность, что уже на экране, не перерисовывается. Радиус от 128 или строки дальше 64 за краем —
+; прежний путь (CIRCLE). pc_try: Z — сделано; NZ — рисовать прежним путём (быстрая, если была, уже стёрта).
+pc_try:
+	ld	a, (K + 1)
+	or	a
+	jp	nz, pc_old
+	ld	a, (K)
+	cp	3
+	jp	c, pc_old
+	dec	a			; как у окружности BBC: наибольший размах — K · 255 / 256
+	jp	m, pc_old
+	ld	b, a			; B = радиус
+	push	bc
+	call	CHKON
+	pop	bc
+	jp	c, pc_old
+	ld	hl, (K4)
+	ld	e, b
+	ld	d, 0
+	add	hl, de
+	ld	a, h
+	or	a
+	jp	nz, pc_old		; нижний край дальше строки 255
+	ld	hl, (K4)
+	ld	a, l
+	sub	b
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+	ld	e, 64
+	add	hl, de
+	ld	a, h
+	or	a
+	jp	m, pc_old		; верхний край выше строки -64
+	ld	hl, (K3)
+	ld	(pc_n), hl
+	ld	a, (K4)
+	ld	l, a
+	ld	h, b
+	ld	(pc_n + 2), hl
+	ld	a, (LSX2)
+	dec	a
+	jp	nz, pc_new		; на экране не быстрая окружность
+	ld	hl, pc_n
+	ld	de, pc_s
+	ld	c, 4
+pc_cmp:
+	ld	a, (de)
+	cp	(hl)
+	jp	nz, pc_chg
+	inc	hl
+	inc	de
+	dec	c
+	jp	nz, pc_cmp
+	ret				; та же окружность
+pc_chg:
+	ld	hl, pc_n
+	call	pcirc			; новая, затем стереть прежнюю — без мерцания
+	ld	hl, pc_s
+	call	pcirc
+pc_keep:
+	ld	hl, (pc_n)
+	ld	(pc_s), hl
+	ld	hl, (pc_n + 2)
+	ld	(pc_s + 2), hl
+	xor	a
+	ret
+pc_new:
+	ld	hl, pc_n
+	call	pcirc
+	call	WPLS2			; прежняя — по списку отрезков, если была
+	ld	a, 1
+	ld	(LSX2), a
+	jp	pc_keep
+pc_old:
+	call	pc_erase
+	or	1
+	ret
+; pc_erase: стереть быструю окружность, если она на экране.
+pc_erase:
+	ld	a, (LSX2)
+	dec	a
+	ret	nz
+	ld	hl, pc_s
+	call	pcirc
+	jp	WP1
+; pc_col: HL = x (со знаком) -> D = старший байт адреса столбца, A = маска точки. Портит E, HL.
+pc_col:
+	ld	a, l
+	and	7
+	add	a, low TWOS
+	ld	e, a
+	ld	d, high TWOS
+	ld	a, (de)
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	ld	e, a
+	ld	a, h
+	add	a, high SCR_VIEW
+	ld	d, a
+	ld	a, e
+	ret
+; pc_pt: точка HL с маской A, если она в обзоре. Портит A, E.
+pc_pt:
+	ld	e, a
+	ld	a, h
+	sub	high SCR_VIEW
+	cp	32
+	ret	nc
+	ld	a, l
+	cp	64
+	ret	c
+	ld	a, e
+	xor	(hl)
+	ld	(hl), a
+	ret
+; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску.
+	macro	PCPAIR msk, dlt
+	ld	a, h
+	sub	high SCR_VIEW
+	cp	32
+	jp	nc, .e			; столбец за краем
+	ld	a, l
+	cp	64
+	jp	c, .a			; строка за краем
+	ld	a, msk
+	xor	(hl)
+	ld	(hl), a
+.a:
+	ld	a, l
+	add	a, dlt
+	ld	l, a
+	cp	64
+	jp	c, .e
+	ld	a, msk
+	xor	(hl)
+	ld	(hl), a
+.e:
+	endm
+; pcirc: окружность исключающим ИЛИ. HL -> x центра (слово), y центра (байт), радиус (2..127).
+; В цикле: B = 2y, C = 2x, D и E — маски точек в столбцах X + x и X - x; адреса — в командах. Строка y — байт
+; адреса 255 - y; строки вне 0..191 дают байт меньше 64. Портит всё.
+pcirc:
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	c, (hl)
+	inc	hl
+	ld	b, (hl)			; DE = X, C = Y, B = r
+	push	de
+	ld	l, b
+	ld	h, 0
+	add	hl, de
+	call	pc_col			; столбец X + r
+	ld	(pc_m3), a
+	ld	a, d
+	ld	(pc_p3 + 2), a
+	pop	de
+	push	de
+	ld	a, e
+	sub	b
+	ld	l, a
+	ld	a, d
+	sbc	a, 0
+	ld	h, a
+	call	pc_col			; столбец X - r
+	ld	(pc_m4), a
+	ld	a, d
+	ld	(pc_h4 + 1), a
+	ld	a, c
+	cpl
+	ld	(pc_p3 + 1), a		; строка Y
+	sub	b
+	ld	(pc_p1 + 1), a		; строка Y + r
+	ld	hl, (pc_p3 + 1)
+	ld	a, (pc_m3)
+	call	pc_pt			; (X + r, Y)
+	ld	hl, (pc_p3 + 1)
+	ld	a, (pc_h4 + 1)
+	ld	h, a
+	ld	a, (pc_m4)
+	call	pc_pt			; (X - r, Y)
+	pop	hl
+	call	pc_col			; столбец X
+	ld	e, a
+	ld	a, d
+	ld	(pc_p1 + 2), a
+	ld	(pc_h2 + 1), a
+	ld	d, e
+	ld	a, b
+	cpl
+	ld	l, a
+	ld	h, 0xFF
+	inc	hl
+	inc	hl
+	ld	(pc_d), hl		; d = 1 - r
+	ld	a, b
+	add	a, a
+	ld	b, a			; B = 2y
+	ld	c, 0			; C = 2x
+	call	pc_pair1		; (X, Y + r), (X, Y - r)
+pc_loop:
+	inc	c
+	inc	c			; x + 1: столбец X + x вправо, X - x влево, строка Y + x дальше
+	ld	a, d
+	rrca
+	ld	d, a
+	jp	nc, pc_1
+	ld	hl, pc_p1 + 2
+	inc	(hl)
+pc_1:
+	ld	a, e
+	rlca
+	ld	e, a
+	jp	nc, pc_2
+	ld	hl, pc_h2 + 1
+	dec	(hl)
+pc_2:
+	ld	hl, pc_p3 + 1
+	dec	(hl)
+	ld	hl, (pc_d)
+	ld	a, h
+	or	a
+	jp	m, pc_noy
+	dec	b			; y - 1: d -= 2y
+	dec	b
+	ld	a, l
+	sub	b
+	ld	l, a
+	jp	nc, $ + 4
+	dec	h
+	push	hl
+	ld	hl, pc_p1 + 1		; строка Y + y ближе к центру
+	inc	(hl)
+	ld	hl, pc_m3		; столбец X + y влево
+	ld	a, (hl)
+	rlca
+	ld	(hl), a
+	jp	nc, pc_3
+	ld	hl, pc_p3 + 2
+	dec	(hl)
+pc_3:
+	ld	hl, pc_m4		; столбец X - y вправо
+	ld	a, (hl)
+	rrca
+	ld	(hl), a
+	jp	nc, pc_4
+	ld	hl, pc_h4 + 1
+	inc	(hl)
+pc_4:
+	pop	hl
+pc_noy:
+	ld	a, c			; d += 2x + 1
+	inc	a
+	add	a, l
+	ld	l, a
+	jp	nc, $ + 4
+	inc	h
+	ld	(pc_d), hl
+	ld	a, b
+	cp	c
+	ret	c			; x > y — конец
+	call	pc_pair1		; (X + x, Y ± y)
+	ld	hl, (pc_p1 + 1)
+pc_h2:
+	ld	h, 0			; (X - x, Y ± y)
+	PCPAIR	e, b
+	ld	a, b
+	cp	c
+	ret	z			; x = y: вторая четвёрка совпала бы с первой
+pc_p3:
+	ld	hl, 0			; (X + y, Y ± x)
+	PCPAIR	(pc_m3), c
+	ld	hl, (pc_p3 + 1)
+pc_h4:
+	ld	h, 0			; (X - y, Y ± x)
+	PCPAIR	(pc_m4), c
+	jp	pc_loop
+pc_pair1:
+pc_p1:
+	ld	hl, 0
+	PCPAIR	d, b
+	ret
+pc_s:	ds	4			; быстрая окружность на экране: x (слово), y, радиус
+pc_n:	ds	4			; новая
+pc_d:	dw	0
+pc_m3:	db	0
+pc_m4:	db	0
+	endif
 wp_n:	db	0			; длина прежнего списка (0 — стирать нечего)
 wp_i:	db	0			; сколько записей уже разобрано
 wp_touch:	db	0		; новая окружность уже писала X1..Y2

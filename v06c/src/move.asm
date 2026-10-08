@@ -425,6 +425,12 @@ mv_sp2:
 	ld	(INWK + 27), a
 	xor	a
 	ld	(INWK + 28), a
+	ifndef	SCHED
+	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): поворот — умножения на ноль
+	ld	hl, BET1
+	or	(hl)
+	jp	z, mv45
+	endif
 	ld	a, (ALP1)		; K2 = y - alpha · x
 	ld	b, a
 	ld	a, (INWK)
@@ -533,12 +539,19 @@ mv45:
 	and	0x81
 	cp	129
 	ret	z
+	ifndef	SCHED
+	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): поворот — умножения на ноль
+	ld	hl, BET1
+	or	(hl)
+	jp	z, mv_nors
+	endif
 	ld	c, 9
 	call	MVS4
 	ld	c, 15
 	call	MVS4
 	ld	c, 21
 	call	MVS4
+mv_nors:
 	ld	hl, INWK + 30		; тангаж корабля
 	call	mv_rat
 	jp	z, mv8

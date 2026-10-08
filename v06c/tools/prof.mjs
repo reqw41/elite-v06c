@@ -14,6 +14,7 @@ const prof = new Float64Array(0x10000); let on = false;
 const orig = cpu.instruction.bind(cpu);
 let tt = 0;
 cpu.instruction = () => { const pc = cpu.pc & 0xffff, r = orig(); if (on) { prof[pc] += cpu.vcycles | 0; if (pc === L.TT100) tt++; } return r; };
+if (process.env.ROLL) g.key(3, 0x10, true);   // держать крен: короткие пути «полёт прямо» не работают
 let loops = 0, mc = g.rd(L.MCNT); on = true;
 const FIGHT = process.env.SCENE === 'fight'; let shipsSum = 0, polls = 0;
 for (let f = 0; f < FR; f += 5) { g.frame(5);

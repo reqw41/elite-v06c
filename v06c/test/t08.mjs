@@ -1,7 +1,7 @@
 // T08: движение корабля и сканер — парные тесты 6502 ↔ i8080. node v06c/test/t08.mjs [случаев = 3000]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 3000);
-const P = makePair(), { B, m, bbc } = P;
+const P = makePair('elite_t'), { B, m, bbc } = P;   // образ стенда: в обычном при полёте прямо — короткие пути (straight.mjs)
 const arr = (b, n) => Array.from({ length: n }, b);
 const DRAW = ['SC', 'SCH', 'X1'];
 // блок корабля: координаты, ориентация, скорость, вращение, флаги; ИИ выключен (тактика — этап P4)

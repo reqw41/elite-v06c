@@ -227,6 +227,25 @@ st_x1:
 	ld	a, (X1)
 	adc	a, (hl)
 	ld	(hl), a
+	ifndef	SCHED
+	ld	a, (ALP1)		; полёт прямо (ни крена, ни тангажа): все слагаемые ниже — нули
+	ld	hl, BET1
+	or	(hl)
+	jp	nz, st_rot
+	ld	b, a
+	ld	hl, SXL
+	add	hl, bc
+	ld	a, (XX)
+	ld	(hl), a
+	ld	hl, SYL
+	add	hl, bc
+	ld	a, (YY)
+	ld	(hl), a
+	call	PIXEL2			; стереть пылинку на прежнем месте
+	jp	st_norot
+st_rot:
+	ld	a, (XX + 1)
+	endif
 	ld	hl, ALP2 + 1		; y += alpha · x / 256 (mul8 вместо MLS1)
 	xor	(hl)
 	ld	d, a
@@ -291,6 +310,7 @@ st_x1:
 	ld	a, (BETA)
 	xor	0x80
 	call	PIX1			; и стереть пылинку на прежнем месте
+st_norot:
 	ld	a, (XX + 1)
 	ld	(X1), a
 	ld	hl, SX

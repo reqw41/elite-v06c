@@ -2,7 +2,7 @@
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 600);
 const MER = !!process.env.MERID;                          // MERID=1 — сборка с меридианами и кратером (elite_merid.rom)
-const P = makePair(MER ? 'elite_merid' : 'elite'), { B, bbc } = P;
+const P = makePair(MER ? 'elite_merid' : 'elite_t'), { B, bbc } = P;
 if (!MER) bbc.mem[B.PL25] = 0x60;                         // планета — окружность: в эталоне RTS на месте меридианов
 const w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH'];

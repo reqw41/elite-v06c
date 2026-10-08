@@ -2,7 +2,7 @@
 // node v06c/test/t17.mjs [случаев = 1500]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 1500);
-const P = makePair(), { B, m, bbc } = P;
+const P = makePair('elite_t'), { B, m, bbc } = P;   // образ стенда: в обычном 12 пылинок вместо 18
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255], arr = (b, n) => Array.from({ length: n }, b);
 const COLS = [0xF0, 0x0F, 0xFF];
 const sc = (r) => [[0x10, 0xD0][r(2)], 0x78 + r(6)];

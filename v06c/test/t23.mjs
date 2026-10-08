@@ -1,7 +1,7 @@
 // T23: звёздная пыль — парные тесты 6502 ↔ i8080. node v06c/test/t23.mjs [случаев = 1500]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 1500);
-const P = makePair(), { B, m, bbc } = P;
+const P = makePair('elite_t'), { B, m, bbc } = P;   // образ стенда: в обычном при полёте прямо — короткие пути (straight.mjs)
 const arr = (b, n) => Array.from({ length: n }, b);
 const DRAW = ['SC', 'SCH', 'T1', 'X1', 'T', 'U'];	// T,U — ADD/PIXEL2 после STARS1/PIX1 не читают (liveness launch)
 const sm = (r, lim) => r(lim) | (r(2) << 7);
