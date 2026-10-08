@@ -696,6 +696,68 @@ sun_lso:				; A = LSO+Y, Z — ноль
 	or	a
 	ret
 
+; sun_sqrt: Q = целый корень из (R Q), как LL5, но не побитовым счётом: соседние строки круга отличаются мало,
+; поэтому корень подправляется от корня предыдущей строки (sun_q) по таблице квадратов SQLO (q² лежит в ней по
+; номеру 2q). Перенос на выходе — как у LL5: 1, если остаток не меньше 256 (проверено перебором всех 65 536
+; значений на модели); S = T = 0. Регистры на выходе другие — в SUN они не нужны.
+sun_sqrt:
+	ld	hl, (Q)			; L = Q, H = R — соседние ячейки
+	ld	b, h
+	ld	c, l
+	ld	a, (sun_q)
+ss_dn:					; пока q² больше числа — q убывает
+	ld	d, a
+	add	a, a
+	ld	l, a
+	ld	a, high SQLO
+	adc	a, 0
+	ld	h, a
+	ld	e, (hl)
+	inc	h
+	inc	h
+	ld	h, (hl)
+	ld	l, e
+	ld	a, c
+	sub	l
+	ld	l, a
+	ld	a, b
+	sbc	a, h
+	ld	h, a
+	ld	a, d
+	jp	nc, ss_ok
+	dec	a
+	jp	ss_dn
+ss_ok:
+	ld	c, a			; C = q, HL = остаток
+ss_up:					; пока остаток не меньше 2q + 1 — q растёт
+	ld	a, c
+	add	a, a
+	ld	e, a
+	ld	a, 0
+	rla
+	ld	d, a
+	inc	de
+	ld	a, l
+	sub	e
+	ld	b, a
+	ld	a, h
+	sbc	a, d
+	jp	c, ss_end
+	ld	h, a
+	ld	l, b
+	inc	c
+	jp	ss_up
+ss_end:
+	ld	a, c
+	ld	(Q), a
+	ld	(sun_q), a
+	xor	a
+	ld	(S), a
+	ld	(T), a
+	ld	a, h
+	add	a, 0xFF
+	ret
+
 ; SUN: солнце — круг радиуса K из горизонтальных строк с рваным краем; прежние строки (LSO) стираются
 ; и рисуются новые за один проход сверху вниз.
 SUN:
@@ -801,7 +863,7 @@ plfl:
 	ld	(R_), a
 	ld	a, c
 	ld	(Y1), a
-	call	LL5
+	call	sun_sqrt		; на BBC здесь LL5; результат и перенос те же
 	ld	a, (Y1)
 	ld	c, a
 	call	DORND

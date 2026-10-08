@@ -465,57 +465,57 @@ LL2:
 	scf
 	ret
 
-; LL5: Q = корень из (R Q). Перенесена команда в команду: на выходе S = 0, T = 0, X, Y, A, перенос — как на BBC.
+; LL5: Q = корень из (R Q). Тот же побитовый счёт, что на BBC, но в регистрах: остаток — B и H, под ним S — L
+; (сдвиг пары HL одной командой), результат — D, счётчик — E. На выходе Q, S = 0, T = 0, A, X (B), Y (C) и
+; перенос — как на BBC. DE сохраняются.
 LL5:
+	push	de
 	ld	a, (R_)
-	ld	c, a
-	ld	a, (Q)
-	ld	(S), a
-	ld	b, 0
-	xor	a
-	ld	(Q), a
-	ld	a, 8
-	ld	(T), a
-ll6:
-	ld	a, (Q)
 	ld	h, a
+	ld	a, (Q)
+	ld	l, a
+	ld	b, 0
+	ld	d, b
+	ld	e, 8
+ll6:
 	ld	a, b
-	cp	h
+	cp	d
 	jp	c, ll7_0
 	jp	nz, ll8
-	ld	a, c
+	ld	a, h
 	cp	64
 	jp	c, ll7_0
 ll8:
-	ld	a, c
+	ld	a, h
 	sub	64
-	ld	c, a
+	ld	h, a
 	ld	a, b
-	sbc	a, h
+	sbc	a, d
 	ld	b, a
 	scf
 	jp	ll7
 ll7_0:
 	or	a
 ll7:
-	ld	a, (Q)
+	ld	a, d
 	rla
-	ld	(Q), a
-	ld	hl, S
+	ld	d, a
 	dup	2
-	ld	a, (hl)
-	add	a, a
-	ld	(hl), a
-	ld	a, c
-	rla
-	ld	c, a
+	add	hl, hl
 	ld	a, b
 	rla
 	ld	b, a
 	edup
-	ld	hl, T
-	dec	(hl)
+	dec	e
 	jp	nz, ll6
+	ld	c, h			; дальше флаги не меняются: перенос — от последнего сдвига
+	ld	hl, Q
+	ld	(hl), d
+	ld	hl, S
+	ld	(hl), 0
+	ld	hl, T
+	ld	(hl), 0
+	pop	de
 	ret
 
 ; DORND: случайное число в A и X, перенос — как на BBC. DORND2 — то же с переносом 0 на входе.
