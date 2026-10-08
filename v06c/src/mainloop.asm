@@ -163,8 +163,25 @@ tj_u:
 	inc	c
 tj_d:
 	cp	0x29
-	ret	nz
+	jp	nz, tj_e
 	dec	c
+tj_e:
+	ifndef	SCHED			; как в дисковой версии: с нажатой СС (на BBC — SHIFT) курсор идёт вчетверо быстрее
+	ld	d, a
+	ld	a, (kb_mod)
+	and	0x20
+	ld	a, d
+	ret	z
+	ld	a, b
+	add	a, a
+	add	a, a
+	ld	b, a
+	ld	a, c
+	add	a, a
+	add	a, a
+	ld	c, a
+	ld	a, d
+	endif
 	ret
 
 ; U%: обнулить журнал клавиш KL+1..KL+15.

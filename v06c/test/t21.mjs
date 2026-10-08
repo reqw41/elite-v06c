@@ -4,7 +4,7 @@ import path from 'node:path';
 import { makePair } from '../tools/pair.mjs';
 import { ROOT } from '../tools/v06c.mjs';
 const N = +(process.argv[2] || 600);
-const P = makePair(), { B, bbc, m } = P;
+const P = makePair('elite_t'), { B, bbc, m } = P;   // образ стенда: в обычном курсор карты с СС идёт вчетверо быстрее (дисковая версия)
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
 const TEXT = ['YSAV2', 'XSAV2', ['P', 3], 'SC', 'SCH', ['V', 2], 'Q', 'R', 'S', 'SWAP', 'YSAV', 'T'];
 const arr = (b, n) => Array.from({ length: n }, b);

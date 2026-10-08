@@ -252,15 +252,30 @@ tt211:
 	ld	(XC), a
 	pop	af
 	ld	b, a
+	ifndef	SCHED
+	ld	(QQ25), a		; сколько можно продать
+	endif
 	or	a
 	call	pr2
 	call	TT152
 	ld	a, (QQ11)
 	cp	4
 	jp	nz, tt212
+	ifdef	SCHED
 	ld	a, 205
 	call	TT214
 	jp	nc, tt212
+	else
+	call	TT162			; как в дисковой версии: «Sell(Y/N)?» — Y всё, N ничего, либо число
+	ld	a, 205
+	call	TT27
+	ld	a, 225
+	call	TT27
+	call	gnum
+	jp	c, tt210_e
+	or	a
+	jp	z, tt212
+	endif
 	ld	a, 0xFF			; продать: цена — без печати
 	ld	(QQ17), a
 	ld	a, (QQ29)
@@ -270,19 +285,23 @@ tt211:
 	ld	d, 0
 	ld	hl, QQ20
 	add	hl, de
+	ifdef	SCHED
 	ld	a, (hl)
 	ld	(P_), a
+	ld	(hl), 0
+	else
+	ld	a, (R_)			; продаётся введённое количество
+	ld	(P_), a
+	ld	d, a
+	ld	a, (hl)
+	sub	d
+	ld	(hl), a
+	endif
 	ld	a, (QQ24)
 	ld	(Q), a
 	call	GCASH
 	call	MCASH
-	ld	a, (QQ29)
-	ld	e, a
-	ld	d, 0
-	ld	hl, QQ20
-	add	hl, de
 	xor	a
-	ld	(hl), a
 	ld	(QQ17), a
 tt212:
 	ld	a, (QQ29)
@@ -296,6 +315,15 @@ tt212:
 BAY2:
 	ld	a, K_F9
 	jp	FRCE
+	ifndef	SCHED
+tt210_e:				; больше, чем есть: «Quantity?» и строка товара заново
+	call	TT67
+	ld	a, 176
+	call	prq
+	call	dn2
+	ld	a, (QQ29)
+	jp	tt211
+	endif
 
 ; tnpr: поместится ли ещё A единиц товара QQ29? Перенос 1 — нет. A сохраняется.
 ; Товары 0–12 меряются тоннами (сумма против CRGO), остальные — штуками, до 200.
@@ -433,6 +461,18 @@ gnum:
 	ld	(T1), a
 tt223:
 	call	TT217
+	ifndef	SCHED			; как в дисковой версии: первым знаком Y — всё, что можно, N — ничего
+	ld	e, a
+	ld	a, (R_)
+	or	a
+	ld	a, e
+	jp	nz, gn_dig
+	cp	'y'
+	jp	z, gn_all
+	cp	'n'
+	jp	z, gn_none
+gn_dig:
+	endif
 	ld	(Q), a
 	sub	'0'
 	jp	c, gn_out0		; знак меньше «0» (ввод окончен): перенос 6502 = 0
@@ -474,6 +514,19 @@ gn_out1:
 	ld	a, (R_)
 	scf
 	ret
+	ifndef	SCHED
+gn_all:
+	call	TT26
+	ld	a, (QQ25)
+	ld	(R_), a
+	or	a
+	ret
+gn_none:
+	call	TT26
+	xor	a
+	ld	(R_), a
+	ret
+	endif
 
 ; TT214: пробел, слово A, «(Y/N)?»: перенос 1 — ответ Y. TT221: без пробела.
 TT214:
