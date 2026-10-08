@@ -52,6 +52,7 @@ dvid96_3:
 	ret
 
 ; MUT3: P = ALP1. MUT2: S = XX+1. MUT1: R = XX. Дальше MULT1 (jp — провал в конце). A, Y не меняются.
+	ifdef	SCHED			; MUT3 и MUT2 в игре не вызывается — только из тестов (образ стенда)
 MUT3:
 	ld	e, a			; i8080: в (nn) пишет только A — бережём A в E
 	ld	hl, ALP1
@@ -66,6 +67,7 @@ MUT2:
 	ld	a, b
 	ld	(S), a			; STX S
 	ld	a, e
+	endif
 MUT1:
 	ld	e, a
 	ld	hl, XX

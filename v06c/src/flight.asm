@@ -732,6 +732,41 @@ nol1:
 	call	snd_start
 	pop	bc
 	ret
+	ifdef	PCIRC			; окружность планеты (planet.asm): две подпрограммы — в пустоту выравнивания
+; pc_col: HL = x (со знаком) -> D = старший байт адреса столбца, A = маска точки. Портит E, HL.
+pc_col:
+	ld	a, l
+	and	7
+	add	a, low TWOS
+	ld	e, a
+	ld	d, high TWOS
+	ld	a, (de)
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	ld	e, a
+	ld	a, h
+	add	a, high SCR_VIEW
+	ld	d, a
+	ld	a, e
+	ret
+; pc_pt: точка HL с маской A, если она в обзоре. Портит A, E.
+pc_pt:
+	ld	e, a
+	ld	a, h
+	sub	high SCR_VIEW
+	cp	32
+	ret	nc
+	ld	a, l
+	cp	64
+	ret	c
+	ld	a, e
+	xor	(hl)
+	ld	(hl), a
+	ret
+	endif
 	align	64
 sfx_tab:
 	db	0x12, 0x01, 0x00, 0x10	; 0: наш лазер

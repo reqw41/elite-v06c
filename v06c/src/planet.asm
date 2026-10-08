@@ -3,11 +3,6 @@
 ; Сверка — v06c/test/t25.mjs. По умолчанию планета — простая окружность (как на ZX Spectrum); меридианы и
 ; кратер BBC собираются с -DMERID.
 
-	ifndef	SCHED
-	ifndef	MERID
-	define	PCIRC			; окружность планеты точками (pcirc)
-	endif
-	endif
 	ifdef	MERID			; меридианы и кратер планеты — только в сборке -DMERID (как на BBC)
 ; Арктангенс: ACT+n = 128 / pi · atan(n / 32), округлённо, n = 0..31.
 ACT:
@@ -207,9 +202,11 @@ pl82:
 	rrca
 	jp	c, sun_red
 	ifdef	PCIRC
-	call	pc_try			; окружность целиком в обзоре — рисуется точками (pcirc)
+	call	pc_try			; окружность рисуется точками (pcirc)
 	ret	z
-	endif
+	call	WPLS2			; не подошла (радиус от 128): отрезками, как на BBC, — стереть и нарисовать
+	jp	CIRCLE
+	else
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
 	ifndef	MERID
@@ -453,6 +450,7 @@ pl_sin:					; A = Q = синус угла A
 	ret
 
 	endif
+	endif			; PCIRC
 
 ; Солнце в полёте — вторым цветом (на карте звёзды рисует та же SUN, но белым).
 sun_red:
@@ -520,6 +518,7 @@ WP1:
 	ld	(LSX2), a
 	ret
 
+	ifndef	PCIRC
 ; Планета без мерцания. На BBC прежняя окружность стирается целиком (WPLS2), потом рисуется новая — между ними
 ; планеты на экране нет. Здесь прежний список отрезков копируется в сторону (wp_begin), новая окружность
 ; рисуется как обычно, а после каждого её отрезка стирается один прежний (wp_step из BLINE); остаток — wp_finish.
@@ -630,6 +629,7 @@ ws_brk:					; разрыв: следующая запись — начало н�
 	ld	hl, (wp_x1)
 	ld	(X1), hl
 	jp	ws_l
+	endif
 	ifdef	PCIRC
 ; Окружность планеты точками (обычный образ; в образе стенда и с меридианами — отрезками, как на BBC).
 ; Алгоритм средней точки с восьмикратной симметрией и отсечением по обзору, без списка отрезков. На экране такая
@@ -721,39 +721,7 @@ pc_erase:
 	ld	hl, pc_s
 	call	pcirc
 	jp	WP1
-; pc_col: HL = x (со знаком) -> D = старший байт адреса столбца, A = маска точки. Портит E, HL.
-pc_col:
-	ld	a, l
-	and	7
-	add	a, low TWOS
-	ld	e, a
-	ld	d, high TWOS
-	ld	a, (de)
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	ld	e, a
-	ld	a, h
-	add	a, high SCR_VIEW
-	ld	d, a
-	ld	a, e
-	ret
-; pc_pt: точка HL с маской A, если она в обзоре. Портит A, E.
-pc_pt:
-	ld	e, a
-	ld	a, h
-	sub	high SCR_VIEW
-	cp	32
-	ret	nc
-	ld	a, l
-	cp	64
-	ret	c
-	ld	a, e
-	xor	(hl)
-	ld	(hl), a
-	ret
+; pc_col и pc_pt лежат в flight.asm — в пустоте выравнивания перед sfx_tab.
 ; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску.
 	macro	PCPAIR msk, dlt
 	ld	a, h
@@ -928,10 +896,12 @@ pc_d:	dw	0
 pc_m3:	db	0
 pc_m4:	db	0
 	endif
+	ifndef	PCIRC
 wp_n:	db	0			; длина прежнего списка (0 — стирать нечего)
 wp_i:	db	0			; сколько записей уже разобрано
 wp_touch:	db	0		; новая окружность уже писала X1..Y2
 wp_x1:	dw	0			; начало очередного прежнего отрезка: x, y
+	endif
 
 ; EDGES: строка солнца: X1, X2 = YY(1 0) ∓ A, обрезанные по экрану; перенос 1 — строка не видна (LSO+Y = 0).
 EDGES:

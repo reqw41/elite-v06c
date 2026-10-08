@@ -262,27 +262,37 @@ sat_r2:
 	cp	high SCR_VIEW + 32
 	jp	nz, sat_r1
 	ret
-; sat_wait: подождать три секунды или до клавиши (прерывания уже идут).
+; sat_wait: ждать нажатия клавиши (прерывания уже идут). Считается только новое нажатие: всё, что нажато с
+; самого начала (клавиша, которой запускали загрузку; ложное «нажатие» джойстика, чьё состояние покоя снято
+; раньше, чем установился порт), лежит в «базе» hm_buf и выходит из неё, когда отпущено.
 sat_wait:
-	ld	b, 150
+	call	joy_init		; покой джойстиков — заново
+	ld	hl, hm_buf
+	ld	b, 8
+sat_w0:
+	ld	(hl), 0xFF
+	inc	hl
+	dec	b
+	jp	nz, sat_w0
 sat_w1:
-	push	bc
 	ld	c, 1
 	call	DELAY
-	pop	bc
 	ld	hl, kb_rows
-	ld	c, 8
-	xor	a
+	ld	de, hm_buf
+	ld	b, 8
 sat_w2:
-	or	(hl)
+	ld	a, (de)
+	cpl
+	and	(hl)
+	ret	nz			; нажато то, чего в базе нет
+	ld	a, (de)
+	and	(hl)
+	ld	(de), a
 	inc	hl
-	dec	c
-	jp	nz, sat_w2
-	or	a
-	ret	nz
+	inc	de
 	dec	b
-	jp	nz, sat_w1
-	ret
+	jp	nz, sat_w2
+	jp	sat_w1
 sat_t:	db	0			; «таймер»: затравка очередной точки шара
 sat_c:	db	0			; перенос 6502 между шагами
 sat_x:	db	0

@@ -1,7 +1,7 @@
 // Q4: арифметика, вторая партия — парные тесты 6502 ↔ i8080. node v06c/test/q4.mjs [случаев = 3000]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 3000);
-const P = makePair(), { B } = P;
+const P = makePair('elite_t'), { B } = P;   // образ стенда: MUT2, MUT3 в обычном нет
 const SPECS = [
   { name: 'MU5', gen: (r, b) => ({ a: b(), x: b(), y: b(), c: r(2) }) },
   { name: 'DVID96', gen: (r, b) => ({ a: b(), x: b(), y: b(), c: r(2) }) },

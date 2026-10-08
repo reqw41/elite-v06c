@@ -2,7 +2,7 @@
 // node v06c/test/t06.mjs [случаев на процедуру = 3000]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 3000);
-const P = makePair(), { B, m } = P;
+const P = makePair('elite_t'), { B, m } = P;   // образ стенда: FMLTU2, MUT3 в обычном нет
 const sm = (rnd, byte) => byte();                           // байт со знаком в бите 7 — любой
 const SPECS = [
   { name: 'MULTU', gen: (r, b) => ({ y: b(), mem: { P: b(), Q: b() } }) },

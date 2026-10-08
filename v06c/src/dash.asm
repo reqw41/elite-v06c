@@ -5,6 +5,9 @@ dash_show:
 	ld	de, dials
 	ld	h, high SCR_2
 	call	ds_plane
+	ifndef	SCHED
+	ld	de, dials2		; обычный образ: плоскости сжаты порознь и лежат в разных местах
+	endif
 	ld	h, high SCR_VIEW
 ds_plane:
 	ld	c, 32
@@ -17,6 +20,10 @@ ds_b:
 	dec	l
 	dec	b
 	jp	nz, ds_b
+ds_z:
+	ld	(hl), b			; восемь строк под панелью — чистые (после заставки загрузчика там её звёзды)
+	dec	l
+	jp	p, ds_z
 	inc	h
 	dec	c
 	jp	nz, ds_col

@@ -139,6 +139,7 @@ prstr:
 	inc	hl
 	jp	prstr
 
+	ifdef	SCHED			; в игре не вызывается — только из тестов (образ стенда)
 ; A двумя шестнадцатеричными знаками.
 prhex:
 	push	af
@@ -155,3 +156,4 @@ ph_dig:
 	jp	c, TT26
 	add	a, 'A' - '9' - 1
 	jp	TT26
+	endif

@@ -12,6 +12,12 @@ SCR_2		equ	0xE000		; вторая плоскость: бит 0 цвета (па�
 DASH_Y		equ	192		; первая строка панели
 DASH_H		equ	56
 
+	ifndef	SCHED
+	ifndef	MERID
+	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
+	endif
+	endif
+
 	include	"bbc_vars.inc"
 
 	jp	entry
@@ -27,7 +33,11 @@ entry:
 	ld	hl, isr
 	ld	(0x0039), hl
 	ld	hl, WS			; обнулить рабочие области (стек лежит внутри них — поэтому не подпрограммой):
+	ifdef	SCHED
 	ld	bc, 0x0900		; сначала до блоков кораблей — в них в образе лежит заставка с Сатурном
+	else
+	ld	bc, 0x0800		; обычный образ: и до страницы стека — в ней лежит код запуска (init_*.asm)
+	endif
 ws_clr:
 	ld	(hl), 0
 	inc	hl
@@ -54,12 +64,12 @@ ws_clr:
 	dec	a
 	ld	(ENERGY), a		; чтобы обработчик кадра не включил цвет тревоги
 	ei
-	call	sat_wait		; три секунды или клавиша
+	call	sat_wait		; до клавиши
 	di
 sat_done:
 	endif
-	ld	hl, WS + 0x0900		; остаток рабочих областей — вместе с кодом заставки
-	ld	bc, 0x0660
+	ld	hl, WS + 0x0900		; остаток рабочих областей — вместе с кодом заставки и второй плоскостью панели
+	ld	bc, 0x0700
 ws_clr2:
 	ld	(hl), 0
 	inc	hl
@@ -91,7 +101,9 @@ ws_clr2:
 	include	"planet.asm"
 	include	"flight.asm"
 	include	"mainflight.asm"
+	ifdef	SCHED
 	include	"dash.asm"
+	endif
 	include	"line.asm"
 	include	"arith.asm"
 	include	"arith2.asm"
@@ -141,14 +153,27 @@ ALOGODD	equ	LOG + 0x300
 	endif
 font:
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
+; Панель, сжатая (tools/convert/dials_rle.py): по столбцам, 56 байт сверху вниз; нужна один раз, при запуске.
+; Таблица наклонов коротких отрезков (1024 байта с границы страницы) в образе не лежит: div_init строит её после
+; распаковки панели. В образе стенда картинка (обе плоскости подряд) лежит в конце игры, таблица — поверх неё.
+; В обычном образе таблица — последние 1024 байта перед рабочими областями, код и данные игры кончаются до неё;
+; на её месте в образе лежит первая плоскость картинки, вторая — в рабочих областях за заставкой загрузчика.
+	ifdef	SCHED
 dials:
-	incbin	"dials.rle"		; панель, сжатая (tools/convert/dials_rle.py): плоскость бита 0, затем бита 1;
-					; по столбцам, 56 байт сверху вниз. Нужна один раз, при запуске
+	incbin	"dials.rle"
 rom_end:
-; Таблица наклонов коротких отрезков (1024 байта с границы страницы) в образе не лежит: div_init строит её при
-; запуске поверх сжатой картинки панели, которая нужна один раз.
 divtab		equ	(dials + 255) & 0xFF00
 	assert	divtab + 1024 <= rom_end
+	else
+rom_end:
+divtab		equ	WS - 0x0400
+	assert	rom_end <= divtab
+	org	divtab
+dials:
+	incbin	"dials0.rle"		; плоскость бита 0
+	include	"dash.asm"		; распаковка панели — тоже здесь: нужна до постройки таблицы
+	assert	$ <= WS
+	endif
 
 ; --- переменные слоя Вектора ---
 	org	VARS
@@ -191,10 +216,17 @@ wp_sy:		ds	80
 	assert	$ <= WS + 0x1000
 	assert	rom_end <= WS
 	ifndef	SCHED
+	org	WS + 0x0800		; код, нужный один раз при запуске, — в низу страницы стека (стек идёт сверху)
+	include	"init_div.asm"
+	include	"init_sq.asm"
+	include	"init_cls.asm"
+	assert	$ <= WS + 0x08A0
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
-	assert	sat_end <= WS + 0x0F51
-IMG_END		equ	sat_end
+dials2:
+	incbin	"dials1.rle"		; плоскость бита 1 панели: после распаковки обнуляется вместе с заставкой
+	assert	$ <= WS + 0x1000
+IMG_END		equ	$
 	else
 IMG_END		equ	rom_end
 	endif

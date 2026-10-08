@@ -53,6 +53,13 @@ def main():
     assert unpack(p, len(d)) == d
     open(os.path.join(ROOT, 'v06c/data/dials.rle'), 'wb').write(p)
     print(f'dials.rle: {len(d)} -> {len(p)} байт')
+    # по плоскостям отдельно (обычный образ держит их в двух разных местах рабочих областей)
+    h = len(d) // 2
+    for k, part in enumerate((d[:h], d[h:])):
+        q = pack(part)
+        assert unpack(q, h) == part
+        open(os.path.join(ROOT, f'v06c/data/dials{k}.rle'), 'wb').write(q)
+        print(f'dials{k}.rle: {h} -> {len(q)} байт')
 
 
 if __name__ == '__main__':

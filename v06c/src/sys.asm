@@ -145,6 +145,7 @@ wf_lp:
 	jp	z, wf_lp
 	ret
 
+	ifdef	SCHED			; в игре не вызывается — только из тестов (образ стенда)
 ; Клавиша нажата? A = строка·8 + бит матрицы. Выход: NZ — нажата. Портит BC, DE, HL.
 kb_test:
 	ld	c, a
@@ -169,6 +170,7 @@ kt_sh:
 kt_ok:
 	and	(hl)
 	ret
+	endif
 
 ; Палитра из четырёх цветов: HL -> 4 байта (цвета 0..3, формат порта 0Ch: BBGGGRRR).
 ; Номер регистра = биты плоскостей 8000h, A000h, C000h, E000h; в двух старших лежит программа, поэтому
@@ -303,16 +305,6 @@ pal_flight:
 	db	0x00, 0x07, 0xFF, 0x38	; чёрный, красный, белый (обзор и рамки панели), зелёный
 	endif
 
-; Очистить обе плоскости целиком.
-cls_all:
-	ld	hl, SCR_VIEW
-	xor	a
-ca_lp:
-	dup	4
-	ld	(hl), a
-	inc	l
-	edup
-	jp	nz, ca_lp
-	inc	h
-	jp	nz, ca_lp
-	ret
+	ifdef	SCHED
+	include	"init_cls.asm"
+	endif

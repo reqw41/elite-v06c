@@ -6,7 +6,7 @@ NOSH		equ	12		; мест под корабли
 	ifdef	SCHED
 NOST		equ	18		; пылинок (как на BBC)
 	else
-NOST		equ	12		; пылинок: меньше, чем на BBC, — ради скорости (docs/research/versions.md)
+NOST		equ	16		; пылинок: как в ZX 48K (на BBC — 18)
 	endif
 
 ; ZERO: обнулить страницы &9–&D BBC — блоки кораблей, кучу отрезков и начало WP (места кораблей, счётчики).

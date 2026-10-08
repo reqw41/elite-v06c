@@ -4,7 +4,7 @@ import path from 'node:path';
 import { makePair } from '../tools/pair.mjs';
 import { ROOT } from '../tools/v06c.mjs';
 const N = +(process.argv[2] || 800);
-const P = makePair(), { B, bbc } = P;
+const P = makePair('elite_t'), { B, bbc } = P;   // образ стенда: в обычном окружность планеты — точками
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
 const w16 = (v) => [v & 255, (v >> 8) & 255];
 const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH', 'T'];

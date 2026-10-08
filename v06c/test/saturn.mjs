@@ -45,13 +45,22 @@ console.log(`время рисования на Векторе: ${r.cycles} та
     for (let c = 0; c < 32; c++) for (let k = 0; k < 8; k++) if (m.rd(0xC000 + c * 256 + 255 - (row * 8 + k)) !== img[c * 8 + k]) d++; }
   ok(d === 0, `надписи ACORNSOFT, ELITE и строка прав стоят в строках 1, 3 и 22, как на BBC (различий ${d})`); }
 
-// --- образ с заставкой от включения
+// --- образ с заставкой от включения: заставка ждёт клавишу
 { const g = createVector('elite', { saturn: true });
-  let f = 0; while (g.cpu.pc !== 0 && f < 2000 && !(g.rd(g.L.TYPE) === 7 && g.rd(g.L.QQ11) !== 0)) { g.frame(5); f += 5; if (f === 150) savePng(g.bmp(), path.join(ROOT, 'work/v06c/saturn.png')); }
+  const title = (v) => v.rd(v.L.TYPE) === 7 && v.rd(v.L.QQ11) !== 0;
+  const till = (v, max) => { let f = 0; while (f < max && !title(v)) { v.frame(5); f += 5; } return f; };
+  g.frame(150); savePng(g.bmp(), path.join(ROOT, 'work/v06c/saturn.png')); g.frame(850);
+  ok(!title(g), 'без клавиши заставка стоит (1000 кадров от включения)');
+  g.key(7, 0x80, true); const f = till(g, 500); g.key(7, 0x80, false);
   let left = 0; for (let a = g.L.sat_show; a < g.L.sat_end; a++) if (g.rd(a) !== 0 && a >= 0xBD40) left += 0;
   const k0 = g.L.WS + 0x0900; let code = 0; for (let a = g.L.sat_asoft; a < g.L.sat_asoft + 64; a++) if (g.rd(a) === fs.readFileSync(path.join(ORIG, 'bbc/cassette/1-source-files/images/P.A-SOFT.bin'))[a - g.L.sat_asoft] && g.rd(a) !== 0) code++;
-  ok(f < 2000 && code === 0, `от включения: заставка игры появилась через ${f} кадров (${(f / 50).toFixed(0)} с); картинки заставки в памяти не осталось; снимок work/v06c/saturn.png`);
-  const g2 = createVector('elite', { saturn: true }); g2.frame(120); g2.key(7, 0x80, true); let f2 = 120; while (f2 < 2000 && !(g2.rd(g2.L.TYPE) === 7 && g2.rd(g2.L.QQ11) !== 0)) { g2.frame(5); f2 += 5; } g2.key(7, 0x80, false);
-  console.log(`с нажатым пробелом заставка игры появляется через ${f2} кадров (без нажатия — через ${f})`); }
+  ok(f < 100 && code === 0, `пробел: заставка игры появилась через ${f} кадров; картинки заставки в памяти не осталось; снимок work/v06c/saturn.png`);
+  const g3 = createVector('elite', { saturn: true }); g3.key(7, 0x80, true); g3.frame(1000);
+  ok(!title(g3), 'клавиша, зажатая с включения, заставку не сбрасывает (1000 кадров)');
+  // в эмуляторе пробел — ещё и кнопка джойстика: его отпускание после съёма «покоя» само выглядит нажатием
+  g3.key(7, 0x80, false); let f3 = till(g3, 20); if (!title(g3)) { g3.key(7, 0x80, true); f3 += till(g3, 500); g3.key(7, 0x80, false); }
+  ok(f3 < 100, `отпустили (и нажали снова): заставка игры через ${f3} кадров`);
+  let under = 0; for (const base of [0xC000, 0xE000]) for (let col = 0; col < 32; col++) for (let l = 0; l < 8; l++) if (g.rd(base + col * 256 + l)) under++;
+  ok(under === 0, `под панелью (строки 248–255) после заставки чисто: ненулевых байт ${under}`); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'SATURN: всё совпало');
 process.exit(bad ? 1 : 0);

@@ -123,37 +123,9 @@ m8_p:
 	ld	l, e
 	ret
 
-; Построить таблицу четвертей квадратов: f(x + 1) = f(x) + (x + 1) / 2 нацело, x = 0..511.
-sq_init:
-	ld	hl, 0
-	ld	de, SQLO
-	ld	b, h
-	ld	c, l
-sq_lp:
-	ld	a, l
-	ld	(de), a
-	inc	d
-	inc	d
-	ld	a, h
-	ld	(de), a
-	dec	d
-	dec	d
-	inc	de
-	inc	bc
-	push	bc
-	ld	a, b
-	or	a
-	rra
-	ld	b, a
-	ld	a, c
-	rra
-	ld	c, a
-	add	hl, bc
-	pop	bc
-	ld	a, b
-	cp	2
-	jp	nz, sq_lp
-	ret
+	ifdef	SCHED
+	include	"init_sq.asm"
+	endif
 
 ; SQUA: (A P) = A·A, бит 7 у A отбрасывается. SQUA2: то же без отбрасывания.
 SQUA:
