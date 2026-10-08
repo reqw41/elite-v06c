@@ -175,7 +175,7 @@ PLS5:
 PL2:
 	ld	a, (TYPE)
 	rrca
-	jp	c, WPLS
+	jp	c, wpls_red
 	jp	WPLS2
 PLANET:
 	ld	a, (INWK + 8)
@@ -200,7 +200,7 @@ PLANET:
 pl82:
 	ld	a, (TYPE)
 	rrca
-	jp	c, SUN
+	jp	c, sun_red
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
 	ifndef	MERID
@@ -444,6 +444,16 @@ pl_sin:					; A = Q = синус угла A
 	ret
 
 	endif
+
+; Солнце в полёте — вторым цветом (на карте звёзды рисует та же SUN, но белым).
+sun_red:
+	call	col_red
+	call	SUN
+	jp	col_white
+wpls_red:
+	call	col_red
+	call	WPLS
+	jp	col_white
 
 ; WPLS2: стереть окружность планеты по списку LSX2, LSY2. WP1: список пуст.
 ; HL → LSY2, DE → LSX2: без пересчёта адреса на каждую точку.

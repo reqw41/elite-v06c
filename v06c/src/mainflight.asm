@@ -813,7 +813,7 @@ ma_b2:
 	jp	nc, ma23
 	ld	a, (QQ11)
 	or	a
-	call	z, WPLS
+	call	z, wpls_red
 	call	NWSPS
 	jp	ma23
 	; --- часть 15: высота над планетой, жар солнца ---

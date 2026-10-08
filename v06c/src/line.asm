@@ -15,7 +15,7 @@ PIXEL:
 	rrca
 	rrca
 	and	31
-	or	high SCR_VIEW
+col_p1:	or	high SCR_VIEW
 	ld	h, a
 	ld	a, b
 	and	7
@@ -132,7 +132,7 @@ lx_tab:
 	rrca
 	rrca
 	and	31
-	or	high SCR_VIEW
+col_p2:	or	high SCR_VIEW
 	ld	h, a			; HL — адрес байта точки (X1, Y1)
 	ld	d, c
 	ld	e, b
@@ -336,6 +336,25 @@ lo_swst:
 	ex	de, hl
 	ret
 
+; Цвет обзора. Точки, отрезки и строки рисуются в плоскость обзора (цвет 2, белый) или во вторую плоскость
+; (цвет 1, красный): col_red и col_white подменяют старший байт адреса в четырёх местах. Вторым цветом рисуются
+; солнце, луч лазера и облака взрывов. Рисование — исключающее ИЛИ в своей плоскости; на BBC плоскость одна,
+; поэтому сверка идёт по «исключающему ИЛИ» двух плоскостей. Обе процедуры сохраняют все регистры и флаги.
+col_red:
+	push	af
+	ld	a, high SCR_VIEW + 0x20
+	jp	col_set
+col_white:
+	push	af
+	ld	a, high SCR_VIEW
+col_set:
+	ld	(col_p1 + 1), a
+	ld	(col_p2 + 1), a
+	ld	(col_p3 + 1), a
+	ld	(col_p4 + 1), a
+	pop	af
+	ret
+
 ; Адрес и маска точки: E = x, D = y -> HL, A. Портит DE.
 li_addr:
 	ld	a, d
@@ -346,7 +365,7 @@ li_addr:
 	rrca
 	rrca
 	and	31
-	or	high SCR_VIEW
+col_p3:	or	high SCR_VIEW
 	ld	h, a
 	ld	a, e
 	and	7
@@ -461,7 +480,7 @@ hl_ord:
 	ld	c, l
 	ld	l, a
 	ld	a, d
-	or	high SCR_VIEW
+col_p4:	or	high SCR_VIEW
 	ld	h, a
 	ld	a, b
 	or	a

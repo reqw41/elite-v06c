@@ -105,6 +105,12 @@ td_col:
 	ld	b, 8
 td_row:
 	ld	(hl), 0
+	ld	a, h			; и во второй плоскости
+	xor	0x20
+	ld	h, a
+	ld	(hl), 0
+	xor	0x20
+	ld	h, a
 	dec	l
 	dec	b
 	jp	nz, td_row

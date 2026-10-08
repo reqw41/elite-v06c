@@ -27,8 +27,16 @@ tx_b:
 	inc	h
 	ld	a, h
 	cp	high SCR_VIEW + 32
+	jp	z, tx_p2		; обзор очищен — теперь те же строки второй плоскости (второй цвет)
+	or	a
 	ld	a, 0
 	jp	nz, tx_col
+	jp	tx_end
+tx_p2:
+	ld	h, high SCR_VIEW + 0x20
+	xor	a
+	jp	tx_col
+tx_end:
 	ld	a, (QQ22 + 1)
 	or	a
 	call	nz, ee3			; идёт отсчёт перед прыжком — показать его
@@ -90,8 +98,24 @@ cl_b:
 	inc	h
 	ld	a, h
 	cp	high SCR_VIEW + 30
+	jp	z, cl_p2		; и вторая плоскость
+	cp	high SCR_VIEW + 0x20 + 30
 	ld	a, 0
 	jp	nz, cl_col
+	jp	cl_end
+cl_p2:
+	ld	h, high SCR_VIEW + 0x20 + 1
+	xor	a
+	jp	cl_col
+cl_end:
+	ld	h, high SCR_VIEW + 0x20 + 30
+	ld	l, 255 - 21 * 8
+	ld	(hl), a
+	ld	l, 255 - 22 * 8
+	ld	(hl), a
+	ld	l, 255 - 23 * 8
+	ld	(hl), a
+	ld	h, high SCR_VIEW + 30
 	ld	l, 255 - 21 * 8
 	ld	(hl), a
 	ld	l, 255 - 22 * 8

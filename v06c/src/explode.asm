@@ -92,6 +92,7 @@ exl1:
 	ld	(hl), a
 ; PTCLS: нарисовать (или стереть) облако: у каждой вершины U точек, разброс — по размеру облака.
 PTCLS:
+	call	col_red			; облако — вторым цветом
 	ld	hl, (XX19)
 	ld	a, (hl)
 	ld	(Q), a
@@ -182,7 +183,7 @@ ex4:
 	ld	(RAND + 1), a
 	ld	a, (K_ + 6)
 	ld	(RAND + 3), a
-	ret
+	jp	col_white
 ex11:
 	call	DORND2
 	jp	ex4

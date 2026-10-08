@@ -8,9 +8,11 @@ export function bbcView(mem) {
   for (let y = 0; y < 192; y++) for (let c = 0; c < 32; c++) v[y * 32 + c] = mem[0x6000 + (y >> 3) * 256 + c * 8 + (y & 7)];
   return v;
 }
-export function vecView(mem, plane = VIEW) {
+// Обзор Вектора: две плоскости (белое и второй цвет); на BBC плоскость одна, и рисование там — исключающее ИЛИ,
+// поэтому с эталоном сравнивается исключающее ИЛИ плоскостей. plane задан — только эта плоскость.
+export function vecView(mem, plane = null) {
   const v = new Uint8Array(32 * 192);
-  for (let y = 0; y < 192; y++) for (let c = 0; c < 32; c++) v[y * 32 + c] = mem[plane + c * 256 + 255 - y];
+  for (let y = 0; y < 192; y++) for (let c = 0; c < 32; c++) { const o = c * 256 + 255 - y; v[y * 32 + c] = plane === null ? mem[VIEW + o] ^ mem[PLANE2 + o] : mem[plane + o]; }
   return v;
 }
 export function bbcDash(mem) {

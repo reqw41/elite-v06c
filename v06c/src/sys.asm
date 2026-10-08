@@ -49,8 +49,8 @@ isr_row:
 	jp	z, isr_nf
 	dec	(hl)
 	jp	nz, isr_nf
-	xor	a
-	call	pal_bg
+	ld	hl, pal_flight
+	call	pal_set
 isr_nf:
 	ld	a, (pal_dirty)
 	or	a
@@ -215,20 +215,33 @@ jk_c:
 joy_rest:
 	db	0, 0
 
-; flash: вспышка энергетической бомбы — фон обзора и панели на два кадра жёлтый (на BBC — запись в палитру
-; до следующего кадра). pal_bg: цвет фона A — в регистры палитры с номером цвета 0.
+; Смена цвета всего экрана на несколько кадров, как на ZX Spectrum (там — атрибут окна обзора):
+; flash — взрыв энергетической бомбы: фон жёлтый; tint_hit — по нам попали: белое становится красным.
+; Палитра возвращается к обычной в прерывании кадра, когда счётчик flash_cnt дойдёт до нуля.
 flash:
+	ld	hl, pal_bomb
 	ld	a, 2
-	ld	(flash_cnt), a
-	ld	a, 0x3F
-pal_bg:
-	ld	(pal_regs), a
-	ld	(pal_regs + 4), a
-	ld	(pal_regs + 8), a
-	ld	(pal_regs + 12), a
-	ld	a, 1
-	ld	(pal_dirty), a
+	jp	pal_fx
+tint_hit:				; сохраняет все регистры и флаги: зовётся из OOPS
+	push	af
+	push	bc
+	push	de
+	push	hl
+	ld	hl, pal_hit
+	ld	a, 4
+	call	pal_fx
+	pop	hl
+	pop	de
+	pop	bc
+	pop	af
 	ret
+pal_fx:
+	ld	(flash_cnt), a
+	jp	pal_set
+pal_bomb:
+	db	0x3F, 0x07, 0xFF, 0x38
+pal_hit:
+	db	0x00, 0x07, 0x07, 0x38
 flash_cnt:
 	db	0
 

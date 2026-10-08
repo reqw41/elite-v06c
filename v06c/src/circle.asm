@@ -422,11 +422,14 @@ LASLI2:
 	ld	a, (QQ11)
 	or	a
 	ret	nz
+	call	col_red			; луч — вторым цветом
 	ld	a, 32
 	ld	c, 224
 	call	las
 	ld	a, 48
 	ld	c, 208
+	call	las
+	jp	col_white
 las:
 	ld	(X2), a
 	call	las_p
