@@ -12,9 +12,13 @@ DISC = os.path.join(ORIG, 'bbc/disc/3-assembled-output')
 BASE = 0x5600
 WANT = [(19, 'krait', 'Krait'), (25, 'asp', 'Asp Mk II'), (27, 'fer', 'Fer-de-Lance')]   # номера типов дисковой версии
 JUNK = [(4, 'plate', 'пластина обшивки'), (8, 'splinter', 'обломок астероида')]         # типы 19 и 20
+# корабли дисковой версии BBC: типы 21–31 (номер типа дисковой версии, метка, название)
+DISC_SHIPS = [(6, 'boulder', 'Boulder'), (20, 'adder', 'Adder'), (21, 'gecko', 'Gecko'), (22, 'cobra1', 'Cobra Mk I'),
+              (23, 'worm', 'Worm'), (28, 'moray', 'Moray'), (13, 'boa', 'Boa'), (14, 'anaconda', 'Anaconda'),
+              (9, 'shuttle', 'Shuttle'), (10, 'transporter', 'Transporter'), (31, 'constrictor', 'Constrictor')]
 
 
-def model(typ):
+def model(typ, dodo=False):
     for f in sorted(glob.glob(os.path.join(DISC, 'D.MO?.bin'))):
         d = open(f, 'rb').read()
         a = d[2 * (typ - 1)] | (d[2 * (typ - 1) + 1] << 8)
@@ -22,6 +26,8 @@ def model(typ):
             continue
         o = a - BASE
         h = d[o:o + 20]
+        if dodo and h[8] != 24 * 6:        # станция в файле — Coriolis (у Dodo 24 вершины)
+            continue
         # Рёбра и грани модели могут лежать в чужой модели (обломок берёт их у спасательной капсулы): собираем
         # модель заново — заголовок, вершины, рёбра, грани подряд — и правим смещения в заголовке.
         sgn = lambda v: v - 65536 if v >= 32768 else v
@@ -42,9 +48,10 @@ def main():
            '; XX21X: таблица адресов моделей всех типов — 13 кассетных (как XX21) и три новых.',
            'XX21X:'] + ['\tdw ' + l for l in base] + ['\tdw ship_' + lab for _, lab, _ in WANT] + [
            '\tdw ship_asp\t\t; 17: Asp со скрывающим устройством (миссия)', f'\tdw {base[10]}\t\t; 18: контейнер со скрывающим устройством',
-           '\tdw ship_plate\t\t; 19: пластина обшивки', '\tdw ship_splinter\t; 20: обломок астероида']
-    for typ, lab, name in WANT + JUNK:
-        f, m = model(typ)
+           '\tdw ship_plate\t\t; 19: пластина обшивки', '\tdw ship_splinter\t; 20: обломок астероида'] + [
+           f'\tdw ship_{lab}\t\t; {21 + i}: {name}' for i, (_, lab, name) in enumerate(DISC_SHIPS)]
+    for typ, lab, name in WANT + JUNK + DISC_SHIPS + [(2, 'dodo', 'станция Dodo (вместо Coriolis при технике от 10)')]:
+        f, m = model(typ, lab == 'dodo')
         out.append(f'ship_{lab}:\t\t\t\t; {name}: {len(m)} байт, вершин {m[8] // 6}, рёбер {m[9]}, граней {m[12] // 4}, '
                    f'отрезков в куче {m[5]}, энергия {m[14]}, награда {(m[10] | (m[11] << 8)) / 10:g} ({f})')
         for i in range(0, len(m), 16):

@@ -136,6 +136,9 @@ mtt3:
 	jp	nc, mtt3_n
 	ld	a, 11
 mtt3_n:
+	ifndef	SCHED
+	call	zx_rock			; вместо астероида иногда валун
+	endif
 	call	NWSHP
 	jp	mtt1
 mtt4:					; торговец
@@ -154,6 +157,9 @@ mtt4:					; торговец
 	or	16
 	ld	(INWK + 27), a
 	ld	a, 7
+	ifndef	SCHED
+	call	zx_pick			; торговец: иногда Python, Boa или Anaconda
+	endif
 	call	NWSHP
 	jp	TT100
 mtt1_p:
@@ -569,7 +575,9 @@ ma21:
 	jp	c, ma_sc
 	cp	18
 	jp	c, ma58			; корабли версии ZX не подбираются; 18 — контейнер с устройством,
-ma_sc:					; 19 — пластина, 20 — обломок
+	cp	21			; 19 — пластина, 20 — обломок; 21 — валун и корабли дисковой версии — нет
+	jp	nc, ma58
+ma_sc:
 	ld	hl, INWK + 5
 	ld	a, (BST)
 	and	(hl)
@@ -694,8 +702,10 @@ ma47:
 	or	0x80
 	ld	(hl), a
 	ld	a, (TYPE)
+	cp	22
+	jp	nc, ma_zx		; корабли дисковой версии гибнут как корабли
 	cp	19
-	jp	nc, ma8_1		; пластина, обломок — без обломков и счёта
+	jp	nc, ma8_1		; пластина, обломок, валун — без обломков и счёта
 	cp	NTY + 1
 	jp	nc, ma_zx		; корабли версии ZX гибнут как корабли: обломки и счёт побед
 	cp	10
@@ -986,42 +996,94 @@ ma66:
 	ret	nz
 	jp	STARS
 
-; zx_pick: корабли версии для ZX Spectrum. A — тип пирата или охотника, выбранный игрой, как на BBC (1 Sidewinder,
-; 3 Mamba, 4 Python, 5 Cobra); в одном случае из четырёх вместо него выходит Krait (вместо 1 и 3), Asp Mk II
-; (вместо 4) или Fer-de-Lance (вместо 5). Генератор случайных чисел свой: ход игры и её случайные числа не
+; zx_pick: корабли версий ZX и дисковой BBC. A — тип, выбранный игрой, как в кассетной BBC (1 Sidewinder, 3 Mamba,
+; 4 Python, 5 Cobra — пираты и охотники, 7 — Cobra-торговец); в половине случаев вместо него выходит один из
+; четырёх типов строки zp_tab. Генератор случайных чисел свой (mis_rnd): ход игры и её случайные числа не
 ; меняются. Перенос сохраняется (он идёт в DORND). В сборке стенда (SCHED) замены нет — там игра равна эталону.
 zx_pick:
 	push	af
-	ld	hl, (zx_rnd)
-	add	hl, hl
-	jp	nc, zp_1
-	ld	a, l
-	xor	0x2D
-	ld	l, a
-zp_1:
-	ld	(zx_rnd), hl
-	ld	a, h
+	cp	8
+	jp	nc, zp_keep
+	ld	e, a
+	ld	d, 0
+	ld	hl, zp_map - 1
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	jp	m, zp_keep
+	ld	e, a
+	call	mis_rnd
+	rra
+	jp	c, zp_keep
 	and	3
-	jp	nz, zp_keep
+	add	a, e
+	ld	e, a
+	ld	hl, zp_tab
+	add	hl, de
 	pop	af
-	push	af
-	ld	d, 14
-	cp	1
-	jp	z, zp_set
-	cp	3
-	jp	z, zp_set
-	inc	d
-	cp	4
-	jp	z, zp_set
-	inc	d
-	cp	5
-	jp	nz, zp_keep
-zp_set:
-	pop	af
-	ld	a, d
+	ld	a, (hl)
 	ret
 zp_keep:
 	pop	af
 	ret
-zx_rnd:	dw	0x5A17
+zp_map:	db	0, 0xFF, 4, 8, 12, 0xFF, 16
+zp_tab:	db	14, 22, 23, 25		; Sidewinder: Krait, Adder, Gecko, Worm
+	db	14, 24, 26, 23		; Mamba: Krait, Cobra Mk I, Moray, Gecko
+	db	15, 15, 4, 4		; Python: Asp Mk II
+	db	16, 16, 5, 15		; Cobra: Fer-de-Lance, Asp Mk II
+	db	27, 28, 4, 7		; торговец: Boa, Anaconda, Python
+; zx_rock: вместо астероида (10) в одном случае из четырёх — валун (21).
+zx_rock:
+	cp	10
+	ret	nz
+	call	mis_rnd
+	and	3
+	ld	a, 10
+	ret	nz
+	ld	a, 21
+	ret
+; zx_tact: добавки дисковой версии в тактику (B — тип, сохраняется). Anaconda (28) изредка выпускает Worm (25);
+; мирная станция, пока рядом нет челнока, изредка выпускает Shuttle (29) или Transporter (30) — он без тактики,
+; летит прямо из щели, к планете. Случайные числа свои.
+zx_tact:
+	ld	a, b
+	cp	8
+	jp	z, zt_st
+	cp	28
+	ret	nz
+	call	mis_rnd
+	cp	252
+	ret	c
+	push	bc
+	ld	b, 25
+	ld	a, 0xCA
+	call	SFS1
+	pop	bc
+	ret
+zt_st:
+	ld	a, (INWK + 32)
+	add	a, a
+	ret	m
+	call	mis_rnd
+	cp	253
+	ret	c
+	and	1
+	add	a, 29
+	ld	e, a
+	ld	hl, FRIN
+	ld	c, NOSH
+zt_1:
+	ld	a, (hl)
+	sub	29
+	cp	2
+	ret	c
+	inc	hl
+	dec	c
+	jp	nz, zt_1
+	push	bc
+	ld	b, e
+	xor	a
+	call	SFS1
+	pop	bc
+	ret
 

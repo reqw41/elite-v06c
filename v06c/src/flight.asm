@@ -648,6 +648,15 @@ NwS1:
 	ret
 ; NWSPS: завести станцию из INWK: лампа, ИИ, развернуть носом к планете, список отрезков — в области LSO.
 NWSPS:
+	ifndef	SCHED
+	ld	hl, (XX21 + 14)		; станция: при технике от 10 — Dodo, как в дисковой версии
+	ld	a, (tek)
+	cp	10
+	jp	c, nws_cor
+	ld	hl, ship_dodo
+nws_cor:
+	ld	(XX21X + 14), hl
+	endif
 	call	SPBLB
 	ld	a, 1
 	ld	(INWK + 32), a

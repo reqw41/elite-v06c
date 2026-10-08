@@ -193,6 +193,9 @@ TA64:
 
 ; --- TACTICS: X (регистр B) = тип корабля, блок — в INWK ---
 TACTICS:
+	ifndef	SCHED
+	call	zx_tact		; Anaconda выпускает Worm, станция — челноки
+	endif
 	ld	a, b
 	cp	9
 	jp	z, TA18
@@ -509,6 +512,11 @@ fr1:
 ; ANGRY: корабль типа A (блок по адресу INF) становится враждебным; станция — тоже (AN2).
 ; Перенос на выходе — как на BBC: 1 при типе больше 8.
 ANGRY:
+	cp	22
+	jp	c, an_old
+	cp	32
+	jp	c, an_ship		; корабли дисковой версии (22–31) злятся, как все
+an_old:
 	cp	NTY + 1
 	jp	c, an_bbc
 	cp	NTY + 4
@@ -608,8 +616,10 @@ sfs_rx:
 	and	0xFE
 	ld	(hl), a
 	ld	a, b
+	cp	22
+	jp	nc, sfs_noil		; корабли дисковой версии
 	cp	18
-	jp	nc, sfs_oil		; контейнер с устройством, пластина, обломок — кувыркаются, как контейнер
+	jp	nc, sfs_oil		; контейнер с устройством, пластина, обломок, валун — кувыркаются, как контейнер
 	cp	11
 	jp	nz, sfs_noil
 sfs_oil:

@@ -46,10 +46,57 @@ if (maxTally < 2) fail(`побед ${maxTally}, ждали не меньше 2`)
 if (m.rd(WS + B.QQ12) !== 0xFF) fail('в конце не заставка');
 // статистика замены (обычный образ: в образе стенда zx_pick нет)
 { const r = createVector('elite'); r.frame(40); const cnt = {};
-  for (const t of [1, 3, 4, 5, 2]) { cnt[t] = {}; for (let i = 0; i < 2000; i++) { const q = r.call('zx_pick', { a: t, cf: i & 1 }); if (q.cf !== (i & 1)) { fail('zx_pick не сохранил перенос'); break; } cnt[t][q.a] = (cnt[t][q.a] || 0) + 1; } }
+  for (const t of [1, 3, 4, 5, 7, 2, 6]) { cnt[t] = {}; for (let i = 0; i < 2000; i++) { const q = r.call('zx_pick', { a: t, cf: i & 1 }); if (q.cf !== (i & 1)) { fail('zx_pick не сохранил перенос'); break; } cnt[t][q.a] = (cnt[t][q.a] || 0) + 1; } }
   console.log('замена типа при появлении (из 2000): ' + Object.entries(cnt).map(([t, c]) => `${t} → ` + Object.entries(c).map(([a, n]) => `${a}: ${n}`).join(', ')).join(' | '));
-  for (const [t, to] of [[1, 14], [3, 14], [4, 15], [5, 16]]) { const n = cnt[t][to] || 0; if (n < 350 || n > 650) fail(`тип ${t}: замен ${n}, ждали около 500`); if (Object.keys(cnt[t]).some((a) => +a !== +t && +a !== to)) fail(`тип ${t}: лишняя замена`); }
-  if (Object.keys(cnt[2]).length !== 1) fail('полицейский Viper заменяться не должен'); }
+  const ROW = { 1: [14, 22, 23, 25], 3: [14, 24, 26, 23], 4: [15, 15, 4, 4], 5: [16, 16, 5, 15], 7: [27, 28, 4, 7] };
+  for (const [t, row] of Object.entries(ROW)) { const c = cnt[t], other = row.filter((x) => x !== +t);
+    const n = other.reduce((q, x) => q + (new Set(other).has(x) ? 0 : 0), 0) + [...new Set(other)].reduce((q, x) => q + (c[x] || 0), 0), want = 1000 * other.length / 4;
+    if (Math.abs(n - want) > 150) fail(`тип ${t}: замен ${n}, ждали около ${want}`);
+    if (Object.keys(c).some((a) => +a !== +t && !row.includes(+a))) fail(`тип ${t}: лишняя замена`);
+    for (const x of new Set(other)) if (!c[x]) fail(`тип ${t}: замены на ${x} не было`); }
+  if (Object.keys(cnt[2]).length !== 1 || Object.keys(cnt[6]).length !== 1) fail('полицейский Viper и таргоид заменяться не должны'); }
+// корабли дисковой версии (типы 21–31): каждый появляется, рисуется (снимок), гибнет как корабль; валун — как астероид
+{ const NAMES = { 21: 'boulder', 22: 'adder', 23: 'gecko', 24: 'cobra1', 25: 'worm', 26: 'moray', 27: 'boa', 28: 'anaconda', 29: 'shuttle', 30: 'transporter', 31: 'constrictor' };
+  const made = [];
+  for (const t of Object.keys(NAMES).map(Number)) {
+    const r = createVector('elite'); r.frame(40); const W = r.L.WS;
+    r.call('ZINF'); r.wr(W + B.INWK + 7, [t === 30 || t >= 27 ? 2 : 1]); r.wr(W + B.INWK + 6, [0x40]);
+    const q = r.call('NWSHP', { a: t });
+    if (!q.cf) { fail(`тип ${t} (${NAMES[t]}): NWSHP не дал места`); continue; }
+    r.wr(W + B.QQ11, [0]); r.call('TT66', { a: 0 }); r.call('ZINF'); r.wr(W + B.INWK + 7, [t === 30 || t >= 27 ? 2 : 1]); r.wr(W + B.INWK + 6, [0x40]);
+    r.wr(W + B.TYPE, [t]); const xx0 = r.rd16(r.L.XX21X + 2 * (t - 1)); r.wr(W + B.XX0, [xx0 & 255, xx0 >> 8]);
+    r.wr(W + B.INWK + 33, [(W + 0xC00) & 255, (W + 0xC00) >> 8]); r.wr(W + 0xC00, [0]);
+    r.call('LL9', {}, 2e7);
+    let px = 0; for (let a = 0xC000; a < 0xE000; a++) { const v = r.rd(a); if ((a & 255) >= 64) for (let k = 0; k < 8; k++) px += (v >> k) & 1; }
+    if (px < 30) fail(`тип ${t} (${NAMES[t]}): на экране ${px} точек`);
+    r.cpu.iff = false; r.frame(1); savePng(r.bmp(), path.join(ROOT, 'work/v06c', `disc-${NAMES[t]}.png`)); made.push(`${NAMES[t]} ${px}`);
+  }
+  console.log('корабли дисковой версии, точек на экране: ' + made.join(', '));
+  // свойства типов: злость, подбор, кувыркание
+  const r = createVector('elite'); r.frame(40); const W = r.L.WS;
+  r.call('ZINF'); r.wr(W + B.INWK + 7, [3]); r.wr(W + B.INWK + 32, [0x80]); r.call('NWSHP', { a: 22 });
+  const blk = r.rd16(r.L.UNIV + 2 * Array.from(r.mem().subarray(W + B.FRIN, W + B.FRIN + 13)).indexOf(22));
+  r.wr(W + B.INF, [blk & 255, blk >> 8]); r.call('ANGRY', { a: 22 });
+  if (!(r.rd(blk + 32) & 0x40) && r.rd(blk + 28) !== 2) fail('Adder не разозлился');
+  // Anaconda выпускает Worm, станция — челнок; статистика на 4000 вызовов тактики
+  let worms = 0, shut = 0; const slsp = [r.rd(W + B.SLSP), r.rd(W + B.SLSP + 1)];
+  for (let i = 0; i < 4000; i++) { r.wr(W + B.SLSP, slsp); r.wr(W + B.FRIN, new Array(13).fill(0)); r.wr(W + B.FRIN, [128, 8, 28]);
+    r.call('ZINF'); r.wr(W + B.INWK + 7, [3]); r.wr(W + B.TYPE, [28]); r.wr(W + B.INF, [(W + 0x900 + 72) & 255, (W + 0x900 + 72) >> 8]);
+    const a28 = r.rd16(r.L.XX21X + 2 * 27); r.wr(W + B.XX0, [a28 & 255, a28 >> 8]);
+    r.call('zx_tact', { b: 28 });
+    r.wr(W + B.TYPE, [8]); r.wr(W + B.INWK + 32, [0]); r.wr(W + B.INF, [(W + 0x900 + 36) & 255, (W + 0x900 + 36) >> 8]);
+    r.call('zx_tact', { b: 8 });
+    const f = Array.from(r.mem().subarray(W + B.FRIN, W + B.FRIN + 13));
+    if (f.includes(25)) worms++; if (f.includes(29) || f.includes(30)) shut++; }
+  console.log(`за 4000 вызовов тактики: Anaconda выпустила Worm ${worms} раз, станция выпустила челнок ${shut} раз`);
+  if (worms < 30 || worms > 100) fail(`Worm: ${worms}, ждали около 62`); if (shut < 20 || shut > 80) fail(`челнок: ${shut}, ждали около 47`);
+  // станция Dodo при технике от 10
+  for (const [tek, dodo] of [[5, false], [9, false], [10, true], [14, true]]) { r.wr(r.L.tek, [tek]); r.wr(W + B.FRIN, new Array(13).fill(0)); r.wr(W + B.FRIN, [128]);
+    r.call('NWSPS'); const is = r.rd16(r.L.XX21X + 14) === r.L.ship_dodo; if (is !== dodo) fail(`техника ${tek}: станция ${is ? 'Dodo' : 'Coriolis'}`); }
+  r.wr(r.L.tek, [12]); r.call('TT66', { a: 0 }); r.wr(W + B.QQ11, [0]); r.call('ZINF'); r.wr(W + B.INWK + 7, [3]); r.wr(W + B.TYPE, [8]);
+  r.wr(W + B.XX0, [r.L.ship_dodo & 255, r.L.ship_dodo >> 8]); r.wr(W + B.INWK + 33, [(W + 0xC00) & 255, (W + 0xC00) >> 8]); r.wr(W + 0xC00, [0]);
+  r.call('LL9', {}, 2e7); r.cpu.iff = false; r.frame(1); savePng(r.bmp(), path.join(ROOT, 'work/v06c/disc-dodo.png'));
+  console.log('станция: Coriolis при технике до 9, Dodo от 10; снимок work/v06c/disc-dodo.png'); }
 // утечка топлива при уроне (обычный образ): из 3000 ударов по энергии около 47 раз топливо обнуляется
 { const r = createVector('elite'); r.frame(40); const WS2 = r.L.WS; let leaks = 0, msg = 0;
   for (let i = 0; i < 3000; i++) { r.wr(WS2 + B.QQ14, [70]); r.wr(WS2 + B.ENERGY, [255]); r.wr(WS2 + B.FSH, [0]); r.wr(WS2 + B.ASH, [0]); r.wr(WS2 + B.DLY, [0]); r.wr(r.L.mch_x, [0]);
