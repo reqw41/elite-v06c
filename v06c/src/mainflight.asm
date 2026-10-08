@@ -162,12 +162,30 @@ mtt4:					; торговец
 	and	31
 	or	16
 	ld	(INWK + 27), a
-	ld	a, 7
 	ifndef	SCHED
-	call	zx_pick			; торговец: иногда Python, Boa или Anaconda
-	endif
+	ld	c, 0xA0			; торговец мирный, каким бы кораблём ни вышел; в половине случаев он
+	call	mis_rnd			; с тактикой и летит стыковаться, как в дисковой версии
+	or	a
+	jp	m, mtt4_n
+	ld	hl, INWK + 32
+	ld	a, (hl)
+	or	0xC0
+	ld	(hl), a
+	ld	c, 0xB0
+mtt4_n:
+	ld	a, c
+	ld	(nb_pre), a
+	ld	a, 7
+	call	zx_pick			; иногда Python, Boa или Anaconda
+	call	NWSHP
+	xor	a
+	ld	(nb_pre), a
+	jp	TT100
+	else
+	ld	a, 7
 	call	NWSHP
 	jp	TT100
+	endif
 mtt1_p:
 	pop	af
 mtt1:

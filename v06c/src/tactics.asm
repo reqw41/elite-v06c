@@ -239,6 +239,9 @@ TA13:
 	ld	(hl), a
 	ret
 TA14:
+	ifndef	SCHED
+	jp	nb_tact			; обычный образ: поведение по флагам, как в дисковой версии
+	endif
 	ld	a, b
 	cp	NTY + 1
 	jp	nc, ta14_p		; корабли версии ZX — пираты
@@ -530,6 +533,14 @@ an_bbc:
 	cp	7
 	call	z, AN2
 an_ship:
+	ifndef	SCHED
+	call	nb_inf			; корабль теперь враждебен; за мирного злится и станция
+	ld	a, (hl)
+	or	4
+	ld	(hl), a
+	and	0x20
+	call	nz, AN2
+	endif
 	ld	hl, (INF)
 	ld	de, 32
 	add	hl, de

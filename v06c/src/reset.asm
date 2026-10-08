@@ -192,6 +192,9 @@ nw2:
 	ld	b, a
 	or	a
 	jp	m, nw_cp
+	ifndef	SCHED
+	call	nb_new			; флаги поведения нового корабля
+	endif
 	cp	NTY + 1
 	jp	nc, nw_cp		; корабли версии ZX (типы 14–16) в счётчиках MANY не числятся
 	ld	e, a

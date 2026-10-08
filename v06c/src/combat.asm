@@ -261,6 +261,11 @@ KILLSHP:
 	ld	a, 200
 	call	MESS
 ks5:
+	ifndef	SCHED
+	ld	a, (XX4)
+	ld	b, a
+	call	nb_kill			; флаги поведения следующих мест — на место вниз
+	endif
 	ld	a, (XX4)
 	ld	e, a
 	ld	d, 0

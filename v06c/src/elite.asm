@@ -97,6 +97,7 @@ ws_clr:
 	include	"dockit.asm"
 	include	"hangar.asm"
 	include	"discmis.asm"
+	include	"newb.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
@@ -155,6 +156,8 @@ vars_end:
 	org	WS + 0x0372
 save_used:	ds	1		; в памяти есть сохранение этого сеанса
 save_slot:	ds	NT + 2		; файл командира
+newb:		ds	NOSH + 1	; флаги поведения кораблей по местам (newb.asm)
+nb_pre:		ds	1		; добавка к флагам следующего нового корабля
 	assert	$ <= WS + 0x0400
 	org	WS + 0x0F51
 wp_sx:		ds	80		; копия прежней окружности планеты
