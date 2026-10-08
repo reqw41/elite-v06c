@@ -86,6 +86,7 @@ ws_clr:
 	include	"find.asm"
 	include	"pdesc.asm"
 	include	"dockit.asm"
+	include	"hangar.asm"
 
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"

@@ -52,6 +52,11 @@ GOIN:
 	ld	(QQ22 + 1), a
 	call	LAUN
 	call	RES4
+	ifndef	SCHED
+	call	HALL			; ангар станции, как в дисковой версии
+	ld	c, 44
+	call	DELAY
+	endif
 	call	mis_dock		; вопросы и награды миссий
 	jp	BAY
 
