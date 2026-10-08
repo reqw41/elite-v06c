@@ -135,7 +135,6 @@ EXNO2:
 	jp	nz, exno_7
 	inc	hl
 	inc	(hl)
-	call	mis_due			; 256 побед — пора выдавать миссию
 	ld	a, 101
 	call	MESS
 exno_7:
@@ -185,6 +184,7 @@ KS4:
 	jp	nz, ks4_g
 	ld	a, 6
 	ld	(M3ST), a
+	call	mis_256			; как в ZX 48K: награда рейтингом сразу за станцию и ещё раз при стыковке
 ks4_g:
 	call	ZINF
 	call	FLFLLS

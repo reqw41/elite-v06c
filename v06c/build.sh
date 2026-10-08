@@ -24,4 +24,8 @@ if echo "$out" | grep -Eiq 'warning:|warnings: [1-9]'; then
 fi
 python3 -I tools/check_i8080.py v06c/build/$NAME.lst
 sz=$(wc -c < v06c/build/$NAME.rom | tr -d ' ')
-echo "OK: v06c/build/$NAME.rom ($sz Б, до рабочих областей B000h свободно $((0xB000 - 0x100 - sz)))"
+# размер игры в памяти — по метке rom_end: файл обычного образа длиннее на заставку с Сатурном, которая лежит
+# в рабочих областях и после показа обнуляется
+end=$(sed -n 's/^rom_end: *EQU *0x0*\([0-9A-Fa-f]*\).*/\1/p' v06c/build/$NAME.sym)
+game=$((0x$end - 0x100))
+echo "OK: v06c/build/$NAME.rom (игра $game Б, файл $sz Б, до рабочих областей B000h свободно $((0xB000 - 0x$end)))"

@@ -38,7 +38,14 @@ isr_row:
 	call	nz, joy_keys
 	ld	a, 0x88			; все порты на выход
 	out	(0), a
+	ifdef	SCHED
 	ld	a, 0xFF
+	else
+	ld	a, (flash_cnt)		; встряска: пока идёт вспышка (попадание по нам, бомба), экран через кадр
+	and	1			; сдвигается на две строки аппаратной прокруткой
+	add	a, a
+	cpl
+	endif
 	out	(3), a			; прокрутка FFh: верхняя строка экрана — младший байт адреса FFh
 	xor	a
 	out	(2), a			; бордюр — цвет 0
@@ -52,6 +59,29 @@ isr_row:
 	ld	hl, pal_flight
 	call	pal_set
 isr_nf:
+	ifndef	SCHED
+	ld	a, (v_frames)		; тревога: в полёте при энергии ниже четверти зелёное на панели раз в
+	and	0x1F			; 32 кадра становится жёлтым и обратно
+	jp	nz, isr_na
+	ld	a, (flash_cnt)	; не во время вспышки и не при включённом скрывающем устройстве (своя палитра)
+	ld	hl, cloak_on
+	or	(hl)
+	jp	nz, isr_na
+	ld	hl, pal_flight
+	ld	a, (QQ12)
+	or	a
+	jp	nz, isr_ps
+	ld	a, (ENERGY)
+	cp	64
+	jp	nc, isr_ps
+	ld	a, (v_frames)
+	and	0x20
+	jp	z, isr_ps
+	ld	hl, pal_alert
+isr_ps:
+	call	pal_set
+isr_na:
+	endif
 	ld	a, (pal_dirty)
 	or	a
 	jp	z, isr_cnt
@@ -242,8 +272,12 @@ pal_bomb:
 	db	0x3F, 0x07, 0xFF, 0x38
 pal_hit:
 	db	0x00, 0x07, 0x07, 0x38
+pal_alert:
+	db	0x00, 0x07, 0xFF, 0x3F	; тревога: зелёное — жёлтым
 flash_cnt:
 	db	0
+sat_skip:
+	db	0			; <> 0 — не показывать заставку с Сатурном (ставит стенд тестов)
 
 ; Запись 16 регистров палитры. Регистр выбирается цветом под лучом; в гашении это номер бордюра (порт 02h).
 pal_write:

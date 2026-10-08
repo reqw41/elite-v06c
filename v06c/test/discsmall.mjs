@@ -1,6 +1,7 @@
 // Мелкие доработки из дисковой версии BBC (только обычный образ; проверка по смыслу):
 // 1. победа засчитывается и за мусор (контейнер, астероид); 2. враги появляются на расстоянии 25, а не 32;
-// 3. на второй заставке — Krait; 4. пока идёт автопилот стыковки, сообщение о нём повторяется.
+// 3. на второй заставке — Krait; 4. пока идёт автопилот стыковки, сообщение о нём повторяется;
+// 5. каменный отшельник (как в ZX 48K); 6. эффекты Вектора: встряска экрана при попадании, цвет тревоги.
 // Изменённые проверки стыковки проверяет dockit.mjs (автопилот доводит до стыковки).
 // sh v06c/build.sh && node v06c/test/discsmall.mjs
 import { createVector } from '../tools/v06c.mjs';
@@ -35,10 +36,29 @@ const mk = () => { const g = createVector('elite'); g.press = (k, n = 20) => { g
     keyA(false); pass(2);
     ok(!frin().includes(type) && tally() === t0 + 1, `${name} уничтожен лазером за ${n} проходов: побед ${t0} → ${tally()}`);
   }
+  // каменный отшельник: астероид с флагами 21h под огнём выпускает два корабля стаи, затем ведёт себя как астероид
+  { g.call('ZINF'); g.wr(L.INWK + 7, [3]); g.wr(L.nb_pre, [0xA1]); const r = g.call('NWSHP', { a: 10 }); const slot = frin().indexOf(10);
+    const f0 = g.rd(L.newb + slot); g.wr(L.LASER, [15, 0, 0, 0]); keyA(true); let n = 0; const born = new Set();
+    while (frin().includes(10) && n < 300) { const s = frin().indexOf(10); g.wr(L.K_ + 36 * s, [0, 0, 0, 0, 0, 0]); g.wr(L.K_ + 36 * s + 35, [200]); g.wr(L.DELTA, [0]); g.wr(L.GNTMP, [0]); g.wr(L.ENERGY, [255]); g.wr(L.FSH, [255]); g.wr(L.ASH, [255]); pass(1); n++;
+      frin().forEach((t, i) => { if (t && t < 128 && t !== 8 && t !== 10) born.add(t); }); if (n === 120) break; }
+    keyA(false); const s = frin().indexOf(10), left = s >= 0 ? g.rd(L.newb + s) : -1, ships = frin().filter((t) => [1, 3, 14, 22, 23, 24, 25, 5].includes(t)).length;
+    const pack = [...born].filter((t) => [1, 3, 14, 22, 23, 24, 25, 5].includes(t));
+    ok(r.cf === 1 && f0 === 0x21 && pack.length >= 1 && left === 0x01, `каменный отшельник: флаги ${f0.toString(16)}, под огнём выходили корабли стаи типов ${pack.join(', ')}; запас исчерпан (флаги ${left.toString(16)}), сам остался астероидом`);
+    for (let i = 0; i < 13; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128 && t !== 8) { const a = L.K_ + 36 * i + 31; if (!(g.rd(a) & 0xA0)) g.wr(a, [g.rd(a) | 0x80]); } } pass(40); }
   // 4. автопилот: сообщение повторяется
   g.wr(L.DKCMP, [0xFF]); g.wr(L.auto, [0xFF]); let shown = 0, was = 0;
   for (let i = 0; i < 200; i++) { pass(1); const on = g.rd(L.mch_x) === 7 && g.rd(L.DLY) > 0; if (on && !was) shown++; was = on; if (g.rd(L.QQ12) !== 0) break; g.wr(L.auto, [0xFF]); }
   ok(shown >= 2, `за 200 проходов под автопилотом сообщение «DOCKING COMPUTERS ON» появлялось ${shown} раз`);
 }
+// 6. эффекты: в настоящих кадрах. Попадание по нам (OOPS) — прокрутка экрана дрожит четыре кадра; энергия ниже
+// четверти — зелёный цвет панели (регистр палитры 3) раз в 32 кадра становится жёлтым.
+{ const g = mk(), L = g.L; g.frame(300); g.press('N'); g.frame(200); g.press('SPACE'); g.frame(200); g.press('F1'); g.frame(400);
+  const scr = (n) => { const v = new Set(); for (let i = 0; i < n; i++) { g.frame(1); v.add(g.io.PA); } return v; };   // порт A после кадра — регистр прокрутки
+  const calm = scr(8); g.wr(L.flash_cnt, [4]); const shaken = scr(4), after = scr(8);
+  ok(calm.size === 1 && calm.has(0xFF) && shaken.has(0xFD) && shaken.has(0xFF) && after.size === 1 && after.has(0xFF), `встряска: в покое прокрутка ${[...calm].map((v) => v.toString(16))}, четыре кадра вспышки — ${[...shaken].map((v) => v.toString(16)).join(' и ')}, затем снова ${[...after].map((v) => v.toString(16))}`);
+  const green = () => g.rd(L.pal_regs + 3); const seen = new Set();
+  g.wr(L.ENERGY, [255]); for (let i = 0; i < 80; i++) { g.frame(1); g.wr(L.ENERGY, [255]); seen.add(green()); } const full = [...seen]; seen.clear();
+  for (let i = 0; i < 80; i++) { g.wr(L.ENERGY, [40]); g.frame(1); seen.add(green()); }
+  ok(full.length === 1 && full[0] === 0x38 && seen.has(0x3F) && seen.has(0x38), `тревога: при полной энергии цвет 3 всегда ${full.map((v) => v.toString(16))}, при энергии 40 чередуются ${[...seen].map((v) => v.toString(16)).join(' и ')}`); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'DISCSMALL: всё как задумано');
 process.exit(bad ? 1 : 0);

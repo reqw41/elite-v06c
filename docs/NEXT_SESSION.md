@@ -158,7 +158,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 
 ## Дальше
 
-Состояние на 08.10.2026 (вторая сессия): образ 43 738 Б, **свободно 1 062 Б**; кассетная BBC перенесена целиком и
+Состояние на 08.10.2026 (вторая сессия): игра 43 936 Б (файл с заставкой 48 326 Б), **свободно 864 Б**; кассетная BBC перенесена целиком и
 равна эталону на семи сценариях; сверх неё — всё, что нашлось в ZX 48K, и добавки дисковой BBC (T51–T55).
 
 1. **Ждёт проверки владельцем на MiSTer** (я проверял только на стенде): мерцание на глаз, джойстик (оси и кнопки),
@@ -191,7 +191,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 ```sh
 sh v06c/build.sh && sh v06c/build.sh -DSCHED
 for s in equip save launch trade fight jump voyage; do node v06c/test/t27.mjs $s | grep "T27\|FAIL"; done
-for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis market texts discsmall newb soak; do node v06c/test/$t.mjs | tail -1; done
+for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis market texts discsmall newb mischain saturn soak; do node v06c/test/$t.mjs | tail -1; done
 ```
 
 Заливка на MiSTer — см. память `mister-deploy` и `elite-v06c` (ключи scp: только пароль). Рабочие каталоги

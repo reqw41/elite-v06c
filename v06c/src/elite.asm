@@ -26,8 +26,8 @@ entry:
 	ld	(0x0038), a
 	ld	hl, isr
 	ld	(0x0039), hl
-	ld	hl, WS			; обнулить рабочие области (стек лежит внутри них — поэтому не подпрограммой)
-	ld	bc, 0x0F60
+	ld	hl, WS			; обнулить рабочие области (стек лежит внутри них — поэтому не подпрограммой):
+	ld	bc, 0x0900		; сначала до блоков кораблей — в них в образе лежит заставка с Сатурном
 ws_clr:
 	ld	(hl), 0
 	inc	hl
@@ -39,8 +39,34 @@ ws_clr:
 	call	cls_all
 	ld	hl, pal_flight
 	call	pal_set
+	ifndef	SCHED
+	call	joy_init
+	ld	a, (sat_skip)		; заставка загрузчика BBC: надписи и Сатурн (saturn.asm); стенд её пропускает
+	or	a
+	call	z, sat_show
+	endif
 	call	dash_show
 	call	div_init		; таблица наклонов строится на месте уже распакованной картинки панели
+	ifndef	SCHED
+	ld	a, (sat_skip)
+	or	a
+	jp	nz, sat_done
+	dec	a
+	ld	(ENERGY), a		; чтобы обработчик кадра не включил цвет тревоги
+	ei
+	call	sat_wait		; три секунды или клавиша
+	di
+sat_done:
+	endif
+	ld	hl, WS + 0x0900		; остаток рабочих областей — вместе с кодом заставки
+	ld	bc, 0x0660
+ws_clr2:
+	ld	(hl), 0
+	inc	hl
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, ws_clr2
 	ld	hl, 0x94C7		; генератор случайных чисел: игра его не засевает, на BBC в нём след загрузчика
 	ld	(RAND), hl
 	ld	hl, 0x1D27
@@ -164,25 +190,33 @@ wp_sx:		ds	80		; копия прежней окружности планеты
 wp_sy:		ds	80
 	assert	$ <= WS + 0x1000
 	assert	rom_end <= WS
+	ifndef	SCHED
+	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
+	include	"saturn.asm"
+	assert	sat_end <= WS + 0x0F51
+IMG_END		equ	sat_end
+	else
+IMG_END		equ	rom_end
+	endif
 
 	ifdef	FAST
 	ifdef	SCHED
-	savebin	"v06c/build/elite_fast_t.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite_fast_t.rom", 0x0100, IMG_END - 0x0100
 	else
-	savebin	"v06c/build/elite_fast.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite_fast.rom", 0x0100, IMG_END - 0x0100
 	endif
 	else
 	ifdef	MERID
 	ifdef	SCHED
-	savebin	"v06c/build/elite_merid_t.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite_merid_t.rom", 0x0100, IMG_END - 0x0100
 	else
-	savebin	"v06c/build/elite_merid.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite_merid.rom", 0x0100, IMG_END - 0x0100
 	endif
 	else
 	ifdef	SCHED
-	savebin	"v06c/build/elite_t.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite_t.rom", 0x0100, IMG_END - 0x0100
 	else
-	savebin	"v06c/build/elite.rom", 0x0100, rom_end - 0x0100
+	savebin	"v06c/build/elite.rom", 0x0100, IMG_END - 0x0100
 	endif
 	endif
 	endif

@@ -268,6 +268,12 @@ dkl4:
 	jp	nz, dk7
 	ld	(DNOIZ), a
 dk7:
+	ifndef	SCHED
+	cp	0x65			; отладочный вход в миссии: M и K на паузе (missions.asm)
+	call	z, mis_dbg_m
+	cp	0x46
+	call	z, mis_dbg_k
+	endif
 	cp	0x70
 	jp	z, DEATH2
 	cp	0x59

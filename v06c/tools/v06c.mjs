@@ -37,7 +37,9 @@ function emu() {
 }
 
 // name — имя образа в v06c/build без расширения (рядом лежит .sym).
-export function createVector(name = 'elite') {
+// saturn: true — показывать заставку с Сатурном при запуске (по умолчанию стенд её пропускает: тесты считают кадры
+// от включения).
+export function createVector(name = 'elite', { saturn = false } = {}) {
   const c = emu(), base = path.join(ROOT, 'v06c/build', name);
   const memory = new c.Memory(), keyboard = new c.Keyboard(), timer = new c.I8253(), ay = new c.AY(),
     floppy = new (c.Floppy().FD1793)(), io = new c.IO(keyboard, timer, memory, ay, floppy), cpu = new c.I8080(memory, io);
@@ -46,6 +48,7 @@ export function createVector(name = 'elite') {
   const img = new Uint8Array(0x10000); img.set(new Uint8Array(fs.readFileSync(base + '.rom')), 0x100);
   memory.init_from_array(img, 0); memory.detach_boot && memory.detach_boot();
   cpu.pc = 0x100; cpu.sp = 0; cpu.iff = false;
+  { const L0 = parseSym(base + '.sym'); if (L0.sat_skip !== undefined && !saturn) memory.bytes[memory.tobank(L0.sat_skip)] = 1; }
   const R = { b: 0, c: 1, d: 2, e: 3, h: 4, l: 5, a: 7 };
   const m = {
     cpu, memory, keyboard, v06c, io, frames: 0, L: parseSym(base + '.sym'),

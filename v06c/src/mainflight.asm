@@ -147,6 +147,10 @@ mtt3_n:
 	call	ds_junk			; как в дисковой версии: валун, астероид, редко контейнер
 	endif
 	call	NWSHP
+	ifndef	SCHED
+	xor	a			; добавка к флагам (отшельник) не должна пережить неудачное появление
+	ld	(nb_pre), a
+	endif
 	jp	mtt1
 mtt4:					; торговец
 	pop	af
@@ -763,6 +767,9 @@ ma47:
 	and	0x3F
 	ld	(LAS), a
 ma47_l:
+	ifndef	SCHED
+	call	nb_hermit		; каменный отшельник под огнём выпускает пирата
+	endif
 	ld	a, (LAS)
 	ld	d, a
 	ld	a, (INWK + 35)
@@ -1131,7 +1138,18 @@ ds_junk:
 	inc	a
 ds_j1:
 	ld	hl, ds_tj
-	jp	ds_ix
+	call	ds_ix
+	cp	10			; астероид в одном случае из восьми — каменный отшельник (флаги 21h:
+	ret	nz			; признак и два корабля в запасе)
+	ld	d, a
+	call	mis_rnd
+	and	7
+	ld	a, d
+	ret	nz
+	ld	a, 0xA1
+	ld	(nb_pre), a
+	ld	a, d
+	ret
 	endif
 ; zx_tact: добавки дисковой версии в тактику (B — тип, сохраняется). Anaconda (28) изредка выпускает Worm (25);
 ; мирная станция, пока рядом нет челнока, изредка выпускает Shuttle (29) или Transporter (30) — он без тактики,
