@@ -51,12 +51,30 @@ const mk = () => { const g = createVector('elite'); g.press = (k, n = 20) => { g
   for (let i = 0; i < 200; i++) { pass(1); const on = g.rd(L.mch_x) === 7 && g.rd(L.DLY) > 0; if (on && !was) shown++; was = on; if (g.rd(L.QQ12) !== 0) break; g.wr(L.auto, [0xFF]); }
   ok(shown >= 2, `за 200 проходов под автопилотом сообщение «DOCKING COMPUTERS ON» появлялось ${shown} раз`);
 }
-// 6. эффекты: в настоящих кадрах. Попадание по нам (OOPS) — прокрутка экрана дрожит четыре кадра; энергия ниже
+// 6. эффекты: в настоящих кадрах. Попадание по нам (OOPS) — прокрутка экрана дрожит четыре прерывания; энергия ниже
 // четверти — зелёный цвет панели (регистр палитры 3) раз в 32 кадра становится жёлтым.
 { const g = mk(), L = g.L; g.frame(300); g.press('N'); g.frame(200); g.press('SPACE'); g.frame(200); g.press('F1'); g.frame(400);
-  const scr = (n) => { const v = new Set(); for (let i = 0; i < n; i++) { g.frame(1); v.add(g.io.PA); } return v; };   // порт A после кадра — регистр прокрутки
-  const calm = scr(8); g.wr(L.flash_cnt, [4]); const shaken = scr(4), after = scr(8);
-  ok(calm.size === 1 && calm.has(0xFF) && shaken.has(0xFD) && shaken.has(0xFF) && after.size === 1 && after.has(0xFF), `встряска: в покое прокрутка ${[...calm].map((v) => v.toString(16))}, четыре кадра вспышки — ${[...shaken].map((v) => v.toString(16)).join(' и ')}, затем снова ${[...after].map((v) => v.toString(16))}`);
+  // T71: кадровый импульс может попасть в DI при blk_in/blk_out. Счётчик вспышки тикает
+  // в isr, поэтому проверяем четыре реально обработанных прерывания, с ограничением ожидания.
+  // Проверяем точный порядок прокрутки и счётчика, а не только наличие двух цветов в Set.
+  let missed = 0;
+  const scr = (n, byIrq = false) => {
+    const v = [];
+    for (let f = 0; f < n + 8 && v.length < n; f++) {
+      const tick = g.rd16(L.v_frames); g.frame(1);
+      const delivered = (g.rd16(L.v_frames) - tick) & 0xFFFF;
+      if (byIrq && delivered === 0) { missed++; continue; }
+      if (byIrq && delivered !== 1) throw new Error(`за кадр обработано ${delivered} прерываний`);
+      v.push([g.io.PA, g.rd(L.flash_cnt)]);
+    }
+    return v;
+  };
+  const calm = scr(8); g.wr(L.flash_cnt, [4]); const shaken = scr(4, true), after = scr(8, true);
+  const sequence = [[0xFF, 3], [0xFD, 2], [0xFF, 1], [0xFD, 0]];
+  ok(calm.length === 8 && calm.every(([s, c]) => s === 0xFF && c === 0)
+    && JSON.stringify(shaken) === JSON.stringify(sequence)
+    && after.length === 8 && after.every(([s, c]) => s === 0xFF && c === 0),
+    `встряска: четыре прерывания ${shaken.map(([s, c]) => s.toString(16) + '/' + c).join(' ')}, затем ff/0; пропущенных импульсов ${missed}`);
   const green = () => g.rd(L.pal_regs + 3); const seen = new Set();
   g.wr(L.ENERGY, [255]); for (let i = 0; i < 80; i++) { g.frame(1); g.wr(L.ENERGY, [255]); seen.add(green()); } const full = [...seen]; seen.clear();
   for (let i = 0; i < 80; i++) { g.wr(L.ENERGY, [40]); g.frame(1); seen.add(green()); }

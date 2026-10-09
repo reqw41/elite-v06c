@@ -163,6 +163,9 @@ mv51:
 	ret
 
 ; MVS4: повернуть вектор ориентации INWK+Y.. (Y = 9, 15, 21) на крен и тангаж игрока (ALPHA, BETA).
+; T71: адрес сохраняется на стеке через MAD; INC/DEC HL не меняют флаги i8080.
+; Записи младшего байта множимого в P перед MAD не нужны: MULT1 читает только A/Q и сам пишет P.
+; Результаты, рабочие ячейки и A/B/C/CY прежние; проверка — mvs4.mjs и t08.mjs.
 MVS4:
 	ifndef	SCHED
 	ld	a, (ALP1)		; нет крена — первая половина поворота тождественна
@@ -171,11 +174,12 @@ MVS4:
 	endif
 	ld	a, (ALPHA)
 	ld	(Q), a
-	call	mvs4_hl			; y -= alpha · x
-	ld	a, (hl)
-	ld	(P_), a
+	ld	a, c			; y -= alpha · x; HL = INWK + Y
+	add	a, low INWK
+	ld	l, a
+	ld	h, high INWK
 	inc	hl
-	ld	d, (hl)
+	ld	d, (hl)			; старший байт x
 	inc	hl
 	ld	a, (hl)
 	ld	(R_), a
@@ -184,30 +188,29 @@ MVS4:
 	ld	(S), a
 	ld	a, d
 	xor	0x80
+	push	hl			; адрес старшего байта y
 	call	MAD
-	call	mvs4_hl
+	pop	hl
+	ld	(hl), a
+	dec	hl
+	ld	(hl), b
+	dec	hl				; x += alpha · новое y (оно остаётся в A)
+	dec	hl
+	ld	e, (hl)
 	inc	hl
-	inc	hl
+	ld	d, (hl)
+	ex	de, hl
+	ld	(R_), hl			; R/S — соседние байты
+	ex	de, hl
+	dec	hl
+	push	hl			; адрес младшего байта x
+	call	MAD
+	pop	hl
 	ld	(hl), b
 	inc	hl
 	ld	(hl), a
-	ld	e, a
 	ld	a, b
-	ld	(P_), a
-	call	mvs4_hl			; x += alpha · y
-	ld	a, (hl)
-	ld	(R_), a
-	inc	hl
-	ld	a, (hl)
-	ld	(S), a
-	ld	a, e
-	call	MAD
-	call	mvs4_hl
-	ld	(hl), b
-	inc	hl
-	ld	(hl), a
-	ld	a, b
-	ld	(P_), a
+	ld	(P_), a			; сохранить прежний P, в том числе при нулевом тангаже
 mvs4_b:
 	ifndef	SCHED
 	ld	a, (BET1)		; нет тангажа — вторая половина тождественна
@@ -216,7 +219,10 @@ mvs4_b:
 	endif
 	ld	a, (BETA)
 	ld	(Q), a
-	call	mvs4_hl			; y -= beta · z
+	ld	a, c			; y -= beta · z; HL = INWK + Y
+	add	a, low INWK
+	ld	l, a
+	ld	h, high INWK
 	inc	hl
 	inc	hl
 	ld	a, (hl)
@@ -225,47 +231,32 @@ mvs4_b:
 	ld	a, (hl)
 	ld	(S), a
 	inc	hl
-	ld	a, (hl)
-	ld	(P_), a
 	inc	hl
 	ld	a, (hl)
 	xor	0x80
+	push	hl			; адрес старшего байта z
 	call	MAD
-	call	mvs4_hl
-	inc	hl
-	inc	hl
-	ld	(hl), b
-	inc	hl
+	pop	hl
+	dec	hl
+	dec	hl
 	ld	(hl), a
-	ld	e, a
-	ld	a, b
-	ld	(P_), a
-	inc	hl			; z += beta · y
-	ld	a, (hl)
-	ld	(R_), a
+	dec	hl
+	ld	(hl), b
+	inc	hl				; z += beta · новое y (оно остаётся в A)
 	inc	hl
-	ld	a, (hl)
-	ld	(S), a
-	ld	a, e
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	ex	de, hl
+	ld	(R_), hl
+	ex	de, hl
+	push	hl			; адрес старшего байта z
 	call	MAD
-	call	mvs4_hl
-	inc	hl
-	inc	hl
-	inc	hl
-	inc	hl
-	ld	(hl), b
-	inc	hl
+	pop	hl
 	ld	(hl), a
+	dec	hl
+	ld	(hl), b
 	ret
-mvs4_hl:				; HL = INWK + Y; портит только HL и флаги
-	push	af
-	ld	hl, INWK
-	ld	a, c
-	add	a, l
-	ld	l, a
-	pop	af
-	ret
-
 ; MVS5: повернуть пару координат двух векторов ориентации (INWK+X и INWK+Y) на 1/16 радиана в сторону
 ; знака RAT2: x = x·(1 - 1/512) + y/16, y = y·(1 - 1/512) - x/16.
 MVS5:
