@@ -62,5 +62,29 @@ console.log(`случаев ${cases} по ${N} пылинок; заменено 
     if (nx < x * 256 || ny < y * 256) shrink++; worst = Math.max(worst, Math.abs(nx / ny - x / y) / (x / y)); }
   if (shrink || worst > 0.01) fail(`полёт прямо: пылинка приблизилась к центру ${shrink} раз, луч сместился до ${(worst * 100).toFixed(2)} %`);
   console.log(`полёт прямо, 300 пылинок: к центру не приблизилась ни одна, отношение x/y меняется не больше чем на ${(worst * 100).toFixed(2)} %`); }
+
+// Число пылинок по нагрузке (dust_adj): 18 без объектов рядом, на 2 меньше за каждый, не меньше 10. На экране пылинки
+// рисуются исключающим ИЛИ: считаем все вызовы PIXEL2 и после каждого прохода сверяем — «горят» ровно пылинки 1…NOSTM.
+{ const g = createVector('elite'), G = g.L, c = g.cpu, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
+  const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
+  g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(400);
+  c.iff = false; let cyc = 0; const lit = new Map();
+  const tog = (k) => { if (lit.has(k)) lit.delete(k); else lit.set(k, 1); };
+  const pass = () => { let k = 0; do { if ((c.pc & 0xffff) === G.PIXEL2) tog(`${g.rd(G.X1)},${g.rd(G.Y1)},${g.rd(G.ZZ)}`); c.instruction(); cyc += c.vcycles | 0; if (c.last_opcode === 0xd3) g.io.commit();
+      if (cyc >= 59904) { cyc -= 59904; g.wr(G.DL, [30]); } if (++k > 3e7) throw new Error('проход не кончился'); } while ((c.pc & 0xffff) !== G.MLOOP); c.iff = false; };
+  const fr = () => Array.from({ length: 13 }, (_, i) => g.rd(G.FRIN + i));
+  const stars = () => { const m = new Map(); for (let i = 1; i <= g.rd(G.NOSTM); i++) { const k = `${g.rd(G.SX + i)},${g.rd(G.SY + i)},${g.rd(G.SZ + i)}`; if (m.has(k)) m.delete(k); else m.set(k, 1); } return m; };
+  for (let i = 0; i < 3; i++) pass();
+  lit.clear(); for (const k of stars().keys()) lit.set(k, 1);
+  let wrongN = 0, wrongPix = 0, passes = 0; const seen = new Set();
+  const check = () => { passes++; const objs = fr().slice(2).filter((t) => t).length, want = Math.max(10, 18 - 2 * objs), n = g.rd(G.NOSTM); seen.add(n); if (n !== want) wrongN++;
+    const st = stars(); if (st.size !== lit.size || [...st.keys()].some((k) => !lit.has(k))) wrongPix++; };
+  const keep = () => { g.wr(G.ENERGY, [255]); g.wr(G.FSH, [255]); g.wr(G.ASH, [255]); g.wr(G.K_ + 36 + 32, [1]); };
+  const add = (t) => { g.call('ZINF'); g.wr(G.INWK + 7, [30]); g.wr(G.INWK + 1, [20]); g.call('NWSHP', { a: t }); };
+  const kill = () => { for (let i = 12; i >= 2; i--) { const t = g.rd(G.FRIN + i); if (t && t < 128) { const a = G.K_ + 36 * i + 31; g.wr(a, [g.rd(a) | 0x80]); return; } } };
+  for (let i = 0; i < 40; i++) { keep(); pass(); check(); }
+  for (let n = 0; n < 6; n++) { add([1, 11, 14, 10, 3, 1][n]); for (let i = 0; i < 25; i++) { keep(); pass(); check(); } }
+  for (let n = 0; n < 6; n++) { kill(); for (let i = 0; i < 60; i++) { keep(); pass(); check(); } }
+  const msg = `число пылинок по нагрузке: проходов ${passes}, бывало ${[...seen].sort((a, b) => a - b).join(', ')}; не то число — ${wrongN} проходов, расхождение с экраном — ${wrongPix}`; console.log(msg); if (!(wrongN === 0 && wrongPix === 0 && seen.has(18) && seen.has(10))) fail(msg); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'DUST: всё совпало');
 process.exit(bad ? 1 : 0);

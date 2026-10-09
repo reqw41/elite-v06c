@@ -96,6 +96,64 @@ st_idx:
 	ret
 
 ; STARS: шаг пыли по виду: 0 — STARS1, 1 — STARS6, 2/3 — STARS2 (B = VIEW−1: 1 влево, 2 вправо).
+	ifndef	SCHED
+; dust_adj: число пылинок по нагрузке — 18 без объектов рядом, на 2 меньше за каждый объект (корабль, мусор),
+; не меньше 10. В подпространстве число задаёт игра. Пылинки между прежним и новым числом переключаются на экране
+; (рисуются исключающим ИЛИ): лишние стираются, вернувшиеся появляются на прежних местах.
+dust_adj:
+	ld	a, (MJ)
+	or	a
+	ret	nz
+	ld	hl, FRIN + 2
+	ld	d, NOST
+da_1:
+	ld	a, (hl)
+	or	a
+	jp	z, da_2
+	inc	hl
+	dec	d
+	dec	d
+	ld	a, d
+	cp	10
+	jp	nz, da_1
+da_2:
+	ld	a, (NOSTM)
+	cp	d
+	ret	z
+	ld	b, a			; B — большее из двух чисел, E — меньшее
+	ld	e, d
+	jp	nc, da_3
+	ld	b, d
+	ld	e, a
+da_3:
+	ld	a, d
+	ld	(NOSTM), a
+da_l:
+	push	bc
+	push	de
+	ld	c, b
+	ld	b, 0
+	ld	hl, SX
+	add	hl, bc
+	ld	a, (hl)
+	ld	(X1), a
+	ld	hl, SY
+	add	hl, bc
+	ld	a, (hl)
+	ld	(Y1), a
+	ld	hl, SZ
+	add	hl, bc
+	ld	a, (hl)
+	ld	(ZZ), a
+	call	PIXEL2
+	pop	de
+	pop	bc
+	dec	b
+	ld	a, b
+	cp	e
+	jp	nz, da_l
+	ret
+	endif
 STARS:
 	ld	a, (VIEW)
 	ld	b, a
