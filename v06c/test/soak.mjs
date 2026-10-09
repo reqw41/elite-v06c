@@ -30,7 +30,7 @@ for (let f = 0; f < FRAMES; f += STEP) {
     g.frame(400); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(300);
     g.wr(L.LASER, [0x97, 0x97, 0x97, 0x97]); g.wr(L.FIST, [0xFF]); streak.fill(0); continue; }
   // чаще новые корабли: счётчик появления почти истёк, анархия; раз в 10 с один из кораблей взрывается (как от бомбы)
-  g.wr(L.EV, [0]); g.wr(L.gov, [0]); if (f % 60 === 0) g.wr(L.MCNT, [1]);
+  g.wr(L.EV, [0]); g.wr(L.gov, [0]); if (f % 60 === 0) { const v = ((g.rd(L.v_frames) | (g.rd(L.v_frames + 1) << 8)) - 0x500) & 0xffff; g.wr(L.sp_last, [v & 255, v >> 8]); }   // проверка появления — раз в 60 кадров
   if (f % 500 === 0) { const live = []; for (let i = 2; i < 12; i++) { const t = g.rd(L.FRIN + i); if (t && t < 128 && t !== 8 && !(g.rd(L.K_ + 36 * i + 31) & 0xA0)) live.push(i); }   // как бомба: уже взрывающиеся не трогаем
     if (live.length) { const i = live[rnd(live.length)], a = L.K_ + 36 * i + 31; g.wr(a, [g.rd(a) | 0x80]); blown++; } }
   g.wr(L.ENERGY, [255]); g.wr(L.FSH, [255]); g.wr(L.ASH, [255]); g.wr(L.GNTMP, [0]); g.wr(L.CABTMP, [0]); g.wr(L.ALTIT, [255]);

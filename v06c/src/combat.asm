@@ -43,12 +43,24 @@ oo_n:
 	endif
 ; OUCH: при уроне по энергии иногда гибнет груз или прибор.
 OUCH:
+	ifdef	SCHED
 	call	DORND2
 	or	a
 	ret	m
 	ld	a, b
 	cp	22
 	ret	nc
+	else
+; Как в ZX 48K: 10 ударов из 64 губят единицу груза (случайный товар из шестнадцати, если он есть в трюме);
+; приборы не гибнут. В кассетной BBC гибнет весь товар или прибор, реже.
+	call	DORND2
+	and	63
+	cp	10
+	ret	nc
+	ld	a, b
+	and	15
+	ld	b, a
+	endif
 	ld	e, b
 	ld	d, 0
 	ld	hl, QQ20
@@ -61,7 +73,11 @@ OUCH:
 	ret	nz
 	ld	a, 3
 	ld	(de_), a
+	ifdef	SCHED
 	ld	(hl), 0
+	else
+	dec	(hl)
+	endif
 	ld	a, b
 	cp	17
 	jp	nc, ou1

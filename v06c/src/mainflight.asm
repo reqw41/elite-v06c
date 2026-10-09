@@ -73,6 +73,25 @@ TT100:
 me3:
 	ld	hl, MCNT
 	dec	(hl)
+	ifndef	SCHED
+; Правила ZX 48K: новые корабли — не раз в 256 проходов, а раз в SP_PERIOD кадров (на ZX 256 проходов — около 27 с),
+; только вне зоны станции и не в подпространстве. Кто появится — zx_spawn.
+	ld	hl, (sp_last)
+	ex	de, hl
+	ld	hl, (v_frames)
+	ld	a, l
+	sub	e
+	ld	a, h
+	sbc	a, d
+	cp	SP_PERIOD >> 8
+	jp	c, MLOOP
+	ld	(sp_last), hl
+	ld	a, (MJ)
+	ld	hl, SSPR
+	or	(hl)
+	call	z, zx_spawn
+	jp	MLOOP
+	else
 	jp	nz, MLOOP
 	ld	hl, MJ			; проверка без сброса переноса: он идёт в генератор случайных чисел
 	inc	(hl)
@@ -302,6 +321,7 @@ mt3:
 	dec	(hl)
 	jp	p, mt3
 	jp	MLOOP
+	endif
 me2:
 	ld	a, (MCH)
 	call	MESS
@@ -898,9 +918,14 @@ ma15:
 	ld	hl, newb
 	add	hl, de
 	ld	a, (hl)
-	and	0x40
+	and	0x60			; и за мирного, как в ZX 48K (каменный отшельник — астероид — не в счёт)
+	jp	z, ma_q2
+	ld	a, (TYPE)
+	cp	10
+	jp	z, ma_q2
 	ld	hl, FIST
-	or	(hl)
+	ld	a, (hl)
+	or	64
 	ld	(hl), a
 	endif
 ma_q2:
@@ -1126,6 +1151,158 @@ DS_PACK		equ	200
 	else
 DS_GOV		equ	120
 DS_PACK		equ	100
+; zx_spawn: кто появится — по дереву ZX 48K (снимок, BBBAh–BCC7h). Случайные числа свои.
+;   идёт охота за скрывающим устройством, Asp ещё не выходил: 30 из 256 — Asp с устройством и стая;
+;   число минус вес контрабанды (BAD): меньше нуля или меньше 80 — корабли, 80–89 — мусор, от 90 — никого;
+;   корабли: в системе-цели «Захвата станции» — таргоид; при правлении, отличном от анархии, — только если три младших
+;   бита числа не меньше номера правления; бит 3 числа — одиночка, иначе мирные или стая.
+SP_PERIOD	equ	0x0500		; 1280 кадров, 25,6 с
+zx_spawn:
+	ld	a, (MISF)
+	and	0x20
+	jp	z, zs_0
+	ld	a, (asp_out)
+	or	a
+	jp	nz, zs_0
+	call	zs_rnd
+	cp	30
+	jp	nc, zs_0
+	ld	a, 1
+	ld	(asp_out), a
+	call	Ze
+	ld	a, 17
+	call	NWSHP
+	jp	zs_pack
+zs_0:
+	call	dm_thg			; планы таргоидов на борту: таргоиды чаще (молчит, пока миссия не идёт)
+	call	BAD
+	ld	c, a
+	call	zs_rnd
+	sub	c
+	jp	c, zs_ships
+	cp	90
+	ret	nc
+	cp	80
+	jp	c, zs_ships
+	call	Ze			; мусор: валун, астероид, изредка контейнер или каменный отшельник
+	xor	a
+	ld	(INWK + 32), a
+	call	zs_rnd
+	ld	c, a
+	or	0x6F
+	ld	(INWK + 29), a
+	ld	a, c
+	and	31
+	or	16
+	ld	(INWK + 27), a
+	ld	a, c
+	call	ds_junk
+	jp	zs_nw
+zs_ships:
+	ld	b, a
+	and	7
+	ld	e, a
+	ld	a, (M3ST)
+	cp	4
+	jp	z, GTHG
+	ld	a, (gov)
+	or	a
+	jp	z, zs_g
+	inc	e
+	cp	e
+	ret	nc
+zs_g:
+	ld	a, b
+	and	8
+	jp	z, zs_peace
+	call	zs_rnd			; одиночка: 1 из 64 — таргоид
+	and	63
+	jp	z, GTHG
+	call	Ze
+	call	ds_lone
+	call	dm_pick			; миссия 1 дисковой версии: «Констриктор»
+	ld	c, a
+	cp	31
+	jp	z, zs_h
+	call	zs_rnd			; враждебен сразу — 51 из 256; прочие идут мимо, пока их не тронут
+	cp	51
+	jp	c, zs_h
+	ld	b, 0
+	ld	hl, nb_e - 1
+	add	hl, bc
+	ld	a, (hl)
+	and	0x7B
+	or	0x80
+	ld	(nb_pre), a
+zs_h:
+	ld	a, c
+zs_nw:
+	call	NWSHP
+	xor	a
+	ld	(nb_pre), a
+	ret
+zs_peace:
+	call	zs_rnd
+	ld	b, a
+	and	7
+	cp	e
+	jp	nc, zs_pack
+	call	Ze			; мирные: 1 из 8 — каменный отшельник, 1 из 8 — полиция, прочие — торговцы
+	ld	a, b
+	rlca
+	rlca
+	rlca
+	and	7
+	jp	z, zs_herm
+	dec	a
+	ld	a, 2
+	jp	z, zs_nw
+	call	zs_rnd
+	and	31
+	or	16
+	ld	(INWK + 27), a
+	xor	a
+	ld	c, 0xA0			; торговец мирный, каким бы кораблём ни вышел; в половине случаев он
+	ld	d, a			; с тактикой и летит стыковаться, как в дисковой версии
+	ld	a, b
+	and	0x10
+	jp	z, zs_t1
+	ld	d, 0xC0
+	ld	c, 0xB0
+zs_t1:
+	ld	a, d
+	ld	(INWK + 32), a
+	ld	a, c
+	ld	(nb_pre), a
+	call	ds_trade
+	jp	zs_nw
+zs_herm:
+	xor	a
+	ld	(INWK + 32), a
+	ld	a, 0xA1
+	ld	(nb_pre), a
+	ld	a, 10
+	jp	zs_nw
+zs_pack:				; стая: 2–4 корабля
+	call	zs_rnd
+	and	3
+	rra
+	adc	a, 2
+	ld	(XX13), a
+	call	Ze
+zs_p1:
+	call	ds_pack
+	call	NWSHP
+	ld	hl, XX13
+	dec	(hl)
+	jp	nz, zs_p1
+	ret
+zs_rnd:					; случайное число игры (свой генератор даёт связанные числа подряд); BC цел
+	push	bc
+	call	DORND
+	pop	bc
+	ret
+sp_last:	dw	0		; кадр последней проверки появления
 ds_lone:
 	ld	hl, ds_tl
 	jp	ds_4
@@ -1171,7 +1348,6 @@ ds_j1:
 	ld	(nb_pre), a
 	ld	a, d
 	ret
-	endif
 ; zx_tact: добавки дисковой версии в тактику (B — тип, сохраняется). Anaconda (28) изредка выпускает Worm (25);
 ; мирная станция, пока рядом нет челнока, изредка выпускает Shuttle (29) или Transporter (30) — он без тактики,
 ; летит прямо из щели, к планете. Случайные числа свои.
@@ -1197,9 +1373,18 @@ zt_st:
 	call	mis_rnd
 	cp	253
 	ret	c
+	ld	e, 29			; 254 — Shuttle, 255 — Transporter, 253 — торговец (как в ZX 48K)
+	jp	z, zt_tr
 	and	1
-	add	a, 29
+	add	a, e
 	ld	e, a
+	jp	zt_ck
+zt_tr:
+	push	bc
+	call	ds_trade
+	pop	bc
+	ld	e, a
+zt_ck:
 	ld	hl, FRIN
 	ld	c, NOSH
 zt_1:
@@ -1212,8 +1397,16 @@ zt_1:
 	jp	nz, zt_1
 	push	bc
 	ld	b, e
+	ld	a, e
+	cp	29
+	jp	nc, zt_s
+	ld	a, 0xA0			; торговец мирный, каким бы кораблём ни вышел
+	ld	(nb_pre), a
+zt_s:
 	ld	a, 0xF1			; как на диске: челнок с тактикой — летит к планете
 	call	SFS1
+	xor	a
+	ld	(nb_pre), a
 	pop	bc
 	ret
-
+	endif

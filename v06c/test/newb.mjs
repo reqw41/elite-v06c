@@ -81,6 +81,7 @@ for (const WAIT of [400, 440, 500, 700]) { const g = createVector('elite'), G = 
   const cops = fr().map((t, i) => (t === 2 ? g.rd(G.newb + i) : -1)).filter((v) => v >= 0);
   ok(cops.length >= 2 && cops.every((v) => v & 4) && g.rd(G.FIST) === 0 && !fr().some((t) => t === 29 || t === 30), `в игре: злая станция за ${f} кадров выпустила полицию, флаги ${cops.map((v) => v.toString(16)).join(', ')} — враждебна при чистом статусе игрока`); }
 // 7 и 8. в игре: капсула — только у кораблей с её признаком (диск, E% бит 7); в розыск — за корабль с признаком полиции
+// или мирного (правило ZX 48K), за пирата — нет
 { const g = createVector('elite'), G = g.L, c = g.cpu, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(400);
@@ -95,7 +96,7 @@ for (const WAIT of [400, 440, 500, 700]) { const g = createVector('elite'), G = 
   for (const t of [1, 3, 23, 22, 31, 25, 14]) { wipe(); g.call('ZINF'); g.wr(G.INWK + 7, [40]); g.wr(G.INWK + 32, [0xFF]); const r = g.call('NWSHP', { a: t }); const slot = fr().lastIndexOf(t);
     let pod = false; for (let n = 0; n < 1200 && !pod && fr().includes(t); n++) { const s = fr().indexOf(t), b = G.K_ + 36 * s; g.wr(b + 35, [1]); g.wr(b, [0, 0, 0, 0, 0, 0, 0, 40, 0]); g.wr(G.DELTA, [0]); g.wr(G.ENERGY, [255]); g.wr(G.FSH, [255]); g.wr(G.ASH, [255]); pass(); if (fr().includes(13)) pod = true; }
     ok(r.cf === 1 && slot > 0 && pod === POD[t], `${NAME[t]} при энергии 1: капсулу ${pod ? 'выпустил' : 'не выпустил'} (на диске ${POD[t] ? 'есть' : 'нет'})`); }
-  for (const [t, name, want] of [[30, 'Transporter', 64], [29, 'Shuttle', 0], [2, 'Viper', 64]]) { wipe(); g.wr(G.FIST, [0]); g.wr(G.LASER, [15, 0, 0, 0]); g.call('ZINF'); g.wr(G.INWK + 7, [3]); g.call('NWSHP', { a: t }); keyA(true); let n = 0;
+  for (const [t, name, want] of [[30, 'Transporter', 64], [29, 'Shuttle', 64], [1, 'Sidewinder', 0], [2, 'Viper', 64]]) { wipe(); g.wr(G.FIST, [0]); g.wr(G.LASER, [15, 0, 0, 0]); g.call('ZINF'); g.wr(G.INWK + 7, [3]); g.call('NWSHP', { a: t }); keyA(true); let n = 0;
     while (fr().includes(t) && n < 600) { const s = fr().indexOf(t); g.wr(G.K_ + 36 * s, [0, 0, 0, 0, 0, 0, 0, 3, 0]); g.wr(G.K_ + 36 * s + 32, [0]); g.wr(G.K_ + 36 + 32, [1]); g.wr(G.DELTA, [0]); g.wr(G.GNTMP, [0]); g.wr(G.ENERGY, [255]); pass(); n++; }
     keyA(false); g.wr(G.K_ + 36 + 32, [1]); for (let i = 0; i < 3; i++) pass();
     ok(!fr().includes(t) && (g.rd(G.FIST) & 64) === want, `${name} уничтожен за ${n} проходов: правовой статус ${g.rd(G.FIST)}`); }

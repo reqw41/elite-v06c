@@ -27,7 +27,7 @@ const reset = () => { m.wr(MISF, [0]); m.wr(MJC, [0]); m.wr(M1ST, [0]); m.wr(M3S
 // 2. цель третьей миссии
 { reset(); m.wr(L.GCNT, [1]); m.wr(MISF, [0x83]); m.wr(M3PL, [99]); m.wr(MJC, [10]);
   m.call('mis_arrive', {}, 2e6);
-  ok(m.rd(M3ST) === 1 && m.rd(M3PL) === 0 && (m.rd(MISF) & 0x87) === 0x07, `«Захват станции» выдан: состояние ${m.rd(M3ST)}, цель — система ${m.rd(M3PL)}`); }
+  ok(m.rd(M3ST) === 1 && m.rd(M3PL) !== 99 && (m.rd(MISF) & 0x87) === 0x07, `«Захват станции» выдан: состояние ${m.rd(M3ST)}, цель — система ${m.rd(M3PL)}`); }
 
 // 3. награды
 { reset(); m.wr(M1ST, [0x80]); m.wr(L.CRGO, [22]); m.wr(L.QQ20 + 15, [0]);

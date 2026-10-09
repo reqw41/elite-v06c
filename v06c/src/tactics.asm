@@ -216,6 +216,13 @@ TA64:
 ; --- TACTICS: X (регистр B) = тип корабля, блок — в INWK ---
 TACTICS:
 	ifndef	SCHED
+	ld	a, (cloak_on)		; как в ZX 48K: пока включено скрывающее устройство, тактика чужих кораблей
+	or	a			; не выполняется (ракеты летят дальше)
+	jp	z, ta_see
+	ld	a, b
+	cp	9
+	ret	nz
+ta_see:
 	call	zx_tact		; Anaconda выпускает Worm, станция — челноки
 	endif
 	ld	a, b
@@ -570,7 +577,7 @@ an_ship:
 	ld	a, (hl)
 	or	4
 	ld	(hl), a
-	and	0x20
+	and	0x60			; мирный или полицейский
 	call	nz, AN2
 	endif
 	ld	hl, (INF)
@@ -594,6 +601,21 @@ AN2:
 	ld	a, (hl)
 	or	0x80
 	ld	(hl), a
+	ifndef	SCHED
+; Как в ZX 48K: нападение на станцию, мирного или полицейского делает враждебными все корабли вокруг.
+	ld	hl, newb + 2
+	ld	b, NOSH - 1
+an_all:
+	ld	a, (hl)
+	or	a
+	jp	z, an_nx
+	or	4
+	ld	(hl), a
+an_nx:
+	inc	hl
+	dec	b
+	jp	nz, an_all
+	endif
 	or	a
 	ret
 
@@ -697,8 +719,10 @@ sfs_noil:
 	jp	nc, sfs_nh
 	ld	c, 4
 sfs_nh:
+	ld	hl, nb_pre		; к тому, что уже задано (торговец со станции)
 	ld	a, c
-	ld	(nb_pre), a
+	or	(hl)
+	ld	(hl), a
 	pop	bc
 	pop	af
 	endif
