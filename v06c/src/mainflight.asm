@@ -883,6 +883,7 @@ ma15:
 	jp	p, mac1
 	and	0x20
 	jp	z, mac1
+	ifdef	SCHED
 	ld	a, (TYPE)		; корабль взорвался: за полицейского — в розыск, за остальных — награда
 	cp	2
 	jp	nz, ma_q2
@@ -890,6 +891,18 @@ ma15:
 	ld	a, (hl)
 	or	64
 	ld	(hl), a
+	else
+	ld	a, (XSAV)		; как в дисковой версии: в розыск — за корабль с признаком полиции
+	ld	e, a			; (Viper и Transporter)
+	ld	d, 0
+	ld	hl, newb
+	add	hl, de
+	ld	a, (hl)
+	and	0x40
+	ld	hl, FIST
+	or	(hl)
+	ld	(hl), a
+	endif
 ma_q2:
 	ld	a, (DLY)
 	ld	hl, MJ
@@ -1178,8 +1191,8 @@ zx_tact:
 	pop	bc
 	ret
 zt_st:
-	ld	a, (INWK + 32)
-	add	a, a
+	ld	a, (INWK + 32)		; злая станция (бит 7) челноков не выпускает
+	or	a
 	ret	m
 	call	mis_rnd
 	cp	253
@@ -1199,7 +1212,7 @@ zt_1:
 	jp	nz, zt_1
 	push	bc
 	ld	b, e
-	xor	a
+	ld	a, 0xF1			; как на диске: челнок с тактикой — летит к планете
 	call	SFS1
 	pop	bc
 	ret

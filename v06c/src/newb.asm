@@ -4,12 +4,12 @@
 ; Только в обычном образе. Сверка по смыслу — v06c/test/newb.mjs.
 	ifndef	SCHED
 ; nb_e: флаги по умолчанию для типов 1…31 (таблица E% дисковой версии, в нашей нумерации типов)
-nb_e:	db	0x0C, 0x42, 0x0C, 0x0C, 0x0C, 0x0C, 0x20	; Sidewinder, Viper, Mamba, Python, Cobra (пират), Thargoid, Cobra-торговец
+nb_e:	db	0x0C, 0xC2, 0x8C, 0x8C, 0x8C, 0x0C, 0xA0	; Sidewinder, Viper, Mamba, Python, Cobra (пират), Thargoid, Cobra-торговец
 	db	0x00, 0x00, 0x00, 0x00, 0x04, 0x01		; станция, ракета, астероид, контейнер, таргон, капсула
-	db	0x0C, 0x0C, 0x02, 0x0C, 0x00, 0x00, 0x00, 0x00	; Krait, Asp, Fer-de-Lance, Asp с устройством, мусор: 18–21
-	db	0x0C, 0x0C, 0x0C, 0x04, 0x0C, 0x20, 0x21	; Adder, Gecko, Cobra Mk I, Worm, Moray, Boa, Anaconda
+	db	0x8C, 0x8C, 0x82, 0x8C, 0x00, 0x00, 0x00, 0x00	; Krait, Asp, Fer-de-Lance, Asp с устройством, мусор: 18–21
+	db	0x8C, 0x0C, 0x8C, 0x04, 0x0C, 0xA0, 0xA1	; Adder, Gecko, Cobra Mk I, Worm, Moray, Boa, Anaconda
 	db	0x21, 0x61, 0x04				; Shuttle, Transporter, Constrictor
-
+; Бит 7 — у корабля есть спасательная капсула (как в E%); в флаги места он не попадает, его читает тактика.
 ; nb_new (из NWSHP): флаги нового корабля. E — место, B — тип; A, B, DE сохраняются. nb_pre: что добавить к
 ; флагам по умолчанию; с битом 7 — взять вместо них (торговец, каким бы кораблём он ни вышел).
 nb_new:

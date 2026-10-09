@@ -334,9 +334,20 @@ TA7:
 	call	DORND
 	cp	230
 	jp	c, ta3_c0
+	ifdef	SCHED
 	ld	a, (TYPE)
 	cp	6
 	jp	z, ta3_c1
+	else
+	ld	a, (TYPE)		; как в дисковой версии: капсула — только у кораблей с её признаком
+	ld	e, a			; (бит 7 в nb_e); у Sidewinder, Gecko, Moray, Worm, таргоидов, челноков
+	ld	d, 0			; и «Констриктора» её нет
+	ld	hl, nb_e - 1
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	jp	p, ta3_c1
+	endif
 	xor	a			; мало энергии: бросить корабль, выпустить капсулу
 	ld	(INWK + 32), a
 	jp	SESCP
