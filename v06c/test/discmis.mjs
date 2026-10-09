@@ -50,7 +50,7 @@ console.log(`тексты миссий: ${TEXTS.reduce((q, t) => q + t[2].length
   const TOK = { 10: 'BRIEF1', 11: 'BRIEF2', 15: 'DEBRIEF1', 222: 'BRIEF3', 223: 'DEBRIEF2', 216: 'INCOMING' };
   let n = 0, shown = 0;
   const places = [[20, 173], [215, 84], [63, 72], [144, 33]];
-  for (let tp = 0; tp < 16; tp++) for (const [tally, vt, misf, lo] of [[0, 0, 0, 0xFF], [0, 0, 1, 0x80], [1, 0, 1, 0x81], [4, 1, 1, 0], [5, 1, 9, 0], [9, 2, 9, 0]]) for (let gcnt = 0; gcnt < 4; gcnt++) for (const [q0, q1] of places) {
+  for (let tp = 0; tp < 16; tp++) for (const [tally, vt, misf, lo] of [[0, 0, 0, 0x7F], [0, 0, 0, 0x80], [1, 0, 0, 0x81], [4, 1, 0, 0], [5, 1, 1, 0], [9, 2, 1, 0]]) for (let gcnt = 0; gcnt < 4; gcnt++) for (const [q0, q1] of places) {
     dk.reset(); const seenB = [];
     for (const l of ['DEEOR', 'RES2', 'HFS1', 'HALL', 'DELAY', 'BAY', 'NWSHP', 'LL9', 'MVEIT', 'TT66', 'ZINF']) dk.hooks.set(dk.lab[l], () => true);
     dk.hooks.set(dk.lab.DETOK, (o) => { seenB.push(TOK[o.cpu.a] || o.cpu.a); return true; });
@@ -100,7 +100,7 @@ console.log(`тексты миссий: ${TEXTS.reduce((q, t) => q + t[2].length
   const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08] };
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(600);
-  g.wr(g.L.DKCMP, [0xFF]); g.wr(g.L.TALLY + 1, [3]); g.wr(g.L.TP, [1]); press('C');
+  g.wr(g.L.DKCMP, [0xFF]); g.wr(g.L.TALLY + 1, [3]); press('C');
   let f = 0; while (g.rd(g.L.DTP) === 0 && f < 30000) { g.frame(25); f += 25; }
   if (g.rd(g.L.DTP) !== 1) fail('в игре: задание миссии 1 не выдано');
   g.frame(450); savePng(g.bmp(), path.join(ROOT, 'work/v06c/discmis-ship.png'));

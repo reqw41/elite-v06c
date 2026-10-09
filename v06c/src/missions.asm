@@ -66,9 +66,9 @@ mis_dbg_m:
 	ld	(hl), a
 	jp	mis_dbg
 mis_dbg_k:
-	ld	hl, MISF		; условия побочных миссий: «Сверхновая» уже выдавалась, устройство получено
+	ld	hl, MISF		; условие «Планов таргоидов»: «Сверхновая» уже выдавалась
 	ld	a, (hl)
-	or	9
+	or	1
 	ld	(hl), a
 	ld	hl, TALLY + 1
 	inc	(hl)
