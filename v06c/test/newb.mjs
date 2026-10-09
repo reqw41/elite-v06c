@@ -71,5 +71,14 @@ for (const WAIT of [400, 440, 500, 700]) { const g = createVector('elite'), G = 
     const s = fr().indexOf(7); if (s > 0) { const b = G.K_ + 36 * s, d = Math.hypot(...[0, 1, 2].map((ax) => { const q = (i) => g.rd(G.K_ + i); const sg = (base) => (q(base + 3 * ax + 2) & 0x80 ? -1 : 1) * (q(base + 3 * ax) | (q(base + 3 * ax + 1) << 8)); return sg(36 * s) - sg(36); })); minD = Math.min(minD, d); } }
   ok(r.cf === 1 && slot > 0 && !fr().includes(7), `в игре (сцена через ${WAIT} кадров после взлёта): торговец появился у станции и через ${n} проходов исчез в ней (ближе всего к центру станции — ${minD.toFixed(0)}); энергия ${g.rd(G.ENERGY)}, станция ${(g.rd(G.K_ + 36 + 32) & 0x80) ? 'злится' : 'мирная'}`);
 }
+// 6. в игре: разозлённая станция выпускает враждебную полицию (на диске потомок наследует враждебность родителя)
+{ const g = createVector('elite'), G = g.L, c = g.cpu, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
+  const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
+  g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(400);
+  const fr = () => Array.from({ length: 13 }, (_, i) => g.rd(G.FRIN + i));
+  g.wr(G.K_ + 36 + 32, [g.rd(G.K_ + 36 + 32) | 0x80]); g.wr(G.FIST, [0]);
+  let f = 0; while (fr().filter((t) => t === 2).length < 2 && f < 3000) { g.frame(10); f += 10; g.wr(G.ENERGY, [255]); }
+  const cops = fr().map((t, i) => (t === 2 ? g.rd(G.newb + i) : -1)).filter((v) => v >= 0);
+  ok(cops.length >= 2 && cops.every((v) => v & 4) && g.rd(G.FIST) === 0, `в игре: злая станция за ${f} кадров выпустила полицию, флаги ${cops.map((v) => v.toString(16)).join(', ')} — враждебна при чистом статусе игрока`); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'NEWB: всё как задумано');
 process.exit(bad ? 1 : 0);

@@ -669,6 +669,28 @@ sfs_oil:
 	ld	(INWK + 27), a
 	pop	af
 sfs_noil:
+	ifndef	SCHED
+; Как в дисковой версии: потомок наследует от родителя враждебность и признак пирата — злая станция выпускает
+; враждебную полицию (в кассетной версии полиция враждебна сама по себе). Злость станции — бит 7 её байта 32.
+	push	af			; тип потомка (B после DORND уже не тип)
+	push	bc
+	call	nb_inf
+	ld	a, (hl)
+	and	0x0C
+	ld	c, a
+	ld	a, (TYPE)
+	cp	8
+	jp	nz, sfs_nh
+	ld	a, (K_ + NI + 32)
+	rla
+	jp	nc, sfs_nh
+	ld	c, 4
+sfs_nh:
+	ld	a, c
+	ld	(nb_pre), a
+	pop	bc
+	pop	af
+	endif
 	call	NWSHP
 	pop	hl
 	ld	(INF), hl
