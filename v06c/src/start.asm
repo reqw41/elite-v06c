@@ -18,6 +18,9 @@ BR1:
 	cp	0x44			; Y — загрузить командира
 	endif
 	jp	nz, QU5
+	ifndef	SCHED
+	call	mus_stop		; дальше ввод имени и лента — без музыки
+	endif
 	call	GTNME
 	call	LOD
 	ifndef	SCHED
@@ -63,6 +66,9 @@ qu5_tz:
 	ld	b, 14			; Krait, как в дисковой
 	endif
 	call	TITLE
+	ifndef	SCHED
+	call	mus_stop		; заставки кончились
+	endif
 	call	ping
 	call	hyp1
 	jp	BAY
@@ -70,6 +76,9 @@ qu5_tz:
 ; TITLE: заставка с вращающимся кораблём типа X и строкой A внизу; ждёт клавишу, возвращает её номер BBC.
 TITLE:
 	push	af
+	ifndef	SCHED
+	call	mus_start		; «Голубой Дунай», если ещё не играет (с заставки с Сатурном); портит A — после push
+	endif
 	ld	a, b
 	ld	(TYPE), a
 	call	RESET

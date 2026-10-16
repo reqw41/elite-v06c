@@ -4,6 +4,15 @@
 
 ; TT163: заголовок таблицы цен. TT160–TT16a, TT152: единица товара по QQ19+1: «t», «kg» или «g», затем пробел.
 TT163:
+	ifndef	SCHED			; шапка таблицы — зелёным, как подписи
+	ld	a, 0xFF
+	ld	(txt_g), a
+	call	TT163a
+	xor	a
+	ld	(txt_g), a
+	ret
+TT163a:
+	endif
 	ld	a, 17
 	ld	(XC), a
 	ld	a, 255

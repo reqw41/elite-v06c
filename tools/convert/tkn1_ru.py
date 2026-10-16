@@ -305,10 +305,40 @@ def main():
         assert all(0 < b < 256 for b in out), t
         return out + [0]
 
+    encs = [enc(t) for t in texts]
+    mzs = [enc(t) for _, t in MZ]
+    Q0 = W0 + NG                                                     # свободные коды — вторая таблица пар (pd_tkn3)
+    q = []
+    allb = encs + mzs
+    for _ in range(P0 - Q0):
+        cnt = {}
+        for b in allb:
+            for x, y in zip(b, b[1:]):
+                if 32 <= x <= 94 and 32 <= y <= 94:
+                    cnt[(x, y)] = cnt.get((x, y), 0) + 1
+        if not cnt:
+            break
+        (x, y), c = max(cnt.items(), key=lambda kv: kv[1])
+        if c < 3:
+            break
+        code_ = Q0 + len(q)
+        q.append((x, y))
+        for i, b in enumerate(allb):
+            o, j = [], 0
+            while j < len(b):
+                if j + 1 < len(b) and b[j] == x and b[j + 1] == y:
+                    o.append(code_)
+                    j += 2
+                else:
+                    o.append(b[j])
+                    j += 1
+            allb[i] = o
+    encs, mzs = allb[:len(encs)], allb[len(encs):]
+
     eng = open(os.path.join(ROOT, 'v06c/data/tkn1.asm'), encoding='utf-8').read()
     rupla = re.search(r'^pd_rupla:.*$', eng, re.M).group(0)
     rugal = re.search(r'^pd_rugal:.*$', eng, re.M).group(0)
-    eq = [('PD_G0', PD_G0, 'код первой группы'), ('PD_W0', W0, 'код слова 0'), ('PD_P0', P0, 'код пары 0 (QQ16R)'),
+    eq = [('PD_G0', PD_G0, 'код первой группы'), ('PD_W0', W0, 'код слова 0'), ('PD_P0', P0, 'код пары 0 (QQ16R)'), ('PD_Q0', Q0, 'код пары 0 второй таблицы (pd_tkn3)'),
           ('PD_NG', NG, 'одиночных слов; дальше группы по пять'), ('PD_IAN', code['IAN'], 'не нужно (пусто)'),
           ('PD_BRIEF1', code['BRIEF1'], ''), ('PD_BRIEF2', code['BRIEF2'], ''), ('PD_DEBRIEF1', code['DEBRIEF1'], ''),
           ('PD_INCOMING', code['INCOMING'], ''), ('PD_BRIEF3', code['BRIEF3'], ''), ('PD_DEBRIEF2', code['DEBRIEF2'], ''),
@@ -318,7 +348,7 @@ def main():
         '%s\t\tequ\t%d\t\t; %s' % e for e in eq] + [rupla, rugal, 'pd_tkn:']
     size = 0
     for i, t in enumerate(texts):
-        b = enc(t)
+        b = encs[i]
         size += len(b)
         lines.append('; %d: %s' % (i, t[:300]))
         lines += ['\tdb ' + ', '.join('%d' % x for x in b[j:j + 24]) for j in range(0, len(b), 24)]
@@ -327,14 +357,17 @@ def main():
         lines.append('MZ_%s\t\tequ\t%d' % (n, i))
     lines.append('mz_tkn:')
     mz = 0
-    for n, t in MZ:
-        b = enc(t)
+    for (n, t), b in zip(MZ, mzs):
         mz += len(b)
         lines.append('; ' + t[:300])
         lines += ['\tdb ' + ', '.join('%d' % x for x in b[j:j + 24]) for j in range(0, len(b), 24)]
     lines.append('pd_tkn2\t\tequ\tQQ16R\t\t; пары букв — русские (у английской сборки — TKN2/QQ16)')
+    lines.append('; вторая таблица пар (коды PD_Q0…): знаки описаний и миссий, по частоте')
+    lines.append('pd_tkn3:')
+    lines += ['\tdb ' + ', '.join('%d' % v for xy in q[i:i + 12] for v in xy) for i in range(0, len(q), 12)]
+    size += 2 * len(q)
     open(OUT, 'w', encoding='utf-8').write('\n'.join(lines) + '\n')
-    print('v06c/data/tkn1_ru.asm: описания и миссии %d Б, вторая таблица %d Б (английские: 3757 и 501)' % (size, mz))
+    print('v06c/data/tkn1_ru.asm: описания и миссии %d Б (с парами pd_tkn3: %d), вторая таблица %d Б (английские: 3757 и 501)' % (size, len(q), mz))
 
 
 if __name__ == '__main__':

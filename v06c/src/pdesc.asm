@@ -111,8 +111,10 @@ pd_byte:
 	jp	c, pd_dts
 	cp	PD_W0
 	jp	c, pd_rnd
-	cp	PD_P0
+	cp	PD_Q0
 	jp	c, pd_rec
+	cp	PD_P0
+	jp	c, pd_pr3
 	sub	PD_P0
 	else
 	cp	91
@@ -220,6 +222,16 @@ pd_ptr:					; HL = pd_buf + E
 	inc	h
 	ret
 
+	ifdef	RUS
+pd_pr3:					; пара из второй таблицы (pd_tkn3, только русские описания и миссии)
+	sub	PD_Q0
+	add	a, a
+	ld	e, a
+	ld	d, 0
+	ld	hl, pd_tkn3
+	add	hl, de
+	jp	pd_pair
+	endif
 pd_rec:
 	ifdef	RUS
 	sub	PD_W0

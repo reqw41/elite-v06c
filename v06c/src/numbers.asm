@@ -148,7 +148,13 @@ bp_shl_l:
 ; fwl: «Fuel: n.n Light Years», затем PCASH: «Cash: … Cr».
 fwl:
 	ld	a, 105
+	ifdef	RUS			; «ТОПЛИВО :» — двоеточия блока статуса в одном столбце
+	call	spc
+	call	TT73
+	call	TT162			; и пробел — как после «СТАТУС  :»
+	else
 	call	TT68
+	endif
 	ld	a, (QQ14)
 	ld	b, a
 	scf

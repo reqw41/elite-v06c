@@ -9,6 +9,7 @@ const WANT = { 0: [1, 39, 0], 8: [1, 19, 0], 16: [1, 59, 0], 24: [0, 64, 1], 32:
 let bad = 0;
 for (const snd of Object.keys(NAMES).map(Number)) {
   const m = createVector('elite'); m.frame(40); m.wr('DNOIZ', [0]);
+  m.call('mus_stop'); m.frame(2);                          // на заставке играет «Дунай» — до проверки звуков он молчит
   const log = []; let frame = 0; const T = m.io.Timer, w0 = T.Write.bind(T);
   T.Write = (addr, v) => { log.push([frame, addr & 3, v]); return w0(addr, v); };
   m.call('NOISE', { a: snd });
@@ -31,7 +32,7 @@ for (const snd of Object.keys(NAMES).map(Number)) {
   if (V && d.length) console.log('     Гц по кадрам: ' + hz.slice(0, 40).join(' '));
 }
 // звук не трогает состояние игры: вызов NOISE при выключенном звуке ничего не пишет в счётчики
-{ const m = createVector('elite'); m.frame(40); m.wr('DNOIZ', [0xFF]); let n = 0; const T = m.io.Timer, w0 = T.Write.bind(T); T.Write = (a, v) => { n++; return w0(a, v); };
+{ const m = createVector('elite'); m.frame(40); m.call('mus_stop'); m.frame(2); m.wr('DNOIZ', [0xFF]); let n = 0; const T = m.io.Timer, w0 = T.Write.bind(T); T.Write = (a, v) => { n++; return w0(a, v); };
   m.call('NOISE', { a: 16 }); m.frame(10); if (n) bad++; console.log(`${n ? 'FAIL' : 'OK  '} звук выключен (DNOIZ): записей в ВИ53 ${n}`); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'SND: всё как задумано');
 process.exit(bad ? 1 : 0);

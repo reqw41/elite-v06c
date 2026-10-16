@@ -93,6 +93,9 @@ isr_na:
 	ld	(pal_dirty), a
 	call	pal_write
 isr_cnt:
+	ifndef	SCHED
+	call	mus_tick		; мелодия заставки
+	endif
 	call	snd_tick		; звук ВИ53
 	ld	hl, (v_frames)
 	inc	hl

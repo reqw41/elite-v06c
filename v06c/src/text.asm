@@ -57,9 +57,23 @@ tt_chr:
 	ld	a, b
 	inc	a
 	ld	(XC), a
+	ifndef	SCHED
+	ld	a, (txt_g)
+	ld	c, a
+	endif
 	ld	a, (YC)
 	cp	24
 	jp	nc, tt_cls
+	ifndef	SCHED			; зелёным (и во второй плоскости) — строка заголовка (YC = 1) и помеченное txt_g
+	cp	1
+	jp	nz, tt_m
+	ld	c, 0xFF
+tt_m:
+	ld	b, a
+	ld	a, c
+	ld	(tt_mask), a
+	ld	a, b
+	endif
 	add	a, a
 	add	a, a
 	add	a, a
@@ -68,14 +82,15 @@ tt_chr:
 	ld	b, 8
 tt_row:
 	ld	a, (de)
-	ifndef	SCHED			; текст — зелёным: знак и во второй плоскости (цвет 3; решение владельца 17.10.2026)
+	ifndef	SCHED			; во второй плоскости — по маске tt_mask (зелёный — цвет 3; решение владельца 17.10.2026)
 	ld	c, a
 	xor	(hl)
 	ld	(hl), a
 	ld	a, h
 	xor	0x20
 	ld	h, a
-	ld	a, c
+	ld	a, (tt_mask)
+	and	c
 	xor	(hl)
 	ld	(hl), a
 	ld	a, h
@@ -89,6 +104,41 @@ tt_row:
 	dec	l
 	dec	b
 	jp	nz, tt_row
+	ifndef	SCHED			; «:» на текстовом экране — всё левее на этой строке становится зелёным (подпись),
+	ld	a, (K3)			; значение после двоеточия остаётся бежевым (как у ZX: подписи и значения разным цветом)
+	cp	':'
+	jp	nz, tt_ret
+	ld	a, (QQ11)
+	or	a
+	jp	z, tt_ret
+	ld	a, (XC)			; столбцы 1…XC−1: в столбце 0 — рамка
+	and	31
+	cp	2
+	jp	c, tt_ret
+	dec	a
+	ld	d, a
+	ld	a, l			; верхняя строка знакоместа: L после цикла + 8 + 1
+	add	a, 9
+	ld	e, a
+	ld	h, high SCR_VIEW + 1
+tc_col:
+	ld	l, e
+	ld	b, 8
+tc_row:
+	ld	c, (hl)
+	ld	a, h
+	xor	0x20
+	ld	h, a
+	ld	(hl), c
+	xor	0x20
+	ld	h, a
+	dec	l
+	dec	b
+	jp	nz, tc_row
+	inc	h
+	dec	d
+	jp	nz, tc_col
+	endif
 tt_ret:
 	pop	hl
 	pop	de
