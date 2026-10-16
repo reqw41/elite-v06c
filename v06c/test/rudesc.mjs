@@ -39,7 +39,7 @@ const one = (mem, what) => {
 for (let g = 0; g < 8; g++) for (let s = 0; s < 256; s++) {
   const sd = seeds(g, s), got = one({ QQ15: sd, QQ8: [1, 0] }, `галактика ${g}, система ${s}`);
   if ([0, 1, 2, 3, 4, 5].map((i) => m.rd(L.QQ15 + i)).join() !== sd.join()) fail(`галактика ${g}, система ${s}: QQ15 изменён`);
-  if (verbose && g === 0 && s < 8) console.log(String(s).padStart(3) + ' ' + show(got));
+  if (verbose && g === 0 && (s < 8 || process.env.SYS === 'all' || process.env.SYS == s)) console.log(String(s).padStart(3) + ' ' + show(got));
 }
 const RUPLA = Array.from({ length: 25 }, (_, i) => m.rd(L.pd_rupla + i)), RUGAL = Array.from({ length: 25 }, (_, i) => m.rd(L.pd_rugal + i));
 for (let k = 0; k < 25; k++) for (const tp of [0, 1, 2, 3]) {
