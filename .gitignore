@@ -3,3 +3,4 @@ orig/
 .DS_Store
 v06c/build/
 orig
+tools/convert/__pycache__/
