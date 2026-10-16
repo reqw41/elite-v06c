@@ -41,9 +41,9 @@ console.log(`время рисования на Векторе: ${r.cycles} та
 // --- надписи
 { for (let a = 0xC000; a < 0xE000; a++) m.wr(a, [0]);
   m.call('sat_show', { tick: () => { if ((m.cpu.pc & 0xffff) === L.sat_draw) { const sp = m.cpu.sp & 0xffff; m.cpu.pc = m.rd(sp) | (m.rd(sp + 1) << 8); m.cpu.sp = (sp + 2) & 0xffff; } } }, 1e6);
-  let d = 0; for (const [file, row] of [['P.A-SOFT.bin', 1], ['P.ELITE.bin', 3], ['P.(C)ASFT.bin', 22]]) { const img = fs.readFileSync(path.join(ORIG, 'bbc/cassette/1-source-files/images', file));
+  let d = 0; for (const [file, row] of [['v06c/data/sat_asoft.bin', 1], ['P.ELITE.bin', 3], ['P.(C)ASFT.bin', 22]]) { const img = fs.readFileSync(file.startsWith('v06c') ? path.join(ROOT, file) : path.join(ORIG, 'bbc/cassette/1-source-files/images', file));
     for (let c = 0; c < 32; c++) for (let k = 0; k < 8; k++) if (m.rd(0xC000 + c * 256 + 255 - (row * 8 + k)) !== img[c * 8 + k]) d++; }
-  ok(d === 0, `надписи ACORNSOFT, ELITE и строка прав стоят в строках 1, 3 и 22, как на BBC (различий ${d})`); }
+  ok(d === 0, `надписи ВЕКТОР 06Ц (вместо ACORNSOFT, tools/convert/saturn.py), ELITE и строка прав стоят в строках 1, 3 и 22, как на BBC (различий ${d})`); }
 
 // --- образ с заставкой от включения: заставка ждёт клавишу
 { const g = createVector('elite', { saturn: true });
@@ -53,7 +53,7 @@ console.log(`время рисования на Векторе: ${r.cycles} та
   ok(!title(g), 'без клавиши заставка стоит (1000 кадров от включения)');
   g.key(7, 0x80, true); const f = till(g, 500); g.key(7, 0x80, false);
   let left = 0; for (let a = g.L.sat_show; a < g.L.sat_end; a++) if (g.rd(a) !== 0 && a >= 0xBD40) left += 0;
-  const k0 = g.L.WS + 0x0900; let code = 0; for (let a = g.L.sat_asoft; a < g.L.sat_asoft + 64; a++) if (g.rd(a) === fs.readFileSync(path.join(ORIG, 'bbc/cassette/1-source-files/images/P.A-SOFT.bin'))[a - g.L.sat_asoft] && g.rd(a) !== 0) code++;
+  const k0 = g.L.WS + 0x0900; let code = 0; for (let a = g.L.sat_asoft; a < g.L.sat_asoft + 64; a++) if (g.rd(a) === fs.readFileSync(path.join(ROOT, 'v06c/data/sat_asoft.bin'))[a - g.L.sat_asoft] && g.rd(a) !== 0) code++;
   ok(f < 100 && code === 0, `пробел: заставка игры появилась через ${f} кадров; картинки заставки в памяти не осталось; снимок work/v06c/saturn.png`);
   const g3 = createVector('elite', { saturn: true }); g3.key(7, 0x80, true); g3.frame(1000);
   ok(!title(g3), 'клавиша, зажатая с включения, заставку не сбрасывает (1000 кадров)');
