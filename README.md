@@ -6,6 +6,7 @@ Elite для Вектора-06Ц: ванильная машина (48 КБ + д�
 - План: `docs/PORT_PLAN.md`
 - Правила для исполнителей: `docs/CONTRACTS.md`
 - Доска задач: `docs/tasks/README.md`
+- Управление в игре: `docs/CONTROLS.md`
 
 ## Каталоги
 

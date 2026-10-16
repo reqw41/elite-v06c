@@ -180,6 +180,12 @@ dials:
 v_frames:	ds	2		; счётчик кадров
 kb_rows:	ds	8		; матрица клавиатуры, 1 — нажата; строка 0 — стрелки, 7 — пробел
 kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ
+	ifndef	SCHED
+fly_new:	ds	8		; fly_keys: нажатия после перевода
+joy_bits:	ds	1		; нажатое на джойстике (isr)
+fly_on:		ds	1		; <> 0 — главный цикл в полёте (DOKEY), не пауза: fly_keys переводит клавиши
+	assert	high kb_rows == high (kb_rows + 8) && high fly_new == high (fly_new + 7)
+	endif
 pal_dirty:	ds	1		; <> 0: прерывание запишет pal_regs в палитру
 pal_regs:	ds	16
 ds_n:		ds	1		; распаковка панели: осталось байт в группе, признак повтора, повторяемый байт

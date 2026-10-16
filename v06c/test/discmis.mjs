@@ -97,7 +97,7 @@ console.log(`тексты миссий: ${TEXTS.reduce((q, t) => q + t[2].length
 
 // --- 4. задание миссии 1 в игре: стыковка автопилотом при 256 победах
 {
-  const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08] };
+  const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x02] };   // автопилот в полёте — А (русская раскладка, docs/CONTROLS.md)
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(600);
   g.wr(g.L.DKCMP, [0xFF]); g.wr(g.L.TALLY + 1, [3]); press('C');

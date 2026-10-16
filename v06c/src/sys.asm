@@ -35,7 +35,11 @@ isr_row:
 	xor	(hl)
 	or	b
 	and	0xCF
+	ifdef	SCHED
 	call	nz, joy_keys
+	else
+	ld	(joy_bits), a		; применяется в конце, после перевода клавиш полёта (fly_keys)
+	endif
 	ld	a, 0x88			; все порты на выход
 	out	(0), a
 	ifdef	SCHED
@@ -95,6 +99,16 @@ isr_cnt:
 	ld	(v_frames), hl
 	ifndef	SCHED
 	; всё, что обработчик кадра BBC делает с состоянием игры (в сборке SCHED это делает стенд на границе прохода)
+	ld	a, (fly_on)		; полёт (главный цикл в полёте, не пауза) — клавиши под русскую клавиатуру
+	or	a
+	jp	z, isr_nk
+	ld	a, (QQ11)
+	or	a
+	call	z, fly_keys
+isr_nk:
+	ld	a, (joy_bits)
+	or	a
+	call	nz, joy_keys
 	ld	a, 30
 	ld	(DL), a
 	ld	hl, LASCT
@@ -246,6 +260,89 @@ jk_c:
 	ret
 joy_rest:
 	db	0, 0
+
+	ifndef	SCHED
+; fly_keys: полёт под русскую клавиатуру Вектора (обычный образ). Таблицы — v06c/data/keys.asm (tools/convert/keys.py):
+; клавиши из fly_map нажимают другие (стрелки — крен и тангаж, пробел — огонь, Я, ТАБ — разгон, тормоз, Б — бомба,
+; К — капсула, А, О — автопилот, Ц, Р, С — ракета, П, Г — прыжки, М — маскировка), всё, чего нет в fly_keep, гаснет.
+; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга.
+fly_keys:
+	ld	hl, fly_new
+	ld	b, 8
+	xor	a
+fk_z:
+	ld	(hl), a
+	inc	hl
+	dec	b
+	jp	nz, fk_z
+	ld	de, fly_map
+	ld	b, FLY_N
+fk_l:
+	ld	a, (de)
+	inc	de
+	call	fk_bit
+	ld	c, a
+	ld	a, l
+	add	a, low kb_rows
+	ld	l, a
+	ld	h, high kb_rows
+	ld	a, (de)
+	inc	de
+	push	af
+	ld	a, (hl)
+	and	c
+	jp	z, fk_n
+	pop	af
+	call	fk_bit
+	ld	c, a
+	ld	a, l
+	add	a, low fly_new
+	ld	l, a
+	ld	h, high fly_new
+	ld	a, c
+	or	(hl)
+	ld	(hl), a
+	push	af
+fk_n:
+	pop	af
+	dec	b
+	jp	nz, fk_l
+	ld	hl, kb_rows		; строка = (строка И fly_keep) ИЛИ замены
+	ld	de, fly_keep
+	ld	bc, fly_new
+fk_r:
+	ld	a, (de)
+	and	(hl)
+	ld	(hl), a
+	ld	a, (bc)
+	or	(hl)
+	ld	(hl), a
+	inc	hl
+	inc	de
+	inc	bc
+	ld	a, l
+	cp	low (kb_rows + 8)
+	jp	nz, fk_r
+	ret
+; fk_bit: A = строка · 8 + бит -> L = строка, A = маска бита. Портит H.
+fk_bit:
+	ld	l, a
+	and	7
+	inc	a
+	ld	h, a
+	ld	a, l
+	rrca
+	rrca
+	rrca
+	and	7
+	ld	l, a
+	ld	a, 0x80
+fkb_l:
+	rlca
+	dec	h
+	jp	nz, fkb_l
+	ret
+	endif
 
 ; Смена цвета всего экрана на несколько кадров, как на ZX Spectrum (там — атрибут окна обзора):
 ; flash — взрыв энергетической бомбы: фон жёлтый; tint_hit — по нам попали: белое становится красным.

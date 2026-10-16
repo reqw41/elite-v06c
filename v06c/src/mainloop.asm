@@ -248,6 +248,10 @@ DK4:
 	cp	0x69			; COPY (на Векторе — СТР): пауза
 	jp	nz, dk2
 FREEZE:					; пауза: S и Q — звук, клавиши настроек, АР2 — начать заново, DELETE (ЗБ) — дальше
+	ifndef	SCHED
+	xor	a			; на паузе клавиши как на BBC (fly_keys не переводит)
+	ld	(fly_on), a
+	endif
 	call	WSCAN
 	call	RDKEY
 	ld	a, b
@@ -279,6 +283,10 @@ dk7:
 	cp	0x59
 	jp	nz, FREEZE
 dk2:
+	ifndef	SCHED
+	ld	a, 1
+	ld	(fly_on), a
+	endif
 	ld	a, (QQ11)
 	or	a
 	ret	nz

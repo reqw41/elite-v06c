@@ -43,7 +43,7 @@ for (let i = 0; i < N; i++) {
 console.log(`DOCKIT: случаев ${N}, разных исходов ${Object.keys(ph).length}`);
 // В игре (обычный образ, настоящие кадры): новый командир, взлёт, стыковочный компьютер, клавиша C — и ждём стыковки.
 for (const wait of [150, 600]) {
-  const g = createVector('elite'), W = g.L.WS, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08] };
+  const g = createVector('elite'), W = g.L.WS, K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x02] };   // автопилот в полёте — А (русская раскладка, docs/CONTROLS.md)
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(wait);
   if (g.rd(g.L.QQ12) !== 0) { fail('взлёт не состоялся'); continue; }
@@ -58,7 +58,7 @@ for (const wait of [150, 600]) {
 }
 // Отмена автопилота клавишей P (как в дисковой версии): автопилот выключается, корабль остаётся в полёте.
 {
-  const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x08], P: [6, 0x01] };
+  const g = createVector('elite'), K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], C: [4, 0x02], P: [5, 0x80] };   // автопилот в полёте — А, отключить — О (docs/CONTROLS.md)
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(600);
   g.wr(g.L.DKCMP, [0xFF]); press('C'); const on = g.rd(g.L.auto); g.frame(200);
