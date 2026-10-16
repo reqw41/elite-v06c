@@ -3,7 +3,7 @@
 32 знакоместа по 8 байт сверху вниз) → v06c/data/sat_*.bin без изменений: раскладку по столбцам экрана Вектора
 делает sat_row (v06c/src/saturn.asm). Верхняя надпись — не ACORNSOFT (он есть в строке прав внизу), а «ВЕКТОР 06Ц»
 (решение владельца 17.10.2026): буквы нарисованы здесь в манере ACORNSOFT — прямые глифы со штрихами по 5 точек,
-строка за строкой сдвинутые влево на 3 точки (курсив), по середине строки.
+в перспективе, как ACORNSOFT и ELITE: каждая строка книзу шире на 6 точек, середина на месте.
 Запуск из корня проекта: python3 -I tools/convert/saturn.py [--show]"""
 import os
 import sys
@@ -25,7 +25,7 @@ G = {
     'Ц': ['#####....#####..', '#####....#####..', '#####....#####..', '#####....#####..', '#####....#####..', '#####....#####..', '################'],
     ' ': ['.......'] * 7,
 }
-GAP, SLANT = 3, 3
+GAP, SPREAD = 3, 6                         # как у ACORNSOFT: строка книзу шире на 6 точек
 
 
 def banner(text):
@@ -34,14 +34,14 @@ def banner(text):
         w = max(len(r) for r in G[ch])
         for k in range(7):
             rows[k] += G[ch][k].ljust(w, '.') + ('.' * GAP if i < len(text) - 1 else '')
-    w = len(rows[0]) + SLANT * 6
-    x0 = (256 - w) // 2
+    W = len(rows[0])
     img = [[0] * 256 for _ in range(8)]
-    for k in range(7):
-        x = x0 + SLANT * (6 - k)              # верх правее, низ левее
-        for j, c in enumerate(rows[k]):
-            if c == '#':
-                img[k + 1][x + j] = 1
+    for k in range(7):                        # перспектива: строка k шире на SPREAD·(k − 3), середина на месте
+        w = W + SPREAD * (k - 3)
+        x0 = 128 - w // 2
+        for x in range(w):
+            if rows[k][x * W // w] == '#':
+                img[k + 1][x0 + x] = 1
     out = bytearray(256)
     for c in range(32):
         for k in range(8):
