@@ -106,6 +106,15 @@ pd_t2:
 pd_byte:
 	cp	32
 	jp	c, pd_jump
+	ifdef	RUS			; русский словарь (tkn1_ru.asm): свои границы — буквы до 95, пары — QQ16R
+	cp	PD_G0
+	jp	c, pd_dts
+	cp	PD_W0
+	jp	c, pd_rnd
+	cp	PD_P0
+	jp	c, pd_rec
+	sub	PD_P0
+	else
 	cp	91
 	jp	c, pd_dts
 	cp	129
@@ -113,6 +122,7 @@ pd_byte:
 	cp	215
 	jp	c, pd_rec
 	sub	215
+	endif
 	add	a, a
 	ld	e, a
 	ld	d, 0
@@ -125,8 +135,22 @@ pd_pair:				; две буквы по адресу HL
 	pop	hl
 	inc	hl
 	ld	a, (hl)
-; pd_dts (DTS): знак A с учётом режима букв.
+; pd_dts (DTS): знак A с учётом режима букв. В русской сборке — всё прописными: буква 64–94 — кириллица (+32),
+; если не включена латиница; «_» включает и выключает латиницу.
 pd_dts:
+	ifdef	RUS
+	cp	95
+	jp	z, ru_lat
+	cp	64
+	jp	c, pd_dasc
+	ld	c, a
+	ld	a, (lat)
+	or	a
+	ld	a, c
+	jp	nz, pd_dasc
+	add	a, 32
+	jp	pd_dasc
+	endif
 	cp	'A'
 	jp	c, pd_dasc
 	ld	c, a
@@ -197,10 +221,18 @@ pd_ptr:					; HL = pd_buf + E
 	ret
 
 pd_rec:
+	ifdef	RUS
+	sub	PD_W0
+	else
 	sub	129
+	endif
 	jp	pd_tok
 pd_rnd:					; DT6: одно из пяти слов группы
+	ifdef	RUS
+	sub	PD_G0
+	else
 	sub	91
+	endif
 	ld	c, a
 	add	a, a
 	add	a, a

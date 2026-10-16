@@ -246,9 +246,14 @@ def code(p):
     return v - 114
 
 
-def main():
+def build():
+    """Слова QQ18 (куски после замены пар) и таблица пар: [(код буквы, код буквы), …]."""
     toks = [parse(RU[i]) for i in range(150)]
-    table = pairs(toks)
+    return toks, pairs(toks)
+
+
+def main():
+    toks, table = build()
     out = ['; создано tools/convert/words_ru.py, руками не править', 'QQ18:']
     size = 0
     for i, t in enumerate(toks):

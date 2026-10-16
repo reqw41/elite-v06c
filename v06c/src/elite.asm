@@ -145,9 +145,15 @@ ws_clr2:
 	else
 	include	"words.asm"		; словарь QQ18
 	endif
+	ifdef	RUS
+	include	"tkn1_ru.asm"		; русские описания и миссии (tools/convert/tkn1_ru.py)
+	else
 	include	"tkn1.asm"		; словарь описаний планет; кончается парами букв, продолжение которых — QQ16
+	endif
 	include	"qq16.asm"
+	ifndef	RUS
 	assert	QQ16 == pd_tkn2 + 26
+	endif
 	ifdef	FAST
 	align	256
 LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)

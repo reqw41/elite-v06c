@@ -541,9 +541,16 @@ TT221:
 	or	0x20
 	cp	'y'
 	jp	z, tt218
+	ifdef	RUS			; ответ — латиницей (строчные латинские в русском шрифте — кириллица)
+	ld	a, 'N'
+	else
 	ld	a, 'n'
+	endif
 	jp	TT26
 tt218:
+	ifdef	RUS
+	ld	a, 'Y'
+	endif
 	call	TT26
 	scf
 	ret
