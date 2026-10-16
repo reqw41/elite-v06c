@@ -211,6 +211,17 @@ hyp1_3:					; на BBC — hyp1+3: без поиска системы
 
 ; cpl (на Векторе — cpl_): название системы по семенам QQ15: три или четыре слога.
 cpl_:
+	ifdef	RUS
+	ld	hl, lat			; название — латиницей
+	ld	a, (hl)
+	push	af
+	ld	(hl), 1
+	call	cpl_0
+	pop	af
+	ld	(lat), a
+	ret
+cpl_0:
+	endif
 	ld	hl, QQ15
 	ld	de, QQ19
 	ld	b, 6

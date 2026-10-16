@@ -59,6 +59,29 @@ tt27_9:
 	cp	32
 	jp	c, qw
 tt27_ch:
+	ifdef	RUS
+	ld	e, a			; русская сборка: всё прописными; буквы 64–94 — кириллица (+32, КОИ-7),
+	ld	a, (QQ17)		; если не включена латиница (lat: названия систем, имя, «_» в словаре)
+	inc	a
+	ret	z			; QQ17 = 255: печать выключена
+	ld	a, e
+	cp	95
+	jp	z, ru_lat
+	cp	64
+	jp	c, TT26
+	ld	a, (lat)
+	or	a
+	ld	a, e
+	jp	nz, TT26
+	add	a, 32
+	jp	TT26
+ru_lat:
+	ld	hl, lat
+	ld	a, (hl)
+	cpl
+	ld	(hl), a
+	ret
+	else
 	ld	e, a
 	ld	a, (QQ17)
 	ld	d, a
@@ -101,6 +124,7 @@ tt46:					; не буква: следующая буква снова пропи
 	ld	(QQ17), a
 	ld	a, e
 	jp	TT26
+	endif
 qw:
 	add	a, 114
 	jp	ex
@@ -111,7 +135,14 @@ tt43:
 	add	a, a
 	ld	e, a
 	ld	d, 0
+	ifdef	RUS
+	ld	a, (lat)		; в тексте — русские пары, в названиях (латиница) — QQ16
+	or	a
+	ld	hl, QQ16R
+	jp	z, tt43_t
+	endif
 	ld	hl, QQ16
+tt43_t:
 	add	hl, de
 	ld	a, (hl)
 	push	hl

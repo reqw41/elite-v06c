@@ -140,7 +140,11 @@ ws_clr2:
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
 	include	"ships_zx.asm"		; корабли версии ZX: Krait, Asp Mk II, Fer-de-Lance; XX21X
+	ifdef	RUS
+	include	"words_ru.asm"		; русский словарь QQ18 и пары QQ16R (tools/convert/words_ru.py)
+	else
 	include	"words.asm"		; словарь QQ18
+	endif
 	include	"tkn1.asm"		; словарь описаний планет; кончается парами букв, продолжение которых — QQ16
 	include	"qq16.asm"
 	assert	QQ16 == pd_tkn2 + 26
@@ -152,7 +156,11 @@ ALOG	equ	LOG + 0x200
 ALOGODD	equ	LOG + 0x300
 	endif
 font:
+	ifdef	RUS
+	incbin	"font_ru.bin"		; на месте строчных — русские прописные (КОИ-7)
+	else
 	incbin	"font.bin"		; знаки 32–127, 8 байт сверху вниз, бит 7 слева
+	endif
 ; Панель, сжатая (tools/convert/dials_rle.py): по столбцам, 56 байт сверху вниз; нужна один раз, при запуске.
 ; Таблица наклонов коротких отрезков (1024 байта с границы страницы) в образе не лежит: div_init строит её после
 ; распаковки панели. В образе стенда картинка (обе плоскости подряд) лежит в конце игры, таблица — поверх неё.
@@ -180,6 +188,9 @@ dials:
 v_frames:	ds	2		; счётчик кадров
 kb_rows:	ds	8		; матрица клавиатуры, 1 — нажата; строка 0 — стрелки, 7 — пробел
 kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ
+	ifdef	RUS
+lat:		ds	1		; <> 0 — буквы латиницей (название системы, имя, «_» в словаре)
+	endif
 	ifndef	SCHED
 fly_new:	ds	8		; fly_keys: нажатия после перевода
 joy_bits:	ds	1		; нажатое на джойстике (isr)
@@ -237,6 +248,9 @@ IMG_END		equ	$
 IMG_END		equ	rom_end
 	endif
 
+	ifdef	RUS
+	savebin	"v06c/build/elite_ru.rom", 0x0100, IMG_END - 0x0100
+	else
 	ifdef	FAST
 	ifdef	SCHED
 	savebin	"v06c/build/elite_fast_t.rom", 0x0100, IMG_END - 0x0100
@@ -255,6 +269,7 @@ IMG_END		equ	rom_end
 	savebin	"v06c/build/elite_t.rom", 0x0100, IMG_END - 0x0100
 	else
 	savebin	"v06c/build/elite.rom", 0x0100, IMG_END - 0x0100
+	endif
 	endif
 	endif
 	endif

@@ -151,8 +151,10 @@ tt207:
 	add	a, 242
 	call	TT27
 tt76:
+	ifndef	RUS			; по-русски раса уже во множественном числе
 	ld	a, 'S'
 	call	TT27
+	endif
 	ld	a, ')'
 	call	TT60
 	ld	a, 193			; производительность
