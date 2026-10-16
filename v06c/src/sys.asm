@@ -368,6 +368,11 @@ pal_fx:
 	ld	(flash_cnt), a
 	jp	pal_set
 ; Цвета (байт BBGGGRRR, решение владельца 17.10.2026): бордовый, тёмно-зелёный как в терминалах, светло-бежевый.
+	ifdef	RUS
+K_YES		equ	'd'		; «да» — Д (клавиша D Вектора; Д/Н — как на клавиатуре)
+	else
+K_YES		equ	'y'
+	endif
 C_RED		equ	0x04
 C_GREEN		equ	0x28
 C_WHITE		equ	0xB7

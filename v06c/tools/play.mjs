@@ -2,7 +2,7 @@
 // Шаг: число — столько кадров; имя клавиши (SPACE, N, F1…) — нажать на 20 кадров и отпустить; SS+F4 — вместе с СС.
 import path from 'node:path';
 import { createVector, savePng } from './v06c.mjs';
-const KEYS = { SPACE: [7, 0x80], N: [5, 0x40], Y: [7, 0x02], F1: [1, 0x08], F2: [1, 0x10], F3: [1, 0x20], F4: [1, 0x40], F5: [1, 0x80], A: [4, 0x02], S: [6, 0x08], X: [7, 0x01] };
+const KEYS = { SPACE: [7, 0x80], N: [5, 0x40], Y: [7, 0x02], F1: [1, 0x08], F2: [1, 0x10], F3: [1, 0x20], F4: [1, 0x40], F5: [1, 0x80], A: [4, 0x02], S: [6, 0x08], X: [7, 0x01], D: [4, 0x10] };
 const [out, ...rest] = process.argv.slice(2);
 const m = createVector(KEYS[rest[0]] || /^\d+$/.test(rest[0]) ? 'elite' : rest.shift());
 for (const s of rest) {

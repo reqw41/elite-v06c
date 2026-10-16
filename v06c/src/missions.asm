@@ -531,11 +531,11 @@ mz_name:				; управляющий код 11: название системы-
 	ld	(QQ17), a
 	call	cpl_
 	jp	m3_back
-; ask_yn: ждать клавишу; перенос 1 — Y.
+; ask_yn: ждать клавишу; перенос 1 — Y (в русской сборке — Д).
 ask_yn:
 	call	TT217
 	or	0x20
-	cp	'y'
+	cp	K_YES
 	scf
 	ret	z
 	or	a

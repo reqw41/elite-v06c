@@ -12,7 +12,11 @@ BR1:
 	ld	a, 128			; «Load New Commander (Y/N)?»
 	call	TITLE
 	ld	a, b
+	ifdef	RUS
+	cp	0x32			; Д (клавиша D) — загрузить командира
+	else
 	cp	0x44			; Y — загрузить командира
+	endif
 	jp	nz, QU5
 	call	GTNME
 	call	LOD
