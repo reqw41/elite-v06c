@@ -78,6 +78,7 @@ const mk = () => { const g = createVector('elite'); g.press = (k, n = 20) => { g
   const green = () => g.rd(L.pal_regs + 3); const seen = new Set();
   g.wr(L.ENERGY, [255]); for (let i = 0; i < 80; i++) { g.frame(1); g.wr(L.ENERGY, [255]); seen.add(green()); } const full = [...seen]; seen.clear();
   for (let i = 0; i < 80; i++) { g.wr(L.ENERGY, [40]); g.frame(1); seen.add(green()); }
-  ok(full.length === 1 && full[0] === 0x38 && seen.has(0x3F) && seen.has(0x38), `тревога: при полной энергии цвет 3 всегда ${full.map((v) => v.toString(16))}, при энергии 40 чередуются ${[...seen].map((v) => v.toString(16)).join(' и ')}`); }
+  const G = g.rd(L.pal_flight + 3);                                         // зелёный обычной палитры (C_GREEN)
+  ok(full.length === 1 && full[0] === G && seen.has(0x3F) && seen.has(G), `тревога: при полной энергии цвет 3 всегда ${full.map((v) => v.toString(16))}, при энергии 40 чередуются ${[...seen].map((v) => v.toString(16)).join(' и ')}`); }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'DISCSMALL: всё как задумано');
 process.exit(bad ? 1 : 0);

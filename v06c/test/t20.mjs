@@ -20,10 +20,10 @@ const SPECS = [
   { name: 'TT24', noreg: 'axyc', gen: (r, b) => ({ mem: { QQ15: arr(b, 6) } }) },
   { name: 'TT111', n: Math.min(N, 300), noreg: 'axyc', gen: (r, b) => ({ mem: { QQ21: seeds(r, b), QQ9: [b(), b()], QQ0: [b(), b()] } }) },
   { name: 'hyp1', n: Math.min(N, 200), noreg: 'axyc', gen: (r, b) => ({ mem: { QQ21: seeds(r, b), QQ9: [b(), b()], QQ0: [b(), b()] } }) },
-  { name: 'cpl', ventry: 'cpl_', noreg: 'axyc', skip: TEXT, screen: 'view', gen: (r, b) => ({ mem: { QQ15: arr(b, 6), ...pos(r) } }) },
-  { name: 'ypl', noreg: 'axyc', skip: TEXT, screen: 'view', gen: (r, b) => ({ mem: { QQ15: arr(b, 6), QQ2: arr(b, 6), MJ: r(5) ? 0 : b(), ...pos(r) } }) },
+  { name: 'cpl', ventry: 'cpl_', noreg: 'axyc', skip: TEXT, screen: 'text', gen: (r, b) => ({ mem: { QQ15: arr(b, 6), ...pos(r) } }) },
+  { name: 'ypl', noreg: 'axyc', skip: TEXT, screen: 'text', gen: (r, b) => ({ mem: { QQ15: arr(b, 6), QQ2: arr(b, 6), MJ: r(5) ? 0 : b(), ...pos(r) } }) },
   { name: 'TT62', noreg: 'axyc', gen: (r, b) => ({ mem: { QQ15: arr(b, 6), QQ2: arr(b, 6) } }) },
-  { name: 'tal', noreg: 'axyc', skip: [...TEXT, 'Q', 'R'], screen: 'view', gen: (r, b) => ({ mem: { GCNT: r(8), ...pos(r) } }) },
+  { name: 'tal', noreg: 'axyc', skip: [...TEXT, 'Q', 'R'], screen: 'text', gen: (r, b) => ({ mem: { GCNT: r(8), ...pos(r) } }) },
 ];
 for (const s of SPECS) P.run({ n: N, ...s });
 P.timing();

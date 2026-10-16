@@ -14,7 +14,7 @@ const SPECS = [
   { name: 'TTX66', gen: (r, b) => { junk(r); return { mem: { QQ11: r(2) ? 0 : b(), VIEW: r(4), [B.QQ22 + 1]: 0, XC: r(30), YC: r(24) } }; } },
   { name: 'CLYNS', gen: (r, b) => { junk(r); return { mem: { XC: r(30), YC: r(24), QQ17: [0, 0x80, 0xC0][r(3)] } }; } },
 ];
-for (const s of SPECS) P.run({ n: N, noreg: 'axc', skip: SKIP, screen: 'view', ...s, ...(s.name === 'CLYNS' ? {} : { noreg: 'axyc' }) });
+for (const s of SPECS) P.run({ n: N, noreg: 'axc', skip: SKIP, screen: 'text', ...s, ...(s.name === 'CLYNS' ? {} : { noreg: 'axyc' }) });
 P.timing();
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T15: всё совпало');
 process.exit(P.failed() ? 1 : 0);

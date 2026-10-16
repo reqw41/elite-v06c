@@ -33,7 +33,7 @@ const SPECS = [
   { name: 'TT73', gen: (r) => ({ mem: { XC: r(22), YC: r(18), QQ17: [0, 0x80, 0xC0, 255][r(4)] } }) },
 ];
 console.log(`слов и знаков, годных для теста: ${all.length} из 256`);
-for (const s of SPECS) P.run({ n: N, noreg: 'axyc', skip: TEXT, screen: 'view', ...s });
+for (const s of SPECS) P.run({ n: N, noreg: 'axyc', skip: TEXT, screen: 'text', ...s });
 P.timing();
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T14: всё совпало');
 process.exit(P.failed() ? 1 : 0);

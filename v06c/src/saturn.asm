@@ -253,6 +253,15 @@ sat_r1:
 sat_r2:
 	ld	a, (de)
 	ld	(hl), a
+
+	ld	a, h			; надписи — зелёным: и во второй плоскости
+	xor	0x20
+	ld	h, a
+	ld	a, (de)
+	ld	(hl), a
+	ld	a, h
+	xor	0x20
+	ld	h, a
 	inc	de
 	dec	l
 	dec	b

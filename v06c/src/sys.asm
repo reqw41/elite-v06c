@@ -367,12 +367,16 @@ tint_hit:				; сохраняет все регистры и флаги: зов�
 pal_fx:
 	ld	(flash_cnt), a
 	jp	pal_set
+; Цвета (байт BBGGGRRR, решение владельца 17.10.2026): бордовый, тёмно-зелёный как в терминалах, светло-бежевый.
+C_RED		equ	0x04
+C_GREEN		equ	0x28
+C_WHITE		equ	0xB7
 pal_bomb:
-	db	0x3F, 0x07, 0xFF, 0x38
+	db	0x3F, C_RED, C_WHITE, C_GREEN
 pal_hit:
-	db	0x00, 0x07, 0x07, 0x38
+	db	0x00, C_RED, C_RED, C_GREEN
 pal_alert:
-	db	0x00, 0x07, 0xFF, 0x3F	; тревога: зелёное — жёлтым
+	db	0x00, C_RED, C_WHITE, 0x3F	; тревога: зелёное — жёлтым
 flash_cnt:
 	db	0
 sat_skip:
@@ -397,9 +401,9 @@ pw_lp:
 
 pal_flight:
 	ifdef	VIEW_YELLOW
-	db	0x00, 0x07, 0x3F, 0x38	; чёрный, красный, жёлтый (обзор и рамки панели), зелёный — цвета панели BBC
+	db	0x00, C_RED, 0x3F, C_GREEN	; чёрный, красный, жёлтый (обзор и рамки панели), зелёный — цвета панели BBC
 	else
-	db	0x00, 0x07, 0xFF, 0x38	; чёрный, красный, белый (обзор и рамки панели), зелёный
+	db	0x00, C_RED, C_WHITE, C_GREEN	; чёрный, красный, белый (обзор и рамки панели), зелёный
 	endif
 
 	ifdef	SCHED

@@ -4,7 +4,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { createVector, ROOT } from './v06c.mjs';
-import { bbcDash, vecDash, bbcView, vecView, firstDiff } from './screen.mjs';
+import { bbcDash, vecDash, bbcView, vecView, firstDiff, VIEW } from './screen.mjs';
 const { BBC } = createRequire(import.meta.url)(path.join(ROOT, 'tools/oracle/bbc.js'));
 
 export const AREAS = [[0x0000, 0x0100], [0x0300, 0x0372], [0x0900, 0x0F34], [0x0F48, 0x0F51]];
@@ -46,7 +46,7 @@ export function makePair(rom = 'elite') {
         for (let i = 0; i < 8; i++) { const col = dash[y * 256 + c * 8 + i]; p1 |= (col >> 1) << (7 - i); p0 |= (col & 1) << (7 - i); }
         m.wr(0xC000 + c * 256 + 255 - (192 + y), [p1]); m.wr(0xE000 + c * 256 + 255 - (192 + y), [p0]); }
     }
-    if (spec.screen === 'view') { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) { m.wr(0xC000 + c * 256 + 64, new Uint8Array(192)); m.wr(0xE000 + c * 256 + 64, new Uint8Array(192)); } }
+    if (spec.screen === 'view' || spec.screen === 'text') { bbc.mem.fill(0, 0x6000, 0x7800); for (let c = 0; c < 32; c++) { m.wr(0xC000 + c * 256 + 64, new Uint8Array(192)); m.wr(0xE000 + c * 256 + 64, new Uint8Array(192)); } }
     for (let i = 0; i < n && !st.fail; i++) {
       const inp = spec.gen(rnd, byte, i), mem = inp.mem || {};
       const vmem = {};
@@ -65,7 +65,8 @@ export function makePair(rom = 'elite') {
         if (v !== bbc.mem[a] && !off.has(a)) diff.push(`${cell(a)}: BBC ${bbc.mem[a]}, Вектор ${v}`);
       }
       if (spec.screen && !diff.length) {
-        const vm = m.mem(), d = spec.screen === 'dash' ? firstDiff(vecDash(vm), bbcDash(bbc.mem)) : firstDiff(vecView(vm), bbcView(bbc.mem));
+        const vm = m.mem(), d = spec.screen === 'dash' ? firstDiff(vecDash(vm), bbcDash(bbc.mem))
+          : firstDiff(spec.screen === 'text' ? vecView(vm, VIEW) : vecView(vm), bbcView(bbc.mem));   // text: только плоскость обзора — текст обычного образа зелёный, он и во второй плоскости
         if (d) diff.push(spec.screen === 'dash' ? `панель: x=${d.i & 255} строка ${192 + (d.i >> 8)}: Вектор ${d.a}, BBC ${d.b}` : `обзор: столбец ${d.i % 32}, строка ${Math.floor(d.i / 32)}: Вектор ${d.a}, BBC ${d.b}`);
       }
       if (diff.length) {

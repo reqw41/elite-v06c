@@ -63,7 +63,7 @@ for (let run = 0; run < 300 && !fail; run++) {
     if (ch === 127 && (bx & 31) === 0 && by === 0) ch = 65;  // на BBC стирание отсюда пишет мимо экрана
     const rb = bbc.call('TT26', { a: ch }), rv = m.call('TT26', { a: ch, b: 0x11, c: 0x22, d: 0x33, e: 0x44, h: 0x55, l: 0x66 });
     chars++;
-    const vm = m.mem(), dd = firstDiff(vecView(vm), bbcView(bbc.mem));
+    const vm = m.mem(), dd = firstDiff(vecView(vm, VIEW), bbcView(bbc.mem));   // плоскость обзора: текст обычного образа зелёный — он и во второй
     const st = (o) => `XC=${o[0]} YC=${o[1]} K3=${o[2]} A=${o[3]} C=${o[4]}`;
     const sb = [bbc.mem[bbc.lab.XC], bbc.mem[bbc.lab.YC], bbc.mem[bbc.lab.K3], rb.a, rb.c], sv = [m.rd('XC'), m.rd('YC'), m.rd('K3'), rv.a, rv.cf];
     if (dd || st(sb) !== st(sv) || rv.bc !== 0x1122 || rv.de !== 0x3344 || rv.hl !== 0x5566)

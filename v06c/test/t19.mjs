@@ -27,7 +27,7 @@ const SPECS = [
   { name: 'NLIN', gen: (r, b) => ({ mem: pos(r) }) },
   { name: 'NLIN2', gen: (r, b) => ({ a: r(192), mem: pos(r) }) },
 ];
-for (const s of SPECS) P.run({ n: N, noreg: 'axyc', skip: s.name.startsWith('NLIN') ? [...TEXT, 'T'] : TEXT, screen: 'view', ...s });   // T — рабочая ячейка HLOIN на BBC
+for (const s of SPECS) P.run({ n: N, noreg: 'axyc', skip: s.name.startsWith('NLIN') ? [...TEXT, 'T'] : TEXT, screen: 'text', ...s });   // T — рабочая ячейка HLOIN на BBC
 P.timing();
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T19: всё совпало');
 process.exit(P.failed() ? 1 : 0);
