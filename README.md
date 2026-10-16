@@ -6,6 +6,7 @@ Elite для Вектора-06Ц: ванильная машина (48 КБ + д�
 - План: `docs/PORT_PLAN.md`
 - Правила для исполнителей: `docs/CONTRACTS.md`
 - Доска задач: `docs/tasks/README.md`
+- Описание версии, сравнение с ZX Spectrum и управление во всех режимах: `docs/ABOUT.md`
 - Управление в игре: `docs/CONTROLS.md`
 - Русская сборка: `sh v06c/build.sh -DRUS` → `v06c/build/elite_ru.rom` (всё прописными, названия систем латиницей)
 
