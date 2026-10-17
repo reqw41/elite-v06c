@@ -204,8 +204,9 @@ pl82:
 	ifdef	PCIRC
 	call	pc_try			; окружность рисуется точками (pcirc)
 	ret	z
-	call	WPLS2			; не подошла (радиус от 128): отрезками, как на BBC, — стереть и нарисовать
-	jp	CIRCLE
+	call	wp_begin		; не подошла (радиус от 128): отрезками; сначала вся новая, потом вся прежняя
+	call	CIRCLE			; (wp_finish): тёмными на миг остаются только общие точки
+	jp	wp_finish
 	else
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
@@ -518,117 +519,9 @@ WP1:
 	ld	(LSX2), a
 	ret
 
-	ifndef	PCIRC
-; Планета без мерцания. На BBC прежняя окружность стирается целиком (WPLS2), потом рисуется новая — между ними
-; планеты на экране нет. Здесь прежний список отрезков копируется в сторону (wp_begin), новая окружность
-; рисуется как обычно, а после каждого её отрезка стирается один прежний (wp_step из BLINE); остаток — wp_finish.
-; Рисование — исключающее ИЛИ, от порядка итог не зависит: экран и рабочие области в конце — как на BBC.
-; Ячейки X1, Y1, X2, Y2 после стирания возвращаются к тому, что оставила новая окружность (wp_touch).
-wp_begin:
-	xor	a
-	ld	(wp_touch), a
-	ld	(wp_i), a
-	ld	(wp_n), a
-	ld	hl, (X1)
-	ld	(wp_x1), hl
-	ld	a, (LSX2)
-	or	a
-	jp	nz, WP1			; списка нет
-	ld	a, (LSP)
-	ld	(wp_n), a
-	or	a
-	jp	z, WP1
-	inc	a			; на запись больше: после разрыва в конце списка WPLS2 читает и её
-	ld	b, a
-	push	bc
-	ld	hl, LSX2
-	ld	de, wp_sx
-	call	ll9_cp
-	pop	bc
-	ld	hl, LSY2
-	ld	de, wp_sy
-	call	ll9_cp
-	jp	WP1
-wp_finish:
-	ld	a, (wp_i)
-	ld	c, a
-	ld	a, (wp_n)
-	cp	c
-	jp	z, wf_end
-	jp	c, wf_end
-	call	wp_step
-	jp	wp_finish
-wf_end:
-	xor	a
-	ld	(wp_n), a
-	ret
-; wp_step: стереть один прежний отрезок (если остались). Портит A, BC, DE, HL.
-wp_step:
-	ld	a, (wp_i)
-	ld	c, a
-ws_l:
-	ld	a, c
-	ld	hl, wp_n
-	cp	(hl)
-	ret	nc			; i >= n — всё стёрто (и когда списка нет: n = 0)
-	ld	b, 0
-	ld	hl, wp_sy
-	add	hl, bc
-	ld	a, (hl)
-	cp	0xFF
-	jp	z, ws_brk
-	ld	e, a			; конец отрезка: y
-	ld	hl, wp_sx
-	add	hl, bc
-	ld	d, (hl)			; x
-	inc	c
-	ld	a, c
-	ld	(wp_i), a
-	ld	hl, (X1)		; X1, Y1 и X2, Y2 — на стек
-	push	hl
-	ld	hl, (X2)
-	push	hl
-	ld	hl, (wp_x1)
-	ld	(X1), hl
-	ld	a, d
-	ld	(X2), a
-	ld	(wp_x1), a
-	ld	a, e
-	ld	(Y2), a
-	ld	(wp_x1 + 1), a
-	call	LOIN
-	pop	hl
-	pop	de
-	ld	a, (wp_touch)
-	or	a
-	jp	nz, ws_back
-	ld	hl, (wp_x1)		; новая окружность X1..Y2 не трогала: оставить как после WPLS2 —
-	ld	(X1), hl		; начало следующего отрезка
-	ret
-ws_back:
-	ld	(X2), hl
-	ex	de, hl
-	ld	(X1), hl
-	ret
-ws_brk:					; разрыв: следующая запись — начало нового куска
-	inc	c
-	ld	hl, wp_sx
-	add	hl, bc
-	ld	a, (hl)
-	ld	(wp_x1), a
-	ld	hl, wp_sy
-	add	hl, bc
-	ld	a, (hl)
-	ld	(wp_x1 + 1), a
-	inc	c
-	ld	a, c
-	ld	(wp_i), a
-	ld	a, (wp_touch)
-	or	a
-	jp	nz, ws_l
-	ld	hl, (wp_x1)
-	ld	(X1), hl
-	jp	ws_l
+	ifdef	SCHED
+	include	"wp_a.asm"		; в обычном образе — в нижней памяти (elite.asm)
+	include	"wp_b.asm"
 	endif
 	ifdef	PCIRC
 ; Окружность планеты точками (обычный образ; в образе стенда и с меридианами — отрезками, как на BBC).
@@ -896,11 +789,8 @@ pc_d:	dw	0
 pc_m3:	db	0
 pc_m4:	db	0
 	endif
-	ifndef	PCIRC
-wp_n:	db	0			; длина прежнего списка (0 — стирать нечего)
-wp_i:	db	0			; сколько записей уже разобрано
-wp_touch:	db	0		; новая окружность уже писала X1..Y2
-wp_x1:	dw	0			; начало очередного прежнего отрезка: x, y
+	ifdef	SCHED
+	include	"wp_v.asm"
 	endif
 
 ; EDGES: строка солнца: X1, X2 = YY(1 0) ∓ A, обрезанные по экрану; перенос 1 — строка не видна (LSO+Y = 0).

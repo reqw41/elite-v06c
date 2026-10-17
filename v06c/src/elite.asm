@@ -12,6 +12,14 @@ SCR_2		equ	0xE000		; вторая плоскость: бит 0 цвета (па�
 DASH_Y		equ	192		; первая строка панели
 DASH_H		equ	56
 
+	ifdef	SCHED
+	define	WPTOUCH			; BLINE отмечает, что новая окружность писала X1..Y2 (wp_touch): равенство с BBC
+	endif
+	ifdef	MERID
+	ifndef	WPTOUCH
+	define	WPTOUCH
+	endif
+	endif
 	ifndef	SCHED
 	ifndef	MERID
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
@@ -28,10 +36,14 @@ DASH_H		equ	56
 entry:
 	di
 	ld	sp, STACK
+	ifdef	SCHED
 	ld	a, 0xC3			; JP isr в векторе RST 7
 	ld	(0x0038), a
 	ld	hl, isr
 	ld	(0x0039), hl
+	else
+	call	low_init		; JP isr в 0038h и код для нижней памяти — на место, пока источник цел
+	endif
 	ld	hl, WS			; обнулить рабочие области (стек лежит внутри них — поэтому не подпрограммой):
 	ifdef	SCHED
 	ld	bc, 0x0900		; сначала до блоков кораблей — в них в образе лежит заставка с Сатурном
@@ -240,6 +252,44 @@ fly_new:	ds	8		; fly_keys: матрица после перевода для м�
 	assert	$ <= WS + 0x1000
 	assert	rom_end <= WS
 	ifndef	SCHED
+; Нижняя память (0000h–00FFh) в образ не входит и игрой не занята (кроме JP isr в 0038h; 0006h — возврат вызовов
+; стенда тестов). Сюда при запуске (low_init, первым делом в entry) копируются JP isr и код, которому нет места в игре.
+; Источник лежит на месте таблицы умножения SQLO: она строится позже, после обнуления рабочих областей.
+	org	SQLO
+low_a:
+	disp	0x0038
+	jp	isr			; вектор RST 7 — прерывание кадра
+	include	"wp_a.asm"
+	include	"fk_bit.asm"
+	assert	$ <= 0x0100
+	ent
+low_b:
+	disp	0x0007
+	include	"wp_b.asm"
+	include	"wp_v.asm"
+	assert	$ <= 0x0038
+	ent
+low_end:
+; low_init: код для нижней памяти — на место; зовётся один раз из entry, до обнуления рабочих областей.
+low_init:
+	ld	hl, low_a
+	ld	de, 0x0038
+	ld	bc, low_b - low_a
+	call	li_cp
+	ld	hl, low_b
+	ld	de, 0x0007
+	ld	bc, low_end - low_b
+li_cp:
+	ld	a, (hl)
+	ld	(de), a
+	inc	hl
+	inc	de
+	dec	bc
+	ld	a, b
+	or	c
+	jp	nz, li_cp
+	ret
+	assert	$ <= SQLO + 0x0400
 	org	WS + 0x0800		; код, нужный один раз при запуске, — в низу страницы стека (стек идёт сверху)
 	include	"init_div.asm"
 	include	"init_sq.asm"
