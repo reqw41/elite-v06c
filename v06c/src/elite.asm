@@ -154,13 +154,6 @@ ws_clr2:
 	ifndef	RUS
 	assert	QQ16 == pd_tkn2 + 26
 	endif
-	ifdef	FAST
-	align	256
-LOG:	incbin	"logs.bin"		; log, logL, antilog, antilogODD — по странице (tools/convert/logs.py)
-LOGL	equ	LOG + 0x100
-ALOG	equ	LOG + 0x200
-ALOGODD	equ	LOG + 0x300
-	endif
 font:
 	ifdef	RUS
 	incbin	"font_ru.bin"		; на месте строчных — русские прописные (КОИ-7)
@@ -261,13 +254,6 @@ IMG_END		equ	rom_end
 	ifdef	RUS
 	savebin	"v06c/build/elite_ru.rom", 0x0100, IMG_END - 0x0100
 	else
-	ifdef	FAST
-	ifdef	SCHED
-	savebin	"v06c/build/elite_fast_t.rom", 0x0100, IMG_END - 0x0100
-	else
-	savebin	"v06c/build/elite_fast.rom", 0x0100, IMG_END - 0x0100
-	endif
-	else
 	ifdef	MERID
 	ifdef	SCHED
 	savebin	"v06c/build/elite_merid_t.rom", 0x0100, IMG_END - 0x0100
@@ -279,7 +265,6 @@ IMG_END		equ	rom_end
 	savebin	"v06c/build/elite_t.rom", 0x0100, IMG_END - 0x0100
 	else
 	savebin	"v06c/build/elite.rom", 0x0100, IMG_END - 0x0100
-	endif
 	endif
 	endif
 	endif

@@ -1,15 +1,15 @@
 #!/bin/sh
 # Сборка v06c/build/elite.rom (i8080, старт 0100h). Ассемблер: tools/bin/sjasmplus, режим --i8080.
 # sh v06c/build.sh [-DИМЯ ...] — например -DVIEW_YELLOW (обзор жёлтый), -DSCHED (кадры считает стенд).
-# -DFAST — быстрая сборка (умножение и деление по логарифмам), пишется в v06c/build/elite_fast.rom.
 # -DMERID — планета с меридианами и кратером, как на BBC (по умолчанию — окружность), пишется в elite_merid.rom.
+# -DRUS — русская сборка, пишется в elite_ru.rom.
 # -DSCHED — сборка для стенда, пишется в v06c/build/elite_t.rom.
 set -e
 cd "$(dirname "$0")/.."
 ROOT=$(pwd)
 mkdir -p v06c/build
 NAME=elite
-for a in "$@"; do [ "$a" = "-DFAST" ] && NAME=${NAME}_fast; [ "$a" = "-DMERID" ] && NAME=${NAME}_merid; [ "$a" = "-DRUS" ] && NAME=${NAME}_ru; done
+for a in "$@"; do [ "$a" = "-DMERID" ] && NAME=${NAME}_merid; [ "$a" = "-DRUS" ] && NAME=${NAME}_ru; done
 for a in "$@"; do [ "$a" = "-DSCHED" ] && NAME=${NAME}_t; done
 out=$("$ROOT/tools/bin/sjasmplus" --i8080 --fullpath -i v06c/src -i v06c/data "$@" \
 	--lst=v06c/build/$NAME.lst --sym=v06c/build/$NAME.sym v06c/src/elite.asm 2>&1) || {

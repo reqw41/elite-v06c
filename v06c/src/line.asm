@@ -399,17 +399,6 @@ li_div:
 	pop	hl
 	ret
 li_div_l:
-	ifdef	FAST
-	ld	a, d			; быстрая сборка: по логарифмам, как отрезок второго процессора
-	or	a
-	ret	z
-	push	hl
-	call	divlog
-	pop	hl
-	ret	nc
-	ld	a, 255
-	ret
-	endif
 	ld	b, 1			; биты частного копятся перевёрнутыми; единица выйдет на восьмом сдвиге
 ld_lp:
 	ld	a, d
