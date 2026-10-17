@@ -9,11 +9,13 @@ import path from 'node:path';
 import { createVector, savePng, ROOT } from '../tools/v06c.mjs';
 const FRAMES = +(process.argv[2] || 60000), STEP = 20, STUCK = 60;      // 60 проверок подряд = 24 с на одном месте
 const g = createVector('elite'), L = g.L;
-const K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], A: [4, 0x02], S: [6, 0x08], X: [7, 0x01], LT: [3, 0x10], GT: [3, 0x40] };
+// клавиши Вектора; в полёте — русская раскладка (docs/CONTROLS.md): стрелки — крен и тангаж, Пробел — огонь, Я — разгон, П — прыжок
+const K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], FIRE: [7, 0x80], UP: [0, 0x20], DOWN: [0, 0x80], LT: [0, 0x10], GT: [0, 0x40],
+  FAST: [6, 0x02], JUMP: [6, 0x01] };
 const key = (k, d) => g.key(K[k][0], K[k][1], d);
 const press = (k) => { key(k, true); g.frame(20); key(k, false); };
 g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(300);
-key('SPACE', true); g.frame(1500); key('SPACE', false);                 // разгон: уйти из зоны станции
+key('FAST', true); g.frame(1500); key('FAST', false);                   // разгон: уйти из зоны станции
 if (g.rd(L.QQ12) !== 0) { console.log('ПРОВАЛ: взлёт не состоялся'); process.exit(1); }
 g.wr(L.LASER, [0x97, 0x97, 0x97, 0x97]); g.wr(L.FIST, [0xFF]);
 const skip = (x, y) => y < 16 || y > 183 || x < 2 || x > 253 || (Math.abs(x - 128) < 3 && Math.abs(y - 96) < 28) || (Math.abs(y - 96) < 3 && Math.abs(x - 128) < 28);
@@ -21,9 +23,11 @@ const streak = new Uint16Array(256 * 192), worst = new Uint16Array(256 * 192);
 let types = new Set(), kills0 = g.rd(L.TALLY) | (g.rd(L.TALLY + 1) << 8), deaths = 0, maxShips = 0, samples = 0, bad = 0, blown = 0;
 let rs = 2024; const rnd = (n) => { rs = (rs * 1103515245 + 12345) >>> 0; return (rs >>> 16) % n; };
 const held = new Set();
+let warps = 0; { const ins = g.cpu.instruction.bind(g.cpu); g.cpu.instruction = () => { if ((g.cpu.pc & 0xffff) === L.wa_z) warps++; return ins(); }; }   // прыжков (wa_z — дважды за прыжок)
 for (let f = 0; f < FRAMES; f += STEP) {
   if (f % 400 === 0) { for (const k of held) key(k, false); held.clear();
-    for (const k of [['LT', 'GT'][rnd(2)], ['S', 'X'][rnd(2)], 'A']) { key(k, true); held.add(k); } if (rnd(3) === 0) { key('SPACE', true); held.add('SPACE'); } }
+    for (const k of [['LT', 'GT'][rnd(2)], ['UP', 'DOWN'][rnd(2)], 'FIRE']) { key(k, true); held.add(k); } if (rnd(3) === 0) { key('FAST', true); held.add('FAST'); }
+    if (rnd(3) === 0) { key('JUMP', true); held.add('JUMP'); } }     // прыжок: пока рядом нет кораблей
   g.frame(STEP);
   if (g.rd(L.QQ12) !== 0) {                                    // погибли или пристыковались: заново в полёт
     deaths++; for (const k of held) key(k, false); held.clear();
@@ -46,7 +50,7 @@ const stuck = []; for (let i = 0; i < worst.length; i++) if (worst[i] >= STUCK) 
 const kills = (g.rd(L.TALLY) | (g.rd(L.TALLY + 1) << 8)) - kills0;
 const top = Math.max(...worst);
 savePng(g.bmp(), path.join(ROOT, 'work/v06c/soak-end.png'));
-console.log(`прогон ${FRAMES} кадров (${(FRAMES / 3000).toFixed(0)} мин игры), проверок экрана ${samples}; типы объектов: ${[...types].sort((a, b) => a - b).join(' ')}; кораблей разом до ${maxShips}; взорвано ${blown}, побед ${kills}, гибелей и стыковок ${deaths}`);
+console.log(`прогон ${FRAMES} кадров (${(FRAMES / 3000).toFixed(0)} мин игры), проверок экрана ${samples}; типы объектов: ${[...types].sort((a, b) => a - b).join(' ')}; кораблей разом до ${maxShips}; взорвано ${blown}, побед ${kills}, гибелей и стыковок ${deaths}; прыжков ${warps >> 1}`);
 console.log(`дольше всего одна точка горела на месте ${top} проверок подряд (${(top * STEP / 50).toFixed(0)} с); порог «залипла» — ${STUCK}`);
 if (stuck.length) { bad = 1; console.log(`залипших точек ${stuck.length}: ` + stuck.slice(0, 20).map(([x, y, n]) => `(${x},${y})×${n}`).join(' ')); }
 console.log(bad ? 'ПРОВАЛ: 1' : 'SOAK: нестёртых точек нет');

@@ -254,6 +254,41 @@ wa3:
 	and	0xFE
 	jp	z, wa1
 wa2:
+	ifndef	SCHED
+; Прыжок как на ZX 48K (решение владельца 17.10.2026): z планеты и солнца − 2000h за проход, пока J держат (на BBC —
+; − 10000h, и обзор очищается и рисуется заново), экран не очищается; пыль в этом проходе сдвигается ещё раз на
+; двойной скорости (на ZX — ещё два раза, со скоростью 30 и 16); проверка появления кораблей — в следующем проходе
+; (на ZX — через прыжок). Проскочивший объект оказывается позади (ADD со знаком).
+	ld	hl, 0x8020		; (S R) = −20h: старшие 16 бит z − 2000h
+	ld	(R_), hl
+	ld	hl, K_ + 7
+	call	wa_z
+	ld	hl, K_ + NI + 7
+	call	wa_z
+	ld	hl, 0
+	ld	(sp_last), hl
+	ld	a, (DELTA)
+	push	af
+	ld	a, 80
+	ld	(DELTA), a
+	call	STARS
+	pop	af
+	ld	(DELTA), a
+	ret
+; wa_z: HL -> байт 7 блока (z_hi), z_sign следом: (z_sign z_hi) += (S R).
+wa_z:
+	ld	a, (hl)
+	ld	(P_), a
+	inc	hl
+	ld	a, (hl)
+	push	hl
+	call	ADD
+	pop	hl
+	ld	(hl), a
+	dec	hl
+	ld	(hl), b
+	ret
+	else
 	ld	a, 0x81
 	ld	(S), a
 	ld	(R_), a
@@ -272,6 +307,7 @@ wa2:
 	ld	a, (VIEW)
 	ld	b, a
 	jp	LOOK1
+	endif
 wa1:
 	ld	a, 40
 	jp	NOISE
