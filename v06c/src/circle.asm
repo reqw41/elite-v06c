@@ -199,7 +199,7 @@ bl5:
 	inc	(hl)
 	jp	bl7
 bl1:
-	ifndef	PCIRC
+	ifdef	WPON
 	ld	a, 1
 	ld	(wp_touch), a		; дальше BLINE пишет X1..Y2 (см. wp_step в planet.asm)
 	endif
@@ -288,7 +288,7 @@ bl8:
 	or	a
 	jp	nz, bl5
 bl7:
-	ifndef	PCIRC
+	ifdef	WPON
 	call	wp_step			; планета: стереть один отрезок прежней окружности
 	endif
 	ld	hl, (K6)

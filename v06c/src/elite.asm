@@ -17,6 +17,16 @@ DASH_H		equ	56
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
 	endif
 	endif
+	ifdef	MERID
+	define	NOMUS			; без мелодии заставки (сборке с меридианами не хватает места)
+	endif
+	define	NOMUS			; ВРЕМЕННО (ветка planet-flicker): место под окружность без мерцания
+	ifndef	PCIRC
+	define	WPON			; окружность отрезками без мерцания: прежняя стирается вслед за новой (wp_* в planet.asm)
+	endif
+	ifdef	WPFF
+	define	WPON			; вариант Б: то же и при быстрой окружности — для радиуса от 128
+	endif
 
 	include	"bbc_vars.inc"
 

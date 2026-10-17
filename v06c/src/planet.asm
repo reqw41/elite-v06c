@@ -204,8 +204,24 @@ pl82:
 	ifdef	PCIRC
 	call	pc_try			; окружность рисуется точками (pcirc)
 	ret	z
+	ifdef	WPFF
+	call	wp_begin		; не подошла (радиус от 128): отрезками, прежняя стирается вслед за новой
+	ifdef	WPB2
+	ld	a, (wp_n)		; Б2: сначала вся новая, потом вся прежняя (стирание не убегает вперёд)
+	push	af
+	xor	a
+	ld	(wp_n), a
+	call	CIRCLE
+	pop	af
+	ld	(wp_n), a
+	else
+	call	CIRCLE
+	endif
+	jp	wp_finish
+	else
 	call	WPLS2			; не подошла (радиус от 128): отрезками, как на BBC, — стереть и нарисовать
 	jp	CIRCLE
+	endif
 	else
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
@@ -518,7 +534,7 @@ WP1:
 	ld	(LSX2), a
 	ret
 
-	ifndef	PCIRC
+	ifdef	WPON
 ; Планета без мерцания. На BBC прежняя окружность стирается целиком (WPLS2), потом рисуется новая — между ними
 ; планеты на экране нет. Здесь прежний список отрезков копируется в сторону (wp_begin), новая окружность
 ; рисуется как обычно, а после каждого её отрезка стирается один прежний (wp_step из BLINE); остаток — wp_finish.
@@ -636,6 +652,291 @@ ws_brk:					; разрыв: следующая запись — начало н�
 ; окружность отмечена LSX2 = 1, её данные — pc_s (x центра — слово, младший байт y, радиус); стирание — повтор.
 ; Та же окружность, что уже на экране, не перерисовывается. Радиус от 128 или строки дальше 64 за краем —
 ; прежний путь (CIRCLE). pc_try: Z — сделано; NZ — рисовать прежним путём (быстрая, если была, уже стёрта).
+	ifdef	PCBIG
+	macro	PCBPT col, row
+	ld	hl, (col)
+	ex	de, hl
+	ld	hl, (row)
+	call	pcb_pt
+	endm
+; Вариант А (ветка planet-flicker): точками — любая окружность на экране; радиус до 127 в пределах строк −64..255 —
+; pcirc, остальное — pcb (16-битные координаты). Данные окружности: x (слово), y (слово), радиус.
+pc_try:
+	ld	a, (K)
+	ld	b, a
+	ld	a, (K + 1)
+	or	a
+	jp	z, pt_k
+	ld	b, 248			; как у BBC: радиус больше экрана — 248
+pt_k:
+	ld	a, b
+	cp	3
+	jp	c, pc_old
+	dec	a
+	ld	b, a			; B = радиус
+	push	bc
+	call	CHKON
+	pop	bc
+	jp	c, pc_old
+	ld	hl, (K3)
+	ld	(pc_n), hl
+	ld	hl, (K4)
+	ld	(pc_n + 2), hl
+	ld	a, b
+	ld	(pc_n + 4), a
+	ld	a, (LSX2)
+	dec	a
+	jp	nz, pc_new		; на экране не быстрая окружность
+	ld	hl, pc_n
+	ld	de, pc_s
+	ld	c, 5
+pc_cmp:
+	ld	a, (de)
+	cp	(hl)
+	jp	nz, pc_chg
+	inc	hl
+	inc	de
+	dec	c
+	jp	nz, pc_cmp
+	ret				; та же окружность
+pc_chg:
+	ld	hl, pc_n
+	call	pc_draw			; новая, затем стереть прежнюю — без мерцания
+	ld	hl, pc_s
+	call	pc_draw
+pc_keep:
+	ld	hl, pc_n
+	ld	de, pc_s
+	ld	c, 5
+pk_l:
+	ld	a, (hl)
+	ld	(de), a
+	inc	hl
+	inc	de
+	dec	c
+	jp	nz, pk_l
+	xor	a
+	ret
+pc_new:
+	ld	hl, pc_n
+	call	pc_draw
+	call	WPLS2			; прежняя — по списку отрезков, если была
+	ld	a, 1
+	ld	(LSX2), a
+	jp	pc_keep
+pc_old:
+	call	pc_erase
+	or	1
+	ret
+pc_erase:
+	ld	a, (LSX2)
+	dec	a
+	ret	nz
+	ld	hl, pc_s
+	call	pc_draw
+	jp	WP1
+; pc_draw: HL -> окружность; pcirc, если радиус до 127 и строки Y − r ≥ −64, Y + r ≤ 255, иначе pcb.
+pc_draw:
+	push	hl
+	inc	hl
+	inc	hl
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)			; DE = Y
+	inc	hl
+	ld	a, (hl)			; A = r
+	pop	hl
+	cp	128
+	jp	nc, pcb
+	push	hl
+	ld	l, a
+	ld	h, 0
+	add	hl, de			; Y + r
+	ld	b, a
+	ld	a, h
+	or	a
+	jp	nz, pd_big
+	ld	a, e
+	sub	b
+	ld	l, a
+	ld	a, d
+	sbc	a, 0
+	ld	h, a
+	ld	bc, 64
+	add	hl, bc			; Y − r + 64
+	ld	a, h
+	or	a
+	jp	m, pd_big
+	pop	hl
+	jp	pcirc
+pd_big:
+	pop	hl
+; pcb: окружность исключающим ИЛИ, координаты 16-битные: столбцы xa = X + x, xb = X − x, xc = X + y, xd = X − y,
+; строки ya = Y + y, yb = Y − y, yc = Y + x, yd = Y − x; точка — pcb_pt, если она в обзоре. HL -> x, y (слова), r.
+pcb:
+	ld	e, (hl)
+	inc	hl
+	ld	d, (hl)
+	inc	hl
+	ld	c, (hl)
+	inc	hl
+	ld	b, (hl)
+	inc	hl
+	ld	a, (hl)
+	ld	(pcb_y), a
+	push	bc			; Y
+	ex	de, hl			; HL = X
+	ld	(pcb_xa), hl
+	ld	(pcb_xb), hl
+	ld	e, a
+	ld	d, 0
+	push	hl
+	add	hl, de
+	ld	(pcb_xc), hl
+	pop	hl
+	call	pcb_sub
+	ld	(pcb_xd), hl
+	pop	hl			; Y
+	ld	(pcb_yc), hl
+	ld	(pcb_yd), hl
+	push	hl
+	add	hl, de
+	ld	(pcb_ya), hl
+	pop	hl
+	call	pcb_sub
+	ld	(pcb_yb), hl
+	ld	a, e
+	cpl
+	ld	l, a
+	ld	h, 0xFF
+	inc	hl
+	inc	hl
+	ld	(pcb_d), hl		; d = 1 − r
+	xor	a
+	ld	(pcb_x), a
+	PCBPT	pcb_xa, pcb_ya		; (X, Y + r), (X, Y − r), (X ± r, Y)
+	PCBPT	pcb_xa, pcb_yb
+	PCBPT	pcb_xc, pcb_yc
+	PCBPT	pcb_xd, pcb_yc
+pcb_l:
+	ld	hl, pcb_x
+	inc	(hl)
+	ld	hl, (pcb_xa)
+	inc	hl
+	ld	(pcb_xa), hl
+	ld	hl, (pcb_xb)
+	dec	hl
+	ld	(pcb_xb), hl
+	ld	hl, (pcb_yc)
+	inc	hl
+	ld	(pcb_yc), hl
+	ld	hl, (pcb_yd)
+	dec	hl
+	ld	(pcb_yd), hl
+	ld	hl, (pcb_d)
+	ld	a, h
+	or	a
+	jp	m, pcb_ny
+	ld	hl, pcb_y		; y − 1
+	dec	(hl)
+	ld	hl, (pcb_xc)
+	dec	hl
+	ld	(pcb_xc), hl
+	ld	hl, (pcb_xd)
+	inc	hl
+	ld	(pcb_xd), hl
+	ld	hl, (pcb_ya)
+	dec	hl
+	ld	(pcb_ya), hl
+	ld	hl, (pcb_yb)
+	inc	hl
+	ld	(pcb_yb), hl
+	ld	a, (pcb_y)		; d += 2(x − y) + 1
+	ld	e, a
+	ld	a, (pcb_x)
+	sub	e
+	ld	e, a
+	sbc	a, a
+	ld	d, a
+	jp	pcb_dd
+pcb_ny:
+	ld	a, (pcb_x)		; d += 2x + 1
+	ld	e, a
+	ld	d, 0
+pcb_dd:
+	ex	de, hl
+	add	hl, hl
+	inc	hl
+	ex	de, hl
+	ld	hl, (pcb_d)
+	add	hl, de
+	ld	(pcb_d), hl
+	ld	a, (pcb_x)
+	ld	hl, pcb_y
+	cp	(hl)
+	jp	z, pcb_e1
+	ret	nc			; x > y — конец
+pcb_e1:
+	PCBPT	pcb_xa, pcb_ya
+	PCBPT	pcb_xb, pcb_ya
+	PCBPT	pcb_xa, pcb_yb
+	PCBPT	pcb_xb, pcb_yb
+	ld	a, (pcb_x)
+	ld	hl, pcb_y
+	cp	(hl)
+	jp	z, pcb_l		; x = y: вторая четвёрка совпала бы с первой
+	PCBPT	pcb_xc, pcb_yc
+	PCBPT	pcb_xd, pcb_yc
+	PCBPT	pcb_xc, pcb_yd
+	PCBPT	pcb_xd, pcb_yd
+	jp	pcb_l
+; pcb_sub: HL −= DE.
+pcb_sub:
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+	ret
+; pcb_pt: точка (DE — столбец, HL — строка), если она в обзоре. Портит A, DE, HL.
+pcb_pt:
+	ld	a, d
+	or	h
+	ret	nz
+	ld	a, l
+	cp	192
+	ret	nc
+	cpl
+	ld	l, a			; байт строки 255 − y
+	ld	a, e
+	rrca
+	rrca
+	rrca
+	and	31
+	add	a, high SCR_VIEW
+	ld	h, a
+	ld	a, e
+	and	7
+	add	a, low TWOS
+	ld	e, a
+	ld	d, high TWOS
+	ld	a, (de)
+	xor	(hl)
+	ld	(hl), a
+	ret
+pcb_xa:	dw	0
+pcb_xb:	dw	0
+pcb_xc:	dw	0
+pcb_xd:	dw	0
+pcb_ya:	dw	0
+pcb_yb:	dw	0
+pcb_yc:	dw	0
+pcb_yd:	dw	0
+pcb_d:	dw	0
+pcb_x:	db	0
+pcb_y:	db	0
+	else
 pc_try:
 	ld	a, (K + 1)
 	or	a
@@ -721,6 +1022,7 @@ pc_erase:
 	ld	hl, pc_s
 	call	pcirc
 	jp	WP1
+	endif
 ; pc_col и pc_pt лежат в flight.asm — в пустоте выравнивания перед sfx_tab.
 ; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску.
 	macro	PCPAIR msk, dlt
@@ -755,6 +1057,9 @@ pcirc:
 	inc	hl
 	ld	c, (hl)
 	inc	hl
+	ifdef	PCBIG
+	inc	hl			; старший байт Y (здесь Y в пределах 0..255)
+	endif
 	ld	b, (hl)			; DE = X, C = Y, B = r
 	push	de
 	ld	l, b
@@ -890,13 +1195,18 @@ pc_p1:
 	ld	hl, 0
 	PCPAIR	d, b
 	ret
+	ifdef	PCBIG
+pc_s:	ds	5			; быстрая окружность на экране: x, y (слова), радиус
+pc_n:	ds	5			; новая
+	else
 pc_s:	ds	4			; быстрая окружность на экране: x (слово), y, радиус
 pc_n:	ds	4			; новая
+	endif
 pc_d:	dw	0
 pc_m3:	db	0
 pc_m4:	db	0
 	endif
-	ifndef	PCIRC
+	ifdef	WPON
 wp_n:	db	0			; длина прежнего списка (0 — стирать нечего)
 wp_i:	db	0			; сколько записей уже разобрано
 wp_touch:	db	0		; новая окружность уже писала X1..Y2
