@@ -268,38 +268,54 @@ joy_rest:
 ; fly_keys: полёт под русскую клавиатуру Вектора (обычный образ). Таблицы — v06c/data/keys.asm (tools/convert/keys.py):
 ; клавиши из fly_map нажимают другие (стрелки — крен и тангаж, пробел — огонь, Я, ТАБ — разгон, тормоз, Б — бомба,
 ; К — капсула, А, О — автопилот, Ц, Р, С — ракета, П, Г — прыжки, М — маскировка), всё, чего нет в fly_keep, гаснет.
-; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга. Если не нажато ничего вне fly_keep,
-; матрица уже верна (замен нет, гасить нечего) — выход сразу: так проходит почти каждый кадр.
+; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга. Перевод зависит только от матрицы,
+; поэтому он запоминается: матрица та же, что в прошлый раз (fly_raw), — результат берётся из fly_new. Так проходит
+; почти каждый кадр, и когда ничего не нажато, и когда клавиши держат.
 fly_keys:
-	ld	hl, kb_rows
-	ld	de, fly_keep
-	ld	bc, 0x0800		; B — строк, C — нажатое вне fly_keep
+	ld	hl, kb_rows		; сравнить с прошлой и запомнить: C <> 0 — матрица другая
+	ld	de, fly_raw
+	ld	bc, 0x0800
 fk_t:
 	ld	a, (de)
-	cpl
-	and	(hl)
+	xor	(hl)
 	or	c
 	ld	c, a
+	ld	a, (hl)
+	ld	(de), a
 	inc	hl
 	inc	de
 	dec	b
 	jp	nz, fk_t
+	ld	a, c
 	or	a
-	ret	z
-	ld	de, fly_map		; fly_new здесь нулевой: его обнуляет fk_r (и запуск)
+	ld	hl, fly_new
+	ld	de, kb_rows
+	jp	z, fk_cp		; та же: прежний перевод
+	ex	de, hl			; строка И fly_keep
+	ld	de, fly_keep
+fk_k:
+	ld	a, (de)
+	and	(hl)
+	ld	(hl), a
+	inc	hl
+	inc	de
+	ld	a, l
+	cp	low (kb_rows + 8)
+	jp	nz, fk_k
+	ld	de, fly_map
 	ld	b, FLY_N
 fk_l:
-	ld	a, (de)			; откуда: нажата ли клавиша Вектора
+	ld	a, (de)			; откуда: нажата ли клавиша Вектора (в fly_raw — матрица до перевода)
 	inc	de
 	call	fk_bit
+	ld	a, l
+	add	a, low (fly_raw - kb_rows)
+	ld	l, a
 	ld	a, (hl)
 	and	c
 	jp	z, fk_n
-	ld	a, (de)			; куда: её бит — в fly_new
+	ld	a, (de)			; куда: её бит — в kb_rows
 	call	fk_bit
-	ld	a, l
-	add	a, low (fly_new - kb_rows)
-	ld	l, a
 	ld	a, c
 	or	(hl)
 	ld	(hl), a
@@ -307,24 +323,17 @@ fk_n:
 	inc	de
 	dec	b
 	jp	nz, fk_l
-	ld	hl, kb_rows		; строка = (строка И fly_keep) ИЛИ замены; fly_new — обратно в ноль
-	ld	de, fly_keep
-	ld	bc, fly_new
-fk_r:
-	ld	a, (de)
-	and	(hl)
-	ld	(hl), a
-	ld	a, (bc)
-	or	(hl)
-	ld	(hl), a
-	xor	a
-	ld	(bc), a
+	ld	hl, kb_rows		; запомнить перевод
+	ld	de, fly_new
+fk_cp:
+	ld	b, 8
+fk_c:
+	ld	a, (hl)
+	ld	(de), a
 	inc	hl
 	inc	de
-	inc	bc
-	ld	a, l
-	cp	low (kb_rows + 8)
-	jp	nz, fk_r
+	dec	b
+	jp	nz, fk_c
 	ret
 ; fk_bit: A = строка · 8 + 7 − бит -> HL = kb_rows + строка, C = маска бита (из TWOS). Портит A.
 fk_bit:
@@ -339,11 +348,10 @@ fk_bit:
 	rrca
 	rrca
 	and	7
-	add	a, low kb_rows
-	ld	l, a
+	ld	l, a			; low kb_rows = 0
 	ld	h, high kb_rows
 	ret
-	assert	high TWOS == high (TWOS + 7) && high kb_rows == high (fly_new + 7)
+	assert	high TWOS == high (TWOS + 7)
 	endif
 
 ; Смена цвета всего экрана на несколько кадров, как на ZX Spectrum (там — атрибут окна обзора):

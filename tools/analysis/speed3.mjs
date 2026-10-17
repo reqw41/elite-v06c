@@ -8,9 +8,11 @@ import { createVector, savePng, ROOT } from '../../v06c/tools/v06c.mjs';
 const require = createRequire(import.meta.url);
 const { BBC } = require(path.join(ROOT, 'tools/oracle/bbc.js'));
 const FR = +(process.argv[2] || 1500), SHOT = process.argv[3];
+const PITCH = !!process.env.PITCH;   // PITCH=1 — тангаж зажат весь замер (короткие пути «полёт прямо» не работают)
 const NSHIPS = process.env.NSHIPS === undefined ? 3 : +process.env.NSHIPS;
 // координаты 3 байта (младший, старший, знак): x, y, z
-const POS = [[[0, 1, 0x80], [0, 0, 0], [0, 4, 0]], [[0, 1, 0], [0x80, 0, 0], [0, 5, 0]], [[0, 0, 0], [0x80, 0, 0x80], [0, 6, 0]]].slice(0, NSHIPS);
+const POS = [[[0, 1, 0x80], [0, 0, 0], [0, 4, 0]], [[0, 1, 0], [0x80, 0, 0], [0, 5, 0]], [[0, 0, 0], [0x80, 0, 0x80], [0, 6, 0]],
+  [[0x80, 1, 0x80], [0xC0, 0, 0], [0, 7, 0]], [[0x80, 1, 0], [0xA0, 0, 0x80], [0x80, 6, 0]], [[0, 0, 0], [0, 1, 0], [0, 8, 0]]].slice(0, NSHIPS);   // до шести (у ZX мест под корабли шесть)
 const flat = (p) => p.flat();
 const out = [];
 
@@ -29,7 +31,7 @@ const out = [];
       slots = []; for (let i = 2; i < 12; i++) if (m[L.FRIN + i] === 1) slots.push(i); }
     passes++; let n = 0; for (let i = 2; i < 12; i++) if (m[L.FRIN + i]) n++; shipsSum += n;
     slots.forEach((s, k) => m.set(flat(POS[k]), L['K%'] + 36 * s)); m[L.ENERGY] = 255; m[L.FSH] = 255; m[L.ASH] = 255; });
-  b.runFrames(50);
+  b.runFrames(50); if (PITCH) b.keys.add(0x51);
   const c0 = b.cpu.cycles; let mc = 0, prev = m[L.MCNT]; passes = 0; shipsSum = 0;
   for (let f = 0; f < FR; f++) { b.runFrames(1); mc += (prev - m[L.MCNT]) & 255; prev = m[L.MCNT]; }
   out.push(['BBC кассета' + (process.env.MERID ? ', меридианы' : ''), mc / ((b.cpu.cycles - c0) / 2e6), shipsSum / passes]);
@@ -51,7 +53,7 @@ const out = [];
       passes++; let n = 0; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i)) n++; shipsSum += n;
       slots.forEach((s, k) => g.wr(L.K_ + 36 * s, flat(POS[k]))); for (const v of ['ENERGY', 'FSH', 'ASH']) g.wr(L[v], [255]); }
     if (PROF) { const pc = cpu.pc & 0xffff, r = ins(); PROF[pc] += cpu.vcycles | 0; return r; } return ins(); };
-  g.frame(50); passes = 0; shipsSum = 0;
+  g.frame(50); passes = 0; shipsSum = 0; if (PITCH) g.key(0, 0x20, true);
   if (PROF) PROF.fill(0);
   g.frame(FR);
   if (PROF) { const labs = Object.entries(L).filter(([n, a]) => typeof a === 'number' && a >= 0x100 && a < 0xB000 && /^[A-Za-z]/.test(n)).sort((x, y) => x[1] - y[1]);
@@ -87,6 +89,8 @@ const out = [];
     if (phase === 'spawn') {                       // игровая «стая» (2–4 Sidewinder и Krait) в начале прохода
       const st = cpu.getState(); st.sp = (st.sp - 2) & 0xffff; mem[st.sp] = pc & 255; mem[st.sp + 1] = pc >> 8; st.pc = PACK; cpu.setState(st); phase = 'fix'; return; }
     if (phase === 'fix') {                         // оставить NSHIPS мест, все — Sidewinder (модель и «занято» как у типа 16)
+      let have = 0; for (let i = 1; i <= 6; i++) if (occ(i)) have++;
+      if (have < NSHIPS) { phase = 'spawn'; return; }   // мало — ещё одна стая
       slots = []; for (let i = 1; i <= 6; i++) if (occ(i)) { if (slots.length < NSHIPS) slots.push(i); else mem[OBJ0 + 39 * i + 0x22] = 0; }
       for (const s of slots) { const b = OBJ0 + 39 * s; mem[b + 0x22] = 70; mem[b + 0x23] = SIDE & 255; mem[b + 0x24] = SIDE >> 8; }
       phase = 'run'; }
@@ -97,7 +101,7 @@ const out = [];
   const run = (n, k) => { down.clear(); if (k) down.add(k); for (let f = 0; f < n; f++) frame(); };
   run(100); run(20, '_'); run(150); run(20, '_'); run(150); run(20, '1'); run(300);   // заставки, вылет, отлёт
   if (NSHIPS) { phase = 'spawn'; while (phase !== 'run') frame(); } else phase = 'run';
-  passes = 0; shipsSum = 0; const t0 = T; run(FR);
+  passes = 0; shipsSum = 0; const t0 = T; run(FR, PITCH ? 's' : null);
   out.push(['ZX 48K', passes / ((T - t0) / 3.5e6), shipsSum / passes]);
   if (SHOT) { const bmp = new Uint32Array(576 * 288), pal = [0, 0xC00000, 0x0000C0, 0xC000C0, 0x00C000, 0xC0C000, 0x00C0C0, 0xC0C0C0];
     for (let y = 0; y < 192; y++) for (let x = 0; x < 256; x++) { const a = 0x4000 | ((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | (x >> 3), at = mem[0x5800 + (y >> 3) * 32 + (x >> 3)];
@@ -105,5 +109,5 @@ const out = [];
     savePng(bmp, path.join(SHOT, 'zx.png')); }
 }
 
-console.log(`кораблей Sidewinder: ${NSHIPS}, кадров замера ${FR}`);
+console.log(`кораблей Sidewinder: ${NSHIPS}, кадров замера ${FR}${PITCH ? ', тангаж зажат' : ''}`);
 for (const [n, r, s] of out) console.log(`${n.padEnd(12)} ${r.toFixed(2)} прохода в секунду; кораблей в среднем ${s.toFixed(1)}`);
