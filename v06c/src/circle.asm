@@ -199,9 +199,9 @@ bl5:
 	inc	(hl)
 	jp	bl7
 bl1:
-	ifdef	WPON
+	ifdef	WPTOUCH			; новая окружность пишет X1..Y2 (для wp_step; стенд и меридианы — равенство с BBC)
 	ld	a, 1
-	ld	(wp_touch), a		; дальше BLINE пишет X1..Y2 (см. wp_step в planet.asm)
+	ld	(wp_touch), a		; дальше BLINE пишет X1..Y2 (см. wp_step в wp_a.asm)
 	endif
 	; быстрый путь: оба конца на экране (старшие байты 0, y < 192) — LL145 только переставляет байты
 	ld	a, (K5 + 1)
@@ -288,7 +288,7 @@ bl8:
 	or	a
 	jp	nz, bl5
 bl7:
-	ifdef	WPON
+	ifdef	SCHED
 	call	wp_step			; планета: стереть один отрезок прежней окружности
 	endif
 	ld	hl, (K6)
