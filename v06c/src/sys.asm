@@ -268,49 +268,46 @@ joy_rest:
 ; fly_keys: полёт под русскую клавиатуру Вектора (обычный образ). Таблицы — v06c/data/keys.asm (tools/convert/keys.py):
 ; клавиши из fly_map нажимают другие (стрелки — крен и тангаж, пробел — огонь, Я, ТАБ — разгон, тормоз, Б — бомба,
 ; К — капсула, А, О — автопилот, Ц, Р, С — ракета, П, Г — прыжки, М — маскировка), всё, чего нет в fly_keep, гаснет.
-; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга.
+; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга. Если не нажато ничего вне fly_keep,
+; матрица уже верна (замен нет, гасить нечего) — выход сразу: так проходит почти каждый кадр.
 fly_keys:
-	ld	hl, fly_new
-	ld	b, 8
-	xor	a
-fk_z:
-	ld	(hl), a
+	ld	hl, kb_rows
+	ld	de, fly_keep
+	ld	bc, 0x0800		; B — строк, C — нажатое вне fly_keep
+fk_t:
+	ld	a, (de)
+	cpl
+	and	(hl)
+	or	c
+	ld	c, a
 	inc	hl
+	inc	de
 	dec	b
-	jp	nz, fk_z
-	ld	de, fly_map
+	jp	nz, fk_t
+	or	a
+	ret	z
+	ld	de, fly_map		; fly_new здесь нулевой: его обнуляет fk_r (и запуск)
 	ld	b, FLY_N
 fk_l:
-	ld	a, (de)
+	ld	a, (de)			; откуда: нажата ли клавиша Вектора
 	inc	de
 	call	fk_bit
-	ld	c, a
-	ld	a, l
-	add	a, low kb_rows
-	ld	l, a
-	ld	h, high kb_rows
-	ld	a, (de)
-	inc	de
-	push	af
 	ld	a, (hl)
 	and	c
 	jp	z, fk_n
-	pop	af
+	ld	a, (de)			; куда: её бит — в fly_new
 	call	fk_bit
-	ld	c, a
 	ld	a, l
-	add	a, low fly_new
+	add	a, low (fly_new - kb_rows)
 	ld	l, a
-	ld	h, high fly_new
 	ld	a, c
 	or	(hl)
 	ld	(hl), a
-	push	af
 fk_n:
-	pop	af
+	inc	de
 	dec	b
 	jp	nz, fk_l
-	ld	hl, kb_rows		; строка = (строка И fly_keep) ИЛИ замены
+	ld	hl, kb_rows		; строка = (строка И fly_keep) ИЛИ замены; fly_new — обратно в ноль
 	ld	de, fly_keep
 	ld	bc, fly_new
 fk_r:
@@ -320,6 +317,8 @@ fk_r:
 	ld	a, (bc)
 	or	(hl)
 	ld	(hl), a
+	xor	a
+	ld	(bc), a
 	inc	hl
 	inc	de
 	inc	bc
@@ -327,24 +326,24 @@ fk_r:
 	cp	low (kb_rows + 8)
 	jp	nz, fk_r
 	ret
-; fk_bit: A = строка · 8 + бит -> L = строка, A = маска бита. Портит H.
+; fk_bit: A = строка · 8 + 7 − бит -> HL = kb_rows + строка, C = маска бита (из TWOS). Портит A.
 fk_bit:
-	ld	l, a
-	and	7
-	inc	a
 	ld	h, a
-	ld	a, l
+	and	7
+	add	a, low TWOS
+	ld	l, a
+	ld	a, h
+	ld	h, high TWOS
+	ld	c, (hl)
 	rrca
 	rrca
 	rrca
 	and	7
+	add	a, low kb_rows
 	ld	l, a
-	ld	a, 0x80
-fkb_l:
-	rlca
-	dec	h
-	jp	nz, fkb_l
+	ld	h, high kb_rows
 	ret
+	assert	high TWOS == high (TWOS + 7) && high kb_rows == high (fly_new + 7)
 	endif
 
 ; Смена цвета всего экрана на несколько кадров, как на ZX Spectrum (там — атрибут окна обзора):

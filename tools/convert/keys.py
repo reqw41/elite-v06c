@@ -81,7 +81,7 @@ def main():
           + 'joy_scr:\n' + db(joy([(0, 'RIGHT'), (1, 'LEFT'), (2, 'UP'), (3, 'DOWN'), (6, 'SPACE'), (7, 'RETURN')])))
     # Полёт под русскую клавиатуру Вектора (решение владельца 17.10.2026), только обычный образ. В полёте (QQ11 = 0,
     # не на паузе) прерывание кадра гасит клавиши, которых нет в fly_keep, и нажимает клавиши BBC по fly_map
-    # (номер клавиши Вектора = строка · 8 + бит). Джойстик нажимает клавиши BBC уже после перевода (joy_fly, как раньше).
+    # (номер клавиши Вектора = строка · 8 + бит; в fly_map — строка · 8 + 7 − бит, чтобы маску брать из TWOS). Джойстик нажимает клавиши BBC уже после перевода (joy_fly, как раньше).
     vec = {k: i for i, k in enumerate(k for row in ROWS for k in row)}
     FLY = [('LEFT', ','), ('RIGHT', '.'), ('UP', 'S'), ('DOWN', 'X'),   # стрелки — крен и тангаж
            ('SPACE', 'A'), ('Q', 'SPACE'), ('TAB', '/'),                 # пробел — огонь, Я — разгон, ТАБ — тормоз
@@ -94,8 +94,9 @@ def main():
     for k in [a for a, _ in FLY] + MOVED:
         keep[vec[k] >> 3] &= ~(1 << (vec[k] & 7)) & 0xFF
     s += ('\tifndef\tSCHED\n; fly_keep: клавиши Вектора, которые в полёте остаются как есть (1 — остаётся).\nfly_keep:\n' + db(keep) +
-          '; fly_map: клавиша Вектора -> клавиша Вектора, на которой стоит нужная клавиша BBC (строка · 8 + бит).\n'
-          f'FLY_N\tequ\t{len(FLY)}\nfly_map:\n' + db([x for a, b in FLY for x in (vec[a], vec[b])]) +
+          '; fly_map: клавиша Вектора -> клавиша Вектора, на которой стоит нужная клавиша BBC (строка · 8 + 7 − бит:\n'
+          '; младшие три бита — номер маски в TWOS).\n'
+          f'FLY_N\tequ\t{len(FLY)}\nfly_map:\n' + db([x ^ 7 for a, b in FLY for x in (vec[a], vec[b])]) +
           '\tendif\n')
     open(os.path.join(ROOT, 'v06c/data/keys.asm'), 'w').write(s)
     print(f'v06c/data/keys.asm: назначено клавиш {sum(1 for c in fwd if c)} и {len(ss)} с СС, без клавиши на Векторе: '

@@ -37,5 +37,25 @@ for (const k of ['Я', 'С', 'А', 'АР2', 'Ь', '↑']) check(`пауза: ${k
 check('полёт: ← ↑ Пробел Я вместе', ['←', '↑', 'Пробел', 'Я'], 0, 0, [',', 'S', 'A', 'SPACE']);
 check('полёт: Р и М вместе — пуск и маскировка, без цепочек', ['Р', 'М'], 0, 0, ['M', 'Y']);
 check('полёт: С и ↑ вместе — снять и нос вниз', ['С', '↑'], 0, 0, ['U', 'S']);
+// fly_keys на случайных матрицах против смысла таблиц (keys.py): строка = (строка И fly_keep) ИЛИ замены по fly_map
+// (номер клавиши там — строка · 8 + 7 − бит); после вызова fly_new снова нулевой. Чаще одна-две клавиши, иногда много.
+{
+  const keep = Array.from({ length: 8 }, (_, i) => m.rd(L.fly_keep + i)), map = [];
+  for (let i = 0; i < 2 * 17; i += 2) map.push([m.rd(L.fly_map + i), m.rd(L.fly_map + i + 1)]);
+  let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) >>> 16;
+  let fails = 0, cyc = [0, 0], cnt = [0, 0];
+  for (let n = 0; n < 20000; n++) {
+    const rows = new Array(8).fill(0), k = n % 4 === 3 ? rnd() % 20 : rnd() % 3;
+    for (let j = 0; j < k; j++) rows[rnd() & 7] |= 1 << (rnd() & 7);
+    const exp = rows.map((v, i) => v & keep[i]);
+    for (const [a, b] of map) if (rows[a >> 3] & (1 << (7 - (a & 7)))) exp[b >> 3] |= 1 << (7 - (b & 7));
+    const r = m.call('fly_keys', { mem: { kb_rows: rows } }), got = Array.from({ length: 8 }, (_, i) => m.rd(L.kb_rows + i));
+    const fresh = Array.from({ length: 8 }, (_, i) => m.rd(L.fly_new + i)).every((v) => v === 0);
+    if (!fresh || got.some((v, i) => v !== exp[i])) { if (fails++ < 5) console.log(`FAIL fly_keys: ${rows} -> ${got}, ждали ${exp}${fresh ? '' : ', fly_new не нулевой'}`); }
+    const busy = rows.some((v, i) => v & ~keep[i]) ? 1 : 0; cyc[busy] += r.cycles; cnt[busy]++;
+  }
+  if (fails) bad++;
+  console.log(`${fails ? 'FAIL' : 'OK  '} fly_keys на 20000 матрицах; тактов: без переводимых клавиш ${(cyc[0] / cnt[0]).toFixed(0)}, с ними ${(cyc[1] / cnt[1]).toFixed(0)}`);
+}
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'RUKEYS: всё как задумано');
 process.exit(bad ? 1 : 0);
