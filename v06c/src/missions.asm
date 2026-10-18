@@ -575,6 +575,7 @@ ex_pts:	db	0
 	db	32, 104, 96, 104, 4, 4, 0, 0		; Krait, Asp, Fer-de-Lance, Asp с устройством, контейнер, пластина, осколок, валун
 	db	34, 72, 96, 48, 112, 124, 144		; Adder, Gecko, Cobra Mk I, Worm, Moray, Boa, Anaconda
 	db	48, 32, 74				; Shuttle, Transporter, Constrictor
+	ifdef	SCHED			; в обычном образе — в рабочих областях (elite.asm, WS + 03CEh)
 ex_t:	db	0			; тип цели, сбитой ракетой (для счёта очков)
 ex_s:	db	0			; место цели ракеты · 2
 mch_x:	db	0			; номер своего сообщения на экране (0 — на экране слово игры MCH)
@@ -583,7 +584,10 @@ leak_say:	db	0
 cloak_on:	db	0		; скрывающее устройство включено
 cloak_key:	db	0
 asp_out:	db	0			; Asp со скрывающим устройством уже выходил в этой системе
+	endif
 mis_seed:	dw	0x3C91
 pal_cloak:
 	db	0x00, C_RED, 0xF8, C_GREEN	; белое — голубым
+	ifdef	SCHED			; в обычном образе — в рабочих областях (elite.asm, WS + 03CEh)
 nova_t:	dw	0
+	endif

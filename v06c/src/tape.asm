@@ -220,4 +220,6 @@ tp_quiet:				; остановить счётчики ВИ53: при закрыт
 	ld	a, 0xB6
 	out	(0x08), a
 	ret
+	ifdef	SCHED			; в обычном образе — в рабочих областях (elite.asm, WS + 03CEh)
 tp_inv:	db	0
+	endif

@@ -783,11 +783,7 @@ pc_p1:
 	ld	hl, 0
 	PCPAIR	d, b
 	ret
-pc_s:	ds	4			; быстрая окружность на экране: x (слово), y, радиус
-pc_n:	ds	4			; новая
-pc_d:	dw	0
-pc_m3:	db	0
-pc_m4:	db	0
+; переменные — в рабочих областях (elite.asm, WS + 03CEh)
 	endif
 	ifdef	SCHED
 	include	"wp_v.asm"

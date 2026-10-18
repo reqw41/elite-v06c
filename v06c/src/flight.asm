@@ -655,7 +655,7 @@ NwS1:
 ; NWSPS: завести станцию из INWK: лампа, ИИ, развернуть носом к планете, список отрезков — в области LSO.
 NWSPS:
 	ifndef	SCHED
-	ld	hl, (XX21 + 14)		; станция: при технике от 10 — Dodo, как в дисковой версии
+	ld	hl, ship_5BA8		; станция (XX21 + 14 — Coriolis): при технике от 10 — Dodo, как в дисковой версии
 	ld	a, (tek)
 	cp	10
 	jp	c, nws_cor
@@ -766,6 +766,12 @@ pc_pt:
 	xor	(hl)
 	ld	(hl), a
 	ret
+	endif
+	ifndef	SCHED
+	ifndef	RUS
+wa_zx:
+	include	"wa_zx.asm"
+	endif
 	endif
 	align	64
 sfx_tab:

@@ -1305,7 +1305,7 @@ zs_rnd:					; случайное число игры (свой генерато�
 	call	DORND
 	pop	bc
 	ret
-sp_last:	dw	0		; кадр последней проверки появления
+; переменные — в рабочих областях (elite.asm, WS + 03CEh)
 ds_lone:
 	ld	hl, ds_tl
 	jp	ds_4

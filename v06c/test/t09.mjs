@@ -28,7 +28,7 @@ const HEAP = 0x0C00, BLOCK = 0x0900;
 const shipCase = (r, i, every) => {
   const fresh = i % every === 0;
   if (fresh) type = 1 + r(13);
-  const bp = bbc.mem[B.XX21 + 2 * (type - 1)] | (bbc.mem[B.XX21 + 2 * type - 1] << 8), vp = m.rd16(m.L.XX21 + 2 * (type - 1));
+  const bp = bbc.mem[B.XX21 + 2 * (type - 1)] | (bbc.mem[B.XX21 + 2 * type - 1] << 8), vp = m.rd16((m.L.XX21 ?? m.L.XX21X) + 2 * (type - 1));   // в обычном образе XX21 нет — XX21X (первые 13 те же)
   return { mem: { INWK: ship(r, fresh), TYPE: type, ...(fresh ? { [HEAP]: 0 } : {}) },
     bmem: { XX0: w16(bp), XX19: w16(HEAP), INF: w16(BLOCK) }, vmem: { XX0: w16(vp), XX19: w16(WS + HEAP), INF: w16(WS + BLOCK) } };
 };

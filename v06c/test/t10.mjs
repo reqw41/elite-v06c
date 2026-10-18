@@ -27,7 +27,7 @@ function copyState() {
   const bp = b16(B.XX0); let type = -1;
   for (let t = 0; t < 13; t++) if (b16(B.XX21 + 2 * t) === bp) type = t;
   if (type < 0) throw new Error('XX0 эталона не указывает на модель');
-  w16(L.XX0, m.rd16(L.XX21 + 2 * type));
+  w16(L.XX0, m.rd16((L.XX21 ?? L.XX21X) + 2 * type));   // в обычном образе XX21 нет — XX21X
   w16(L.XX19, b16(B.XX19) + WS); w16(L.INF, b16(B.INF) + WS);
   const view = bbcView(bbc.mem), dash = bbcDash(bbc.mem);
   for (let c = 0; c < 32; c++) for (let y = 0; y < 248; y++) {

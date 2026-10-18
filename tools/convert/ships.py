@@ -45,9 +45,10 @@ def main():
     label_at = {off: f'ship_{a:04X}' for a, off in labels.items()}
     assert label_at[TABLE_LEN], 'первая модель должна начинаться сразу после таблицы'
 
-    lines = [HDR, 'XX21:']
+    lines = [HDR, '\tifndef\tNOXX21\t\t\t; обычный образ: таблица — XX21X (ships_zx.asm)', 'XX21:']
     for a in addrs:
         lines.append('\tdw ' + ('ship_python' if a == PYTHON_ADDR else f'ship_{a:04X}'))
+    lines.append('\tendif')
 
     body = ships[TABLE_LEN:]
     line = []

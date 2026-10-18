@@ -149,6 +149,9 @@ ws_clr2:
 	include	"discmis.asm"
 	include	"newb.asm"
 
+	ifndef	SCHED
+	define	NOXX21			; обычный образ: таблица моделей — XX21X (ships_zx.asm)
+	endif
 	include	"ships.asm"		; модели кораблей: XX21 — таблица адресов
 	include	"python.asm"
 	include	"ships_zx.asm"		; корабли версии ZX: Krait, Asp Mk II, Fer-de-Lance; XX21X
@@ -242,6 +245,35 @@ save_used:	ds	1		; в памяти есть сохранение этого се
 save_slot:	ds	NT + 2		; файл командира
 newb:		ds	NOSH + 1	; флаги поведения кораблей по местам (newb.asm)
 nb_pre:		ds	1		; добавка к флагам следующего нового корабля
+	ifndef	SCHED
+; переменные игры, которым не нужно место в образе (нулевые при запуске; в образе стенда — в коде, как раньше)
+ex_t:		ds	1		; тип цели, сбитой ракетой (для счёта очков)
+ex_s:		ds	1		; место цели ракеты · 2
+mch_x:		ds	1		; номер своего сообщения на экране (0 — на экране слово игры MCH)
+mf_cnt:		ds	1
+leak_say:	ds	1
+cloak_on:	ds	1		; скрывающее устройство включено
+cloak_key:	ds	1
+asp_out:	ds	1		; Asp со скрывающим устройством уже выходил в этой системе
+nova_t:		ds	2
+ll_on:		ds	1		; прежних отрезков осталось стереть
+ll_nn:		ds	1		; новых отрезков осталось нарисовать
+ll_edge:	ds	1		; рёбра уже писали XX15
+ll_lp:		ds	1		; луч: записан только x (1) или x и y (2)
+ll_lx:		ds	1
+ll_np:		ds	2
+ll_op:		ds	2
+ll9_cy:		ds	1		; перенос 6502 на входе LL9 из главного цикла полёта (бит 0)
+tp_inv:		ds	1
+sn_x:		ds	2
+sn_y:		ds	2
+sp_last:	ds	2		; кадр последней проверки появления
+pc_s:		ds	4		; быстрая окружность на экране: x (слово), y, радиус
+pc_n:		ds	4		; новая
+pc_d:		ds	2
+pc_m3:		ds	1
+pc_m4:		ds	1
+	endif
 	assert	$ <= WS + 0x0400
 	org	WS + 0x0F51
 wp_sx:		ds	80		; копия прежней окружности планеты
