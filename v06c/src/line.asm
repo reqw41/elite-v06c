@@ -503,6 +503,9 @@ hl_last:
 	ret
 
 line_code_end:
+	ifndef	SCHED
+	include	"st_q.asm"		; в пустоту выравнивания (штрихи пыли, stars.asm)
+	endif
 ; Маски точек — все в одной странице памяти.
 	align	64
 TWOS:	db	0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01

@@ -31,6 +31,10 @@ DASH_H		equ	56
 	jp	entry
 	include	"front.asm"		; командир по умолчанию, товары, мелкие таблицы — до границы страницы
 	assert	$ <= 0x0200
+	ifndef	SCHED
+	include	"st_ends.asm"		; в пустоту выравнивания
+	assert	$ <= 0x0200
+	endif
 	align	256
 	include	"keys.asm"		; таблицы клавиш: им нужна граница в 128 байт
 entry:
@@ -273,6 +277,8 @@ pc_n:		ds	4		; новая
 pc_d:		ds	2
 pc_m3:		ds	1
 pc_m4:		ds	1
+st_j:		ds	1		; штрихи пыли: нарисовать след в конце ближайшего STARS (ставит wa_zx)
+st_fx:		ds	1		; след прыжка на экране (сразу за st_j)
 	endif
 	assert	$ <= WS + 0x0400
 	org	WS + 0x0F51
@@ -299,7 +305,13 @@ low_b:
 	disp	0x0007
 	include	"wp_b.asm"
 	include	"wp_v.asm"
+	include	"st_cx.asm"
 	assert	$ <= 0x0038
+	ent
+low_c:
+	disp	0x0000
+	include	"st_cv.asm"
+	assert	$ <= 0x0006
 	ent
 low_end:
 ; low_init: код для нижней памяти — на место; зовётся один раз из entry, до обнуления рабочих областей.
@@ -308,9 +320,13 @@ low_init:
 	ld	de, 0x0038
 	ld	bc, low_b - low_a
 	call	li_cp
+	ld	hl, low_c
+	ld	de, 0x0000
+	ld	bc, low_end - low_c
+	call	li_cp
 	ld	hl, low_b
 	ld	de, 0x0007
-	ld	bc, low_end - low_b
+	ld	bc, low_c - low_b
 li_cp:
 	ld	a, (hl)
 	ld	(de), a

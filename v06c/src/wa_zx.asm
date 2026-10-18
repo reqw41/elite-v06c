@@ -12,6 +12,8 @@
 	call	wa_z
 	ld	hl, 0
 	ld	(sp_last), hl
+	ld	a, 1			; след пыли — в конце этого STARS (st_end), стирается в начале следующего
+	ld	(st_j), a
 	ld	a, (DELTA)
 	push	af
 	ld	a, 80

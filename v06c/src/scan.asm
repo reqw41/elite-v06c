@@ -175,6 +175,9 @@ sc_dn:
 	dec	c
 	jp	nz, sc_dn
 	ret
+	ifdef	PCIRC
+	include	"pc_pt.asm"		; в пустоту выравнивания (окружность планеты, planet.asm)
+	endif
 
 	align	16
 ctw4:	db	0xF0, 0x00, 0x3C, 0x00, 0x0F, 0x00, 0x03, 0xC0	; четыре точки с x & 6 = 0, 2, 4, 6: байт и следующий

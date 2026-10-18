@@ -732,46 +732,19 @@ nol1:
 	call	snd_start
 	pop	bc
 	ret
-	ifdef	PCIRC			; окружность планеты (planet.asm): две подпрограммы — в пустоту выравнивания
-; pc_col: HL = x (со знаком) -> D = старший байт адреса столбца, A = маска точки. Портит E, HL.
-pc_col:
-	ld	a, l
-	and	7
-	add	a, low TWOS
-	ld	e, a
-	ld	d, high TWOS
-	ld	a, (de)
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	ld	e, a
-	ld	a, h
-	add	a, high SCR_VIEW
-	ld	d, a
-	ld	a, e
-	ret
-; pc_pt: точка HL с маской A, если она в обзоре. Портит A, E.
-pc_pt:
-	ld	e, a
-	ld	a, h
-	sub	high SCR_VIEW
-	cp	32
-	ret	nc
-	ld	a, l
-	cp	64
-	ret	c
-	ld	a, e
-	xor	(hl)
-	ld	(hl), a
-	ret
+	ifdef	RUS
+	ifdef	PCIRC
+	include	"pc_col.asm"		; в пустоту выравнивания (в обычном образе её занимает wa_zx)
+	endif
 	endif
 	ifndef	SCHED
 	ifndef	RUS
 wa_zx:
 	include	"wa_zx.asm"
 	endif
+	endif
+	ifndef	SCHED
+	include	"st_cy.asm"		; в пустоту выравнивания (штрихи пыли, st_dots.asm)
 	endif
 	align	64
 sfx_tab:
