@@ -3,10 +3,9 @@
 ; перенос равны эталону (v06c/test/t06.mjs); отступления названы в заголовке процедуры.
 arith_start:
 
-; MULHI: A = старший байт E · A, через mul8.
+; MULHI: A = старший байт E · A (mul8h).
 	macro	MULHI
-	call	mul8
-	ld	a, h
+	call	mul8h
 	endm
 
 ; mul8: HL = E · A, без знака. Общее ядро умножений: a·b = f(a + b) - f(|a - b|), f(x) = x·x / 4 нацело.
@@ -40,6 +39,33 @@ m8_p:
 	sbc	a, (hl)
 	ld	h, a
 	ld	l, e
+	ret
+; mul8h: A = старший байт E · A — как mul8, но младший байт не собирается. Портит DE, HL, флаги. Сохраняет BC.
+mul8h:
+	ld	d, a
+	add	a, e
+	ld	l, a
+	ld	a, high SQLO
+	adc	a, 0
+	ld	h, a
+	ld	a, d
+	sub	e
+	jp	nc, m8h_p
+	cpl
+	inc	a
+m8h_p:
+	ld	e, (hl)
+	inc	h
+	inc	h
+	ld	d, (hl)
+	ld	l, a
+	ld	h, high SQLO
+	ld	a, e
+	sub	(hl)
+	inc	h
+	inc	h
+	ld	a, d
+	sbc	a, (hl)
 	ret
 
 	ifdef	SCHED

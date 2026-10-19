@@ -467,40 +467,43 @@ ll94_0:
 	ld	(XX15 + 2), a
 	ld	a, (S)
 	ld	(XX15 + 3), a
-ll89:
-	ld	a, (XX12)		; нормаль · направление на грань
-	ld	(Q), a
+ll89:					; нормаль XX12 · направление XX15 — как строка LL51 (сумма как LL38; T, Q, R, S после
+	push	bc			; LL9 никто не читает — docs/research/liveness_launch.txt)
 	ld	a, (XX15)
-	call	FMLTU
-	ld	(T), a
+	ld	e, a
+	ld	a, (XX12)
+	MULHI
+	ld	b, a			; B — модуль суммы, C — её знак
 	ld	a, (XX12 + 1)
 	ld	hl, XX15 + 1
 	xor	(hl)
-	ld	(S), a
-	ld	a, (XX12 + 2)
-	ld	(Q), a
+	ld	c, a
 	ld	a, (XX15 + 2)
-	call	FMLTU
-	ld	(Q), a
-	ld	a, (T)
-	ld	(R_), a
+	ld	e, a
+	ld	a, (XX12 + 2)
+	MULHI
+	ld	d, a
 	ld	a, (XX12 + 3)
 	ld	hl, XX15 + 3
 	xor	(hl)
-	call	LL38
-	ld	(T), a
-	ld	a, (XX12 + 4)
-	ld	(Q), a
+	call	ll51_add
 	ld	a, (XX15 + 4)
-	call	FMLTU
-	ld	(Q), a
-	ld	a, (T)
-	ld	(R_), a
+	ld	e, a
+	ld	a, (XX12 + 4)
+	MULHI
+	ld	d, a
 	ld	a, (XX15 + 5)
 	ld	hl, XX12 + 5
 	xor	(hl)
-	call	LL38
-	ld	d, a
+	call	ll51_add
+	ld	a, c
+	ld	d, b
+	pop	bc
+	or	a			; грань видна при отрицательной сумме: XX2 = модуль, иначе 0
+	ld	e, d
+	jp	m, ll89_v
+	ld	e, 0
+ll89_v:
 	ld	a, c
 	rrca
 	rrca
@@ -508,13 +511,7 @@ ll89:
 	add	a, low XX2
 	ld	l, a
 	ld	h, high XX2
-	ld	a, (S)
-	or	a
-	ld	a, d
-	jp	m, ll89_v
-	ld	a, 0
-ll89_v:
-	ld	(hl), a
+	ld	(hl), e
 	inc	c
 ll88:
 	ld	a, (XX20)
@@ -583,114 +580,54 @@ ll49:
 	add	a, a
 	ld	(XX15 + 5), a
 	call	LL51
-	ld	a, (XX1 + 2)		; x = x корабля + x вершины
-	ld	(XX15 + 2), a
-	ld	hl, XX12 + 1
-	xor	(hl)
-	jp	m, ll52
-	ld	hl, XX1
+	ld	hl, (XX1)		; x = x корабля + x вершины: модуль — в стек, знак — XX15+2
 	ld	a, (XX12)
-	add	a, (hl)
-	ld	(XX15), a
-	inc	hl
-	ld	a, (hl)
-	adc	a, 0
-	ld	(XX15 + 1), a
-	jp	ll53
-ll52:
-	ld	hl, XX12
-	ld	a, (XX1)
-	sub	(hl)
-	ld	(XX15), a
-	ld	a, (XX1 + 1)
-	sbc	a, 0
-	ld	(XX15 + 1), a
-	jp	nc, ll53
-	cpl
-	ld	(XX15 + 1), a
-	ld	hl, XX15
-	xor	a
-	sub	(hl)
-	ld	(hl), a
-	jp	c, ll52_s
-	inc	hl
-	inc	(hl)
-ll52_s:
-	ld	hl, XX15 + 2
-	ld	a, (hl)
-	xor	0x80
-	ld	(hl), a
-ll53:
-	ld	a, (XX1 + 5)		; y
-	ld	(XX15 + 5), a
-	ld	hl, XX12 + 3
-	xor	(hl)
-	jp	m, ll54
-	ld	hl, XX1 + 3
+	ld	e, a
+	ld	a, (XX1 + 2)
+	ld	b, a
+	ld	a, (XX12 + 1)
+	call	ll9_vadd
+	ld	a, b
+	ld	(XX15 + 2), a
+	push	hl
+	ld	hl, (XX1 + 3)		; y — модуль в HL, знак — XX15+5
 	ld	a, (XX12 + 2)
-	add	a, (hl)
-	ld	(XX15 + 3), a
-	inc	hl
-	ld	a, (hl)
-	adc	a, 0
-	ld	(XX15 + 4), a
-	jp	ll55
-ll54:
-	ld	hl, XX12 + 2
-	ld	a, (XX1 + 3)
-	sub	(hl)
-	ld	(XX15 + 3), a
-	ld	a, (XX1 + 4)
-	sbc	a, 0
-	ld	(XX15 + 4), a
-	jp	nc, ll55
-	cpl
-	ld	(XX15 + 4), a
-	ld	hl, XX15 + 3
-	xor	a
-	sub	(hl)
-	ld	(hl), a
-	push	af
-	ld	hl, XX15 + 5
-	ld	a, (hl)
-	xor	0x80
-	ld	(hl), a
-	pop	af
-	jp	c, ll55
-	ld	hl, XX15 + 4
-	inc	(hl)
-ll55:
-	ld	a, (XX12 + 5)		; z
+	ld	e, a
+	ld	a, (XX1 + 5)
+	ld	b, a
+	ld	a, (XX12 + 3)
+	call	ll9_vadd
+	ld	a, b
+	ld	(XX15 + 5), a
+	push	hl
+	ld	hl, (XX1 + 6)		; z — не меньше 4
+	ld	a, (XX12 + 4)
+	ld	e, a
+	ld	d, 0
+	ld	a, (XX12 + 5)
 	or	a
 	jp	m, ll56
-	ld	hl, XX1 + 6
-	ld	a, (XX12 + 4)
-	add	a, (hl)
-	ld	c, a
-	inc	hl
-	ld	a, (hl)
-	adc	a, 0
-	ld	b, a
+	add	hl, de
 	jp	ll57
 ll56:
-	ld	hl, XX12 + 4
-	ld	a, (XX1 + 6)
-	sub	(hl)
-	ld	c, a
-	ld	a, (XX1 + 7)
-	sbc	a, 0
-	ld	b, a
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
 	jp	c, ll140
 	jp	nz, ll57
-	ld	a, c
+	ld	a, l
 	cp	4
 	jp	nc, ll57
 ll140:
-	ld	bc, 0x0004		; z не меньше 4
+	ld	hl, 0x0004
 ll57:
-	ld	hl, (XX15)		; x, y, z вправо, пока x и y не станут байтами, а z — байтом
-	ex	de, hl
-	ld	hl, (XX15 + 3)
+	ld	b, h			; x, y, z вправо, пока x и y не станут байтами, а z — байтом
+	ld	c, l
+	pop	hl
+	pop	de
 ll57_l:
 	ld	a, b
 	or	d
@@ -1247,22 +1184,19 @@ ll9_18to15:				; XX15(4..0) = XX18, XX18+2, XX18+3, XX18+5, XX18+6
 	ld	hl, (XX18 + 5)
 	ld	(XX15 + 3), hl
 	ret
-; HL -> байт с двумя номерами граней: P = байт; NZ — хотя бы одна видима
+; HL -> байт с двумя номерами граней: NZ — хотя бы одна видима (P на BBC — рабочая, после LL9 её не читают).
+; HL сохраняется; портит A, B, DE.
 ll9_faces:
 	ld	a, (hl)
-	ld	(P_), a
-	ld	d, a
+	ld	b, a
 	and	0x0F
 	add	a, low XX2
 	ld	e, a
-	ld	a, d
 	ld	d, high XX2
-	ex	de, hl
-	ld	b, (hl)
-	ex	de, hl
-	inc	b
-	dec	b
+	ld	a, (de)
+	or	a
 	ret	nz
+	ld	a, b
 	rrca
 	rrca
 	rrca
@@ -1273,6 +1207,33 @@ ll9_faces:
 	ld	a, (de)
 	or	a
 	ret
+; ll9_vadd: HL (модуль) со знаком B + E со знаком A (бит 7) -> HL, B; как на BBC: перенос из старшего байта
+; теряется, при вычитании ушли за ноль — модуль с обратным знаком. Портит A, D.
+ll9_vadd:
+	xor	b
+	ld	d, 0
+	jp	m, va_sub
+	add	hl, de
+	ret
+va_sub:
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+	ret	nc
+	ld	a, l
+	cpl
+	ld	l, a
+	ld	a, h
+	cpl
+	ld	h, a
+	inc	hl
+	ld	a, b
+	xor	0x80
+	ld	b, a
+	ret
 ; отрезок XX15(3..0) в конец списка, U += 4
 ll9_put:
 	ld	hl, (XX19)
@@ -1282,8 +1243,18 @@ ll9_put:
 	add	hl, de
 	add	a, 4
 	ld	(U), a
+	ex	de, hl			; DE — место в списке
+	ld	hl, (XX15)
 	ex	de, hl
-	ld	hl, XX15
-	ld	b, 4
-	jp	ll9_cp
+	ld	(hl), e
+	inc	hl
+	ld	(hl), d
+	inc	hl
+	ex	de, hl
+	ld	hl, (XX15 + 2)
+	ex	de, hl
+	ld	(hl), e
+	inc	hl
+	ld	(hl), d
+	ret
 ship_end:

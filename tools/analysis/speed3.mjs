@@ -48,7 +48,7 @@ const out = [];
   const K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08] };
   const press = (k) => { g.key(K[k][0], K[k][1], true); g.frame(20); g.key(K[k][0], K[k][1], false); };
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(300);
-  let slots = null, passes = 0, shipsSum = 0, busy = false;
+  let slots = null, passes = 0, shipsSum = 0, busy = false, cyc = 0, cyc1 = 0, cycN = 0;   // такты: точная скорость — между первым и последним проходом
   const PROF = process.env.PROF ? new Float64Array(0x10000) : null;   // PROF=n — n самых дорогих меток
   const ins = cpu.instruction.bind(cpu);
   const CNTN = process.env.COUNT ? process.env.COUNT.split(',') : [], CNTL = CNTN.length ? new Map(CNTN.map((n, i) => [L[n], i])) : null, CNTV = CNTN.map(() => 0);   // COUNT=метка,… — сколько раз за проход
@@ -56,10 +56,10 @@ const out = [];
       if (!slots) { busy = true; if (SUN) g.call('ks4_g'); for (let i = 0; i < NSHIPS; i++) { g.call('ZINF'); g.wr(L.INWK + 7, [4]); g.wr(L.INWK + 32, [0xbf]); g.call('NWSHP', { a: 1 }); } busy = false;
         slots = []; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i) === 1) slots.push(i); }
       if (SUN) { busy = true; for (let i = 11; i >= 2; i--) if (g.rd(L.FRIN + i) && !slots.includes(i)) g.call('KILLSHP', { b: i }); busy = false; }
-      passes++; let n = 0; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i)) n++; shipsSum += n;
+      passes++; if (passes === 1) cyc1 = cyc; cycN = cyc; let n = 0; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i)) n++; shipsSum += n;
       slots.forEach((s, k) => g.wr(L.K_ + 36 * s, flat(POS[k]))); if (SUN) { g.wr(L.K_ + 36, SUNP); g.wr(L.K_, PLAN); } for (const v of ['ENERGY', 'FSH', 'ASH']) g.wr(L[v], [255]); }
     if (CNTL) { const k = CNTL.get(cpu.pc & 0xffff); if (k !== undefined) CNTV[k]++; }
-    if (PROF) { const pc = cpu.pc & 0xffff, r = ins(); PROF[pc] += cpu.vcycles | 0; return r; } return ins(); };
+    const pc = cpu.pc & 0xffff, r = ins(); cyc += cpu.vcycles | 0; if (PROF) PROF[pc] += cpu.vcycles | 0; return r; };
   g.frame(50); passes = 0; shipsSum = 0; if (PITCH) g.key(0, 0x20, true);
   if (PROF) PROF.fill(0); CNTV.fill(0);
   g.frame(FR);
@@ -68,6 +68,7 @@ const out = [];
     console.log('Вектор, профиль (доля всех тактов, такты на проход):'); Object.entries(cost).sort((x, y) => y[1] - x[1]).slice(0, +process.env.PROF).forEach(([n, c]) => console.log(`  ${(c / tot * 100).toFixed(1).padStart(5)}%  ${(c / passes).toFixed(0).padStart(7)}  ${n}`)); }
   if (CNTL) { CNTN.forEach((n, i) => console.log(`  ${n}: ${(CNTV[i] / passes).toFixed(1)} за проход`)); }
   out.push(['Вектор' + (process.env.IMG ? ', ' + process.env.IMG : ''), passes / (FR / 50), shipsSum / passes]);
+  if (process.env.EXACT) console.log(`Вектор точно: ${((passes - 1) / ((cycN - cyc1) / (59904 * 50))).toFixed(3)} прохода в секунду, ${((cycN - cyc1) / (passes - 1)).toFixed(0)} тактов на проход`);
   if (SHOT) savePng(g.bmp(), path.join(SHOT, 'v06c.png'));
 }
 

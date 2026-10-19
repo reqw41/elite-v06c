@@ -7,6 +7,11 @@ isr:
 	push	bc
 	push	de
 	push	hl
+	ifndef	SCHED
+	ld	a, (v_frames)		; клавиатура и джойстик — через кадр (игра читает их раз в проход; опрос — 1,2 тыс.
+	rrca				; тактов)
+	jp	c, isr_ports
+	endif
 	ld	a, 0x8A			; порт A — выход (выбор строки), порт B и старшая половина C — вход
 	out	(0), a
 	ifdef	SCHED
@@ -62,6 +67,7 @@ isr_row:
 	or	(hl)
 	ld	(hl), a
 	endif
+isr_ports:
 	ld	a, 0x88			; все порты на выход
 	out	(0), a
 	ifdef	SCHED

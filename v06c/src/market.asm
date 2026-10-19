@@ -524,12 +524,6 @@ gn_out1:
 	scf
 	ret
 	ifndef	SCHED
-gn_all:
-	call	TT26
-	ld	a, (QQ25)
-	ld	(R_), a
-	or	a
-	ret
 	ifdef	RUS
 	include	"gn_none.asm"		; в английской сборке — в пустоте выравнивания (scan.asm)
 	endif

@@ -1,6 +1,6 @@
 // Джойстик: нажатия на портах 06h («Джойстик П») и 0Eh становятся нажатиями клавиш в kb_rows.
 // В эмуляторе порт 06h отдаёт защёлку PB2, порт 0Eh — стрелки и пробел его клавиатуры; тест подменяет чтение портов.
-// node v06c/test/joy.mjs
+// Порты опрашиваются через кадр (с 19.10), поэтому после смены состояния — два кадра. node v06c/test/joy.mjs
 import { createVector } from '../tools/v06c.mjs';
 const m = createVector('elite'); m.frame(30);
 const L = m.L, WS = L.WS;
@@ -21,13 +21,13 @@ for (const [port, name] of [[6, 'порт 06h, нажатие нулём'], [6, 
       const active = name.includes('единицей') ? rest6 | bit : (port === 6 ? rest6 : restE) ^ bit;
       if (port === 6) { p6 = active; pE = restE; } else { pE = active; p6 = rest6; }
       if (name.includes('единицей') && (rest6 & bit)) continue;         // в покое уже единица — случай покрыт первым проходом
-      m.frame(1); m.wr('QQ11', [view]);
+      m.frame(2); m.wr('QQ11', [view]);
       check(`${name}, ${view ? 'экран с текстом' : 'полёт'}, бит ${bit.toString(16)}`, [view ? scr : fly]);
     }
   }
 }
-p6 = rest6; pE = restE; m.frame(1); check('покой', []);
-p6 = rest6 ^ 0x45; m.wr('QQ11', [0]); m.frame(1); check('вправо + вверх + огонь в полёте', ['>', 'S', 'A']);
-p6 = rest6 ^ 0x30; m.frame(1); check('биты 4 и 5 не в счёт', []);
+p6 = rest6; pE = restE; m.frame(2); check('покой', []);
+p6 = rest6 ^ 0x45; m.wr('QQ11', [0]); m.frame(2); check('вправо + вверх + огонь в полёте', ['>', 'S', 'A']);
+p6 = rest6 ^ 0x30; m.frame(2); check('биты 4 и 5 не в счёт', []);
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'JOY: всё как задумано');
 process.exit(bad ? 1 : 0);
