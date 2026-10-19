@@ -44,7 +44,10 @@ const hits = Object.fromEntries(COV.map((n) => [n, 0])), at = new Map(COV.map((n
 const step = bbc.cpu.step.bind(bbc.cpu); let cov = false;
 bbc.cpu.step = () => { if (cov) { const n = at.get(bbc.cpu.pc); if (n) hits[n]++; } step(); };
 const MERONLY = new Set(['ARCTAN', 'PLS1', 'PLS3', 'PLS4', 'PLS5']);
-for (const s of SPECS) { if (!MER && MERONLY.has(s.name)) continue; cov = s.name.startsWith('PLANET'); P.run({ n: N, ...s }); }
+// обычный образ с меридианами: солнце там своё (planet.asm, без EDGES и HLOIN2; его проверяет sun.mjs), с BBC
+// сверяется только в стенде
+const NOSUN = new Set(['EDGES', 'HLOIN2', 'PLANET (солнце)']);
+for (const s of SPECS) { if (!MER && MERONLY.has(s.name)) continue; if (MER && NOSUN.has(s.name)) continue; cov = s.name.startsWith('PLANET'); P.run({ n: N, ...s }); }
 console.log('ветви эталона в сериях PLANET: ' + COV.map((n) => `${n} ${hits[n]}`).join(', '));
 P.timing();
 console.log(P.failed() ? `ПРОВАЛ: ${P.failed()}` : 'T25: всё совпало');

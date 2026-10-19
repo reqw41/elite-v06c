@@ -204,7 +204,11 @@ dials:
 ; --- переменные слоя Вектора ---
 	org	VARS
 kb_rows:	ds	8		; матрица клавиатуры, 1 — нажата; строка 0 — стрелки, 7 — пробел (с границы страницы: fk_bit)
-kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ
+	ifndef	SCHED
+fly_raw:	ds	8		; матрица с клавиатуры (isr); kb_rows — она же после перевода полёта и джойстика
+kb_chg:		ds	1		; <> 0 — матрица или джойстик изменились с прошлого перевода (сразу за fly_raw)
+	endif
+kb_mod:		ds	1		; бит 5 — СС, 6 — УС, 7 — РУС/ЛАТ (в стенде — сразу за kb_rows)
 v_frames:	ds	2		; счётчик кадров
 	ifdef	RUS
 lat:		ds	1		; <> 0 — буквы латиницей (название системы, имя, «_» в словаре)
@@ -214,11 +218,12 @@ mus_p:		ds	2		; мелодия заставки: следующая нота (0 
 mus_t:		ds	1		; кадров до следующей ноты
 txt_g:		ds	1		; FFh — текст зелёным (шапка рынка)
 tt_mask:	ds	1		; маска знака во второй плоскости: FFh — зелёный, 0 — бежевый
-fly_raw:	ds	8		; fly_keys: матрица до перевода в прошлый раз
 joy_bits:	ds	1		; нажатое на джойстике (isr)
 fly_on:		ds	1		; <> 0 — главный цикл в полёте (DOKEY), не пауза: fly_keys переводит клавиши
+kb_md:		ds	1		; FFh — kb_rows переведена для полёта, 0 — как есть
 	assert	high kb_rows == high (kb_rows + 8)
 	assert	low kb_rows == 0 && high fly_raw == high kb_rows && high (fly_raw + 7) == high kb_rows
+	assert	kb_chg == fly_raw + 8 && kb_mod == kb_chg + 1
 	endif
 pal_dirty:	ds	1		; <> 0: прерывание запишет pal_regs в палитру
 pal_regs:	ds	16
@@ -279,13 +284,14 @@ pc_m3:		ds	1
 pc_m4:		ds	1
 st_j:		ds	1		; штрихи пыли: нарисовать след в конце ближайшего STARS (ставит wa_zx)
 st_fx:		ds	1		; след прыжка на экране (сразу за st_j)
+sun_r:		ds	2		; солнце (planet.asm): остаток K² - V² - q² для полуширины q
+sun_rp:		ds	2		; солнце: указатель на «случайные» байты бахромы
 	endif
 	assert	$ <= WS + 0x0400
 	org	WS + 0x0F51
 wp_sx:		ds	80		; копия прежней окружности планеты
 wp_sy:		ds	80
 	ifndef	SCHED
-fly_new:	ds	8		; fly_keys: матрица после перевода для матрицы fly_raw (перевод зависит только от неё)
 	endif
 	assert	$ <= WS + 0x1000
 	assert	rom_end <= WS

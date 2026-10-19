@@ -38,8 +38,9 @@ check('полёт: ← ↑ Пробел Я вместе', ['←', '↑', 'Про
 check('полёт: Р и М вместе — пуск и маскировка, без цепочек', ['Р', 'М'], 0, 0, ['M', 'Y']);
 check('полёт: С и ↑ вместе — снять и нос вниз', ['С', '↑'], 0, 0, ['U', 'S']);
 // fly_keys на случайных матрицах против смысла таблиц (keys.py): строка = (строка И fly_keep) ИЛИ замены по fly_map
-// (номер клавиши там — строка · 8 + 7 − бит). Каждая матрица переводится дважды: второй раз — из запомненного (fly_raw,
-// fly_new), как в кадрах, пока клавиши держат. Чаще одна-две клавиши, иногда много.
+// (номер клавиши там — строка · 8 + 7 − бит). На входе матрица и в kb_rows, и в fly_raw (так её кладёт прерывание кадра;
+// с 19.10 перевод зовётся только при перемене матрицы, своей памяти у fly_keys нет). Каждая матрица переводится
+// дважды — результат тот же. Чаще одна-две клавиши, иногда много.
 {
   const keep = Array.from({ length: 8 }, (_, i) => m.rd(L.fly_keep + i)), map = [];
   for (let i = 0; i < 2 * 17; i += 2) map.push([m.rd(L.fly_map + i), m.rd(L.fly_map + i + 1)]);
@@ -51,8 +52,8 @@ check('полёт: С и ↑ вместе — снять и нос вниз', ['
     const exp = rows.map((v, i) => v & keep[i]);
     for (const [a, b] of map) if (rows[a >> 3] & (1 << (7 - (a & 7)))) exp[b >> 3] |= 1 << (7 - (b & 7));
     const kb = () => Array.from({ length: 8 }, (_, i) => m.rd(L.kb_rows + i));
-    const r = m.call('fly_keys', { mem: { kb_rows: rows } }), got = kb();
-    const r2 = m.call('fly_keys', { mem: { kb_rows: rows } }), got2 = kb();
+    const r = m.call('fly_keys', { mem: { kb_rows: rows, fly_raw: rows } }), got = kb();
+    const r2 = m.call('fly_keys', { mem: { kb_rows: rows, fly_raw: rows } }), got2 = kb();
     if (got.some((v, i) => v !== exp[i]) || got2.some((v, i) => v !== exp[i])) { if (fails++ < 5) console.log(`FAIL fly_keys: ${rows} -> ${got} / повтор ${got2}, ждали ${exp}`); }
     const changed = n === 0 || prev.some((v, i) => v !== rows[i]); prev = rows;
     if (changed) { cyc[0] += r.cycles; cnt[0]++; } cyc[1] += r2.cycles; cnt[1]++;

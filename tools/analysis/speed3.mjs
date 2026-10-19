@@ -14,6 +14,9 @@ const NSHIPS = process.env.NSHIPS === undefined ? 3 : +process.env.NSHIPS;
 const POS = [[[0, 1, 0x80], [0, 0, 0], [0, 4, 0]], [[0, 1, 0], [0x80, 0, 0], [0, 5, 0]], [[0, 0, 0], [0x80, 0, 0x80], [0, 6, 0]],
   [[0x80, 1, 0x80], [0xC0, 0, 0], [0, 7, 0]], [[0x80, 1, 0], [0xA0, 0, 0x80], [0x80, 6, 0]], [[0, 0, 0], [0, 1, 0], [0, 8, 0]]].slice(0, NSHIPS);   // до шести (у ZX мест под корабли шесть)
 const flat = (p) => p.flat();
+// SUN=1 — солнце (закрашенный круг) в обзоре слева-сверху, планета убрана далеко назад; SUNZ — байт знака z солнца (расстояние в 65536)
+const SUN = !!process.env.SUN, SUNZ = +(process.env.SUNZ || 3);
+const SUNP = [0x00, 0x80, 0x80, 0x00, 0x40, 0x00, 0x00, 0x00, SUNZ], PLAN = [0, 0, 0, 0, 0, 0, 0, 0, 0x90];
 const out = [];
 
 // --- BBC: кассета, прерывание кадра 50 Гц, 2 МГц; планета окружностью (PL25 = RTS), как у Вектора и ZX; MERID=1 — с меридианами
@@ -27,10 +30,11 @@ const out = [];
   const call = (l, o) => { const c = b.cpu, r = { a: c.a, x: c.x, y: c.y }, st = [m[0x1fe], m[0x1ff]]; b.call(l, o); Object.assign(c, r); m[0x1fe] = st[0]; m[0x1ff] = st[1]; };
   let slots = null, passes = 0, shipsSum = 0;
   b.watch.set(L.TT100, () => {
-    if (!slots) { for (let i = 0; i < NSHIPS; i++) { call('ZINF'); m[L.INWK + 7] = 4; m[L.INWK + 32] = 0xbf; call('NWSHP', { a: 1 }); }
+    if (!slots) { if (SUN) call('KS4'); for (let i = 0; i < NSHIPS; i++) { call('ZINF'); m[L.INWK + 7] = 4; m[L.INWK + 32] = 0xbf; call('NWSHP', { a: 1 }); }
       slots = []; for (let i = 2; i < 12; i++) if (m[L.FRIN + i] === 1) slots.push(i); }
+    if (SUN) for (let i = 11; i >= 2; i--) if (m[L.FRIN + i] && !slots.includes(i)) call('KILLSHP', { x: i });   // вне зоны станции игра добавляет свои
     passes++; let n = 0; for (let i = 2; i < 12; i++) if (m[L.FRIN + i]) n++; shipsSum += n;
-    slots.forEach((s, k) => m.set(flat(POS[k]), L['K%'] + 36 * s)); m[L.ENERGY] = 255; m[L.FSH] = 255; m[L.ASH] = 255; });
+    slots.forEach((s, k) => m.set(flat(POS[k]), L['K%'] + 36 * s)); if (SUN) { m.set(SUNP, L['K%'] + 36); m.set(PLAN, L['K%']); } m[L.ENERGY] = 255; m[L.FSH] = 255; m[L.ASH] = 255; });
   b.runFrames(50); if (PITCH) b.keys.add(0x51);
   const c0 = b.cpu.cycles; let mc = 0, prev = m[L.MCNT]; passes = 0; shipsSum = 0;
   for (let f = 0; f < FR; f++) { b.runFrames(1); mc += (prev - m[L.MCNT]) & 255; prev = m[L.MCNT]; }
@@ -47,18 +51,22 @@ const out = [];
   let slots = null, passes = 0, shipsSum = 0, busy = false;
   const PROF = process.env.PROF ? new Float64Array(0x10000) : null;   // PROF=n — n самых дорогих меток
   const ins = cpu.instruction.bind(cpu);
+  const CNTN = process.env.COUNT ? process.env.COUNT.split(',') : [], CNTL = CNTN.length ? new Map(CNTN.map((n, i) => [L[n], i])) : null, CNTV = CNTN.map(() => 0);   // COUNT=метка,… — сколько раз за проход
   cpu.instruction = () => { if (!busy && (cpu.pc & 0xffff) === L.TT100) {
-      if (!slots) { busy = true; for (let i = 0; i < NSHIPS; i++) { g.call('ZINF'); g.wr(L.INWK + 7, [4]); g.wr(L.INWK + 32, [0xbf]); g.call('NWSHP', { a: 1 }); } busy = false;
+      if (!slots) { busy = true; if (SUN) g.call('ks4_g'); for (let i = 0; i < NSHIPS; i++) { g.call('ZINF'); g.wr(L.INWK + 7, [4]); g.wr(L.INWK + 32, [0xbf]); g.call('NWSHP', { a: 1 }); } busy = false;
         slots = []; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i) === 1) slots.push(i); }
+      if (SUN) { busy = true; for (let i = 11; i >= 2; i--) if (g.rd(L.FRIN + i) && !slots.includes(i)) g.call('KILLSHP', { b: i }); busy = false; }
       passes++; let n = 0; for (let i = 2; i < 12; i++) if (g.rd(L.FRIN + i)) n++; shipsSum += n;
-      slots.forEach((s, k) => g.wr(L.K_ + 36 * s, flat(POS[k]))); for (const v of ['ENERGY', 'FSH', 'ASH']) g.wr(L[v], [255]); }
+      slots.forEach((s, k) => g.wr(L.K_ + 36 * s, flat(POS[k]))); if (SUN) { g.wr(L.K_ + 36, SUNP); g.wr(L.K_, PLAN); } for (const v of ['ENERGY', 'FSH', 'ASH']) g.wr(L[v], [255]); }
+    if (CNTL) { const k = CNTL.get(cpu.pc & 0xffff); if (k !== undefined) CNTV[k]++; }
     if (PROF) { const pc = cpu.pc & 0xffff, r = ins(); PROF[pc] += cpu.vcycles | 0; return r; } return ins(); };
   g.frame(50); passes = 0; shipsSum = 0; if (PITCH) g.key(0, 0x20, true);
-  if (PROF) PROF.fill(0);
+  if (PROF) PROF.fill(0); CNTV.fill(0);
   g.frame(FR);
   if (PROF) { const labs = Object.entries(L).filter(([n, a]) => typeof a === 'number' && a >= 0x100 && a < 0xB000 && /^[A-Za-z]/.test(n)).sort((x, y) => x[1] - y[1]);
     const cost = {}; let k = 0, tot = 0; for (let a = 0x100; a < 0x10000; a++) { if (!PROF[a]) continue; while (k + 1 < labs.length && labs[k + 1][1] <= a) k++; const n = a < labs[0][1] || a >= 0xB000 ? '?' : labs[k][0]; cost[n] = (cost[n] || 0) + PROF[a]; tot += PROF[a]; }
     console.log('Вектор, профиль (доля всех тактов, такты на проход):'); Object.entries(cost).sort((x, y) => y[1] - x[1]).slice(0, +process.env.PROF).forEach(([n, c]) => console.log(`  ${(c / tot * 100).toFixed(1).padStart(5)}%  ${(c / passes).toFixed(0).padStart(7)}  ${n}`)); }
+  if (CNTL) { CNTN.forEach((n, i) => console.log(`  ${n}: ${(CNTV[i] / passes).toFixed(1)} за проход`)); }
   out.push(['Вектор' + (process.env.IMG ? ', ' + process.env.IMG : ''), passes / (FR / 50), shipsSum / passes]);
   if (SHOT) savePng(g.bmp(), path.join(SHOT, 'v06c.png'));
 }
@@ -72,7 +80,11 @@ const out = [];
   const mem = new Uint8Array(65536); mem.set(rom, 0); mem.set(z.subarray(30, 30 + 49152), 0x4000);
   const ROWS = ['^zxcv', 'asdfg', 'qwert', '12345', '09876', 'poiuy', '\nlkjh', '_~mnb'];
   const down = new Set();
-  const cpu = new Z80({ mem_read: (a) => mem[a & 0xffff], mem_write: (a, v) => { if ((a & 0xffff) >= 0x4000) mem[a & 0xffff] = v; },
+  // ZXC=1 — приближённо учесть торможение памяти 4000h–7FFFh экраном: обращение во время вывода строки (128 тактов
+  // из 224, строки 64–255 кадра) ждёт в среднем 2,625 такта (ряд 6, 5, 4, 3, 2, 1, 0, 0); время — начало команды
+  const ZXC = !!process.env.ZXC; let cont = 0;
+  const cnt = (a) => { if (ZXC && (a & 0xC000) === 0x4000) cont++; };
+  const cpu = new Z80({ mem_read: (a) => { cnt(a); return mem[a & 0xffff]; }, mem_write: (a, v) => { cnt(a); if ((a & 0xffff) >= 0x4000) mem[a & 0xffff] = v; },
     io_read: (p) => { if (p & 1) return (p & 0xff) === 0x1f ? 0 : 0xff; let v = 0xff; const hi = (p >> 8) & 255;
       for (let r = 0; r < 8; r++) if (!(hi & (1 << r))) for (let k = 0; k < 5; k++) if (down.has(ROWS[r][k])) v &= ~(1 << k); return v; },
     io_write: () => {} });
@@ -95,14 +107,17 @@ const out = [];
       for (const s of slots) { const b = OBJ0 + 39 * s; mem[b + 0x22] = 70; mem[b + 0x23] = SIDE & 255; mem[b + 0x24] = SIDE >> 8; }
       phase = 'run'; }
     if (phase === 'run') { passes++; let n = 0; for (let i = 1; i <= 6; i++) if (occ(i)) n++; shipsSum += n;
-      slots.forEach((s, k) => { const b = OBJ0 + 39 * s; mem.set(flat(POS[k]), b); mem[b + 0x25] |= 1; }); }
+      slots.forEach((s, k) => { const b = OBJ0 + 39 * s; mem.set(flat(POS[k]), b); mem[b + 0x25] |= 1; }); if (SUN) { mem.set(SUNP, 0x7110); mem.set(PLAN, 0x7107); mem[0x9c93] = 0x80; } }   // 9C93h — счётчик появления кораблей
   };
-  const frame = () => { const end = T + 69888; while (T < end) { const pc = cpu.pc; if (pc === MARK) onPass(pc); T += cpu.run_instruction() || 4; } cpu.interrupt(false, 0xff); };
+  let F0 = 0;
+  const frame = () => { F0 = T; const end = T + 69888; while (T < end) { const pc = cpu.pc; if (pc === MARK) onPass(pc); cont = 0; const t = T - F0 - 14335;
+      T += cpu.run_instruction() || 4; if (cont && t >= 0 && t < 192 * 224 && t % 224 < 128) T += cont * 2.625; } cpu.interrupt(false, 0xff); };
   const run = (n, k) => { down.clear(); if (k) down.add(k); for (let f = 0; f < n; f++) frame(); };
   run(100); run(20, '_'); run(150); run(20, '_'); run(150); run(20, '1'); run(300);   // заставки, вылет, отлёт
+  if (process.env.ZXDUMP) { const h = (a, n) => Array.from(mem.subarray(a, a + n), (v) => v.toString(16).padStart(2, '0')).join(' '); console.log('7107', h(0x7107, 9), '\n7110', h(0x7110, 9), '\n7119', h(0x7119, 9), '711D', mem[0x711d]); }
   if (NSHIPS) { phase = 'spawn'; while (phase !== 'run') frame(); } else phase = 'run';
   passes = 0; shipsSum = 0; const t0 = T; run(FR, PITCH ? 's' : null);
-  out.push(['ZX 48K', passes / ((T - t0) / 3.5e6), shipsSum / passes]);
+  out.push(['ZX 48K' + (ZXC ? ', экран тормозит' : ''), passes / ((T - t0) / 3.5e6), shipsSum / passes]);
   if (SHOT) { const bmp = new Uint32Array(576 * 288), pal = [0, 0xC00000, 0x0000C0, 0xC000C0, 0x00C000, 0xC0C000, 0x00C0C0, 0xC0C0C0];
     for (let y = 0; y < 192; y++) for (let x = 0; x < 256; x++) { const a = 0x4000 | ((y & 0xC0) << 5) | ((y & 7) << 8) | ((y & 0x38) << 2) | (x >> 3), at = mem[0x5800 + (y >> 3) * 32 + (x >> 3)];
       const c = pal[(mem[a] >> (7 - (x & 7))) & 1 ? at & 7 : (at >> 3) & 7]; bmp[(y + 48) * 576 + x * 2 + 32] = c; bmp[(y + 48) * 576 + x * 2 + 33] = c; }

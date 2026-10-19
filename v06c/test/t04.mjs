@@ -38,7 +38,7 @@ ok(junk === 0, 'строки 248–255 под панелью пусты');
 
 // 4. клавиатура
 m.key(7, 0x80, true); m.key(4, 0x02, true); m.keyboard.ss = true; m.frame(2);
-const rows = [...Array(9)].map((_, i) => m.rd(L.kb_rows + i));
+const rows = [...Array(8)].map((_, i) => m.rd(L.kb_rows + i)).concat(m.rd(L.kb_mod));   // kb_mod — по метке: в обычном образе он за fly_raw
 ok(rows[7] === 0x80 && rows[4] === 0x02 && rows[8] === 0x20 && rows.filter((v) => v).length === 3, `пробел, A и СС: матрица ${rows.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`);
 { const t = createVector('elite_t'); t.frame(40); t.key(7, 0x80, true); t.key(4, 0x02, true); t.frame(2);   // kb_test есть только в образе стенда
   ok(t.call('kb_test', { a: 7 * 8 + 7 }).zf === 0 && t.call('kb_test', { a: 4 * 8 + 1 }).zf === 0 && t.call('kb_test', { a: 4 * 8 + 2 }).zf === 1, 'kb_test: пробел и A нажаты, B — нет'); }

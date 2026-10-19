@@ -745,6 +745,9 @@ wa_zx:
 	endif
 	ifndef	SCHED
 	include	"st_cy.asm"		; в пустоту выравнивания (штрихи пыли, st_dots.asm)
+	ifndef	RUS
+	include	"mis_dbg.asm"		; в пустоту выравнивания (отладочный вход миссий, missions.asm)
+	endif
 	endif
 	align	64
 sfx_tab:

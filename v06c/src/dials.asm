@@ -611,6 +611,11 @@ sal8:
 	dec	b
 	jp	nz, sal8
 	ret
+	ifdef	PCIRC
+	ifndef	RUS
+	include	"pc_col.asm"		; окружность планеты (planet.asm), в пустоту выравнивания; в русской сборке — перед sfx_tab
+	endif
+	endif
 
 	align	32
 dp_nib:	db	0x00, 0x03, 0x0C, 0x0F, 0x30, 0x33, 0x3C, 0x3F, 0xC0, 0xC3, 0xCC, 0xCF, 0xF0, 0xF3, 0xFC, 0xFF

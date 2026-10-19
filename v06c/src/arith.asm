@@ -325,11 +325,10 @@ LL31:
 	ld	e, a
 	dup	8			; развёрнуто: остаток в H, частное в L
 	add	hl, hl
-	jp	c, $ + 8
 	ld	a, h
+	jp	c, $ + 7		; вышло за байт — вычитать
 	cp	e
-	jp	c, $ + 7
-	ld	a, h
+	jp	c, $ + 6
 	sub	e
 	ld	h, a
 	inc	l

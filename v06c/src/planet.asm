@@ -789,6 +789,7 @@ pc_p1:
 	include	"wp_v.asm"
 	endif
 
+	ifdef	SCHED
 ; EDGES: строка солнца: X1, X2 = YY(1 0) ∓ A, обрезанные по экрану; перенос 1 — строка не видна (LSO+Y = 0).
 EDGES:
 	ld	(T), a
@@ -837,17 +838,45 @@ HLOIN2:
 	ld	(hl), 0
 	jp	HLOIN
 
+	else
+; sr_wipe: стереть строку C прежнего солнца (LSO, SUNX), LSO+C = 0. Портит A, B, DE, HL.
+sr_wipe:
+	call	sun_lso
+	ret	z
+	ld	(hl), 0
+	ld	b, a
+	ld	hl, (SUNX)
+	ex	de, hl
+	call	sun_e
+	ret	c
+	ld	a, h
+	ld	(X2), a
+	ld	h, c
+	ld	(X1), hl
+	jp	HLOIN
+	endif
+; строка C прежнего солнца — стереть
+	macro	SUNWIPE
+	ifdef	SCHED
+	call	sun_lso
+	call	nz, HLOIN2
+	else
+	call	sr_wipe
+	endif
+	endm
+
 ; WPLS: стереть солнце по списку строк LSO.
 WPLS:
 	ld	a, (LSX)
 	or	a
 	ret	m
+	ifdef	SCHED
 	ld	hl, (SUNX)
 	ld	(YY), hl
+	endif
 	ld	c, DASH_Y - 1
 wpl2:
-	call	sun_lso
-	call	nz, HLOIN2
+	SUNWIPE
 	dec	c
 	jp	nz, wpl2
 	dec	c
@@ -862,6 +891,7 @@ sun_lso:				; A = LSO+Y, Z — ноль
 	or	a
 	ret
 
+	ifdef	SCHED
 ; sun_sqrt: Q = целый корень из (R Q), как LL5, но не побитовым счётом: соседние строки круга отличаются мало,
 ; поэтому корень подправляется от корня предыдущей строки (sun_q) по таблице квадратов SQLO (q² лежит в ней по
 ; номеру 2q). Перенос на выходе — как у LL5: 1, если остаток не меньше 256 (проверено перебором всех 65 536
@@ -923,6 +953,8 @@ ss_end:
 	ld	a, h
 	add	a, 0xFF
 	ret
+
+	endif
 
 ; SUN: солнце — круг радиуса K из горизонтальных строк с рваным краем; прежние строки (LSO) стираются
 ; и рисуются новые за один проход сверху вниз.
@@ -1005,16 +1037,18 @@ plf5:
 	ld	a, (P_)
 	ld	(K2), a
 	ld	c, DASH_Y - 1
+	ifdef	SCHED
 	ld	hl, (SUNX)
 	ld	(YY), hl
+	endif
 plfl2:					; стереть прежние строки ниже нового солнца
 	ld	a, (TGT)
 	cp	c
 	jp	z, plfl
-	call	sun_lso
-	call	nz, HLOIN2
+	SUNWIPE
 	dec	c
 	jp	nz, plfl2
+	ifdef	SCHED
 plfl:
 	ld	a, (V)			; полуширина строки: корень из K^2 - V^2 плюс случайная бахрома
 	call	SQUA2
@@ -1108,9 +1142,241 @@ plf10:
 	jp	nc, plfl
 	ld	hl, (SUNX)
 	ld	(YY), hl
+	else
+; Обычный образ: строка за строкой без умножений и корней. Полуширина q = целый корень из K² - V² ведётся
+; шагами: V меняется на 1 за строку, остаток sun_r = K² - V² - q² держится в пределах 0..2q. Бахрома — байты
+; кода игры подряд со случайного места (на BBC — DORND в каждой строке). Края — в регистрах (sun_e); рисуется
+; только разница прежней и новой строк: HLOIN исключающим ИЛИ (oL..nL) и (oR..nR) — верно при любом их положении.
+plfl:
+	ld	a, (V + 1)
+	or	a
+	jp	z, sr_i
+	ld	a, (K)			; центр ниже экрана дальше радиуса — строк нет
+	ld	hl, V
+	cp	(hl)
+	jp	c, sr_end
+sr_i:
+	push	bc
+	ld	a, (V)
+	call	sr_sq			; HL = V²
+	ex	de, hl
+	ld	hl, (K2)		; K2 — младший байт K², K2 + 1 — старший
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a			; HL = K² - V²
+	push	hl
+	ld	(Q), hl			; (R Q)
+	call	LL5
+	ld	a, (Q)
+	ld	(sun_q), a
+	call	sr_sq			; HL = q²
+	ex	de, hl
+	pop	hl
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+	ld	(sun_r), hl
+	call	DORND			; A, B — случайные: место в коде игры
+	and	0x3F
+	add	a, 0x10
+	ld	h, a
+	ld	l, b
+	ld	(sun_rp), hl
+	pop	bc
+sr_row:
+	ld	hl, (sun_rp)
+	ld	a, (hl)
+	inc	hl
+	ld	(sun_rp), hl
+	ld	hl, CNT
+	and	(hl)
+	ld	hl, sun_q
+	add	a, (hl)
+	jp	nc, sr_f
+	ld	a, 255
+sr_f:
+	ld	b, a
+	ld	hl, (K3)
+	ex	de, hl
+	call	sun_e			; HL — края новой строки
+	jp	nc, sr_v
+	ld	b, 0			; строки нет на экране
+sr_v:
+	push	hl
+	ld	d, b			; D — новая полуширина
+	ld	hl, LSO
+	ld	b, 0
+	add	hl, bc
+	ld	a, (hl)			; прежняя полуширина
+	ld	(hl), d
+	or	a
+	jp	z, sr_o0
+	ld	b, a
+	push	de
+	ld	hl, (SUNX)
+	ex	de, hl
+	call	sun_e			; края прежней строки (она была на экране)
+	pop	af			; A — новая полуширина
+	ex	de, hl			; DE — прежние края
+	pop	hl			; HL — новые
+	or	a
+	jp	nz, sr_x
+	ld	l, e			; новой нет: пустая в точке oL
+	ld	h, e
+	jp	sr_x
+sr_o0:
+	pop	hl
+	inc	d
+	dec	d
+	jp	z, sr_next		; ни прежней, ни новой
+	ld	e, l			; прежней нет: пустая в точке nL
+	ld	d, l
+sr_x:					; E, D — прежние левый и правый края; L, H — новые
+	ld	a, l
+	cp	e
+	jp	nz, sr_d
+	ld	a, h
+	cp	d
+	jp	z, sr_next		; строка та же
+sr_d:
+	push	hl
+	ld	a, l
+	ld	(X2), a
+	ld	l, e
+	ld	h, c
+	ld	(X1), hl		; X1, Y1
+	ld	e, d
+	push	de
+	call	HLOIN
+	pop	de
+	pop	hl
+	ld	a, h
+	ld	(X2), a
+	ld	l, e
+	ld	h, c
+	ld	(X1), hl
+	call	HLOIN
+sr_next:
+	dec	c
+	jp	z, plf8
+	ld	a, (sun_q)
+	ld	b, a
+	ld	hl, (sun_r)
+	ld	a, (V + 1)
+	or	a
+	jp	nz, sr_up
+	ld	a, (V)			; к центру: r += 2V - 1, V -= 1
+	ld	e, a
+	dec	a
+	ld	(V), a
+	jp	nz, sr_dn
+	dec	a
+	ld	(V + 1), a
+sr_dn:
+	ld	d, 0
+	add	hl, de
+	add	hl, de
+	dec	hl
+sr_dn2:					; пока r >= 2q + 1: r -= 2q + 1, q += 1
+	call	sr_2q1
+	ld	a, l
+	sub	e
+	ld	e, a
+	ld	a, h
+	sbc	a, d
+	jp	c, sr_st
+	ld	h, a
+	ld	l, e
+	inc	b
+	jp	sr_dn2
+sr_up:					; от центра: r -= 2V + 1, V += 1; V > K — солнце кончилось
+	ld	a, (V)
+	ld	e, a
+	inc	a
+	ld	(V), a
+	ld	d, a
+	ld	a, (K)
+	cp	d
+	jp	c, sr_end
+	push	bc
+	ld	b, e
+	call	sr_2q1
+	pop	bc
+	ld	a, l
+	sub	e
+	ld	l, a
+	ld	a, h
+	sbc	a, d
+	ld	h, a
+sr_up2:					; пока r < 0: q -= 1, r += 2q + 1
+	or	a
+	jp	p, sr_st
+	dec	b
+	call	sr_2q1
+	add	hl, de
+	ld	a, h
+	jp	sr_up2
+sr_st:
+	ld	(sun_r), hl
+	ld	a, b
+	ld	(sun_q), a
+	jp	sr_row
+sr_2q1:					; DE = 2B + 1
+	ld	a, b
+	add	a, a
+	ld	e, a
+	ld	a, 0
+	rla
+	ld	d, a
+	inc	de
+	ret
+sr_sq:					; HL = A² — по таблице f(x) = x² / 4 под номером 2A
+	ld	l, a
+	ld	h, 0
+	add	hl, hl
+	ld	de, SQLO
+	add	hl, de
+	ld	e, (hl)
+	inc	h
+	inc	h
+	ld	d, (hl)
+	ex	de, hl
+	ret
+; sun_e: края строки полуширины B вокруг x = DE, как EDGES: L — левый (не меньше 2), H — правый (не больше 254);
+; перенос 1 — строки на экране нет.
+sun_e:
+	ld	a, e
+	add	a, b
+	ld	h, a
+	ld	a, d
+	adc	a, 0
+	jp	m, se_no
+	jp	z, se_l
+	ld	h, 254
+se_l:
+	ld	a, e
+	sub	b
+	ld	l, a
+	ld	a, d
+	sbc	a, 0
+	ret	z
+	jp	p, se_no
+	ld	l, 2
+	or	a
+	ret
+se_no:
+	scf
+	ret
+sr_end:
+	endif
 plfl3:					; стереть прежние строки выше нового солнца
-	call	sun_lso
-	call	nz, HLOIN2
+	SUNWIPE
 	dec	c
 	jp	nz, plfl3
 plf8:

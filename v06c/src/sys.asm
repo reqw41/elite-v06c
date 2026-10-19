@@ -9,19 +9,35 @@ isr:
 	push	hl
 	ld	a, 0x8A			; порт A — выход (выбор строки), порт B и старшая половина C — вход
 	out	(0), a
+	ifdef	SCHED
 	ld	hl, kb_rows
+	else
+	ld	hl, fly_raw		; обычный образ: строки — в fly_raw, B — изменившиеся биты; kb_rows переводится
+	ld	b, 0			; заново только при перемене (в конце обработчика)
+	endif
 	ld	c, 0xFE
 isr_row:
 	ld	a, c
 	out	(3), a
 	in	a, (2)
 	cpl
+	ifndef	SCHED
+	ld	e, a
+	xor	(hl)
+	or	b
+	ld	b, a
+	ld	a, e
+	endif
 	ld	(hl), a
 	inc	hl
 	ld	a, c
 	rlca
 	ld	c, a
 	jp	c, isr_row		; восемь строк: ноль выходит из бита 7 последним
+	ifndef	SCHED
+	ld	(hl), b			; kb_chg
+	inc	hl
+	endif
 	in	a, (1)
 	cpl
 	and	0xE0
@@ -38,7 +54,13 @@ isr_row:
 	ifdef	SCHED
 	call	nz, joy_keys
 	else
-	ld	(joy_bits), a		; применяется в конце, после перевода клавиш полёта (fly_keys)
+	ld	hl, joy_bits		; применяется в конце, после перевода клавиш полёта (fly_keys); перемена — в kb_chg
+	ld	b, a
+	xor	(hl)
+	ld	(hl), b
+	ld	hl, kb_chg
+	or	(hl)
+	ld	(hl), a
 	endif
 	ld	a, 0x88			; все порты на выход
 	out	(0), a
@@ -104,14 +126,29 @@ isr_cnt:
 	; всё, что обработчик кадра BBC делает с состоянием игры (в сборке SCHED это делает стенд на границе прохода)
 	ld	a, (fly_on)		; полёт (главный цикл в полёте, не пауза) — клавиши под русскую клавиатуру
 	or	a
-	jp	z, isr_nk
+	jp	z, isr_md
 	ld	a, (QQ11)
+	cp	1
+	sbc	a, a			; FFh — вид из корабля
+isr_md:
+	ld	hl, kb_md		; kb_rows пересчитывается, только если сменились матрица, джойстик или режим
+	ld	b, a
+	xor	(hl)
+	ld	(hl), b
+	ld	hl, kb_chg
+	or	(hl)
+	jp	z, isr_nk
+	ld	(hl), 0
+	ld	hl, fly_raw
+	ld	de, kb_rows
+	call	fk_cp
+	ld	a, (kb_md)
 	or	a
-	call	z, fly_keys
-isr_nk:
+	call	nz, fly_keys
 	ld	a, (joy_bits)
 	or	a
 	call	nz, joy_keys
+isr_nk:
 	ld	a, 30
 	ld	(DL), a
 	ld	hl, LASCT
@@ -268,30 +305,10 @@ joy_rest:
 ; fly_keys: полёт под русскую клавиатуру Вектора (обычный образ). Таблицы — v06c/data/keys.asm (tools/convert/keys.py):
 ; клавиши из fly_map нажимают другие (стрелки — крен и тангаж, пробел — огонь, Я, ТАБ — разгон, тормоз, Б — бомба,
 ; К — капсула, А, О — автопилот, Ц, Р, С — ракета, П, Г — прыжки, М — маскировка), всё, чего нет в fly_keep, гаснет.
-; Нажатия берутся из матрицы до перевода: замены не цепляются друг за друга. Перевод зависит только от матрицы,
-; поэтому он запоминается: матрица та же, что в прошлый раз (fly_raw), — результат берётся из fly_new. Так проходит
-; почти каждый кадр, и когда ничего не нажато, и когда клавиши держат.
+; На входе kb_rows и fly_raw — матрица с клавиатуры; нажатия берутся из fly_raw: замены не цепляются друг за друга.
+; Зовётся из прерывания кадра только при перемене матрицы (isr_kb), поэтому своей памяти о прошлом переводе нет.
 fly_keys:
-	ld	hl, kb_rows		; сравнить с прошлой и запомнить: C <> 0 — матрица другая
-	ld	de, fly_raw
-	ld	bc, 0x0800
-fk_t:
-	ld	a, (de)
-	xor	(hl)
-	or	c
-	ld	c, a
-	ld	a, (hl)
-	ld	(de), a
-	inc	hl
-	inc	de
-	dec	b
-	jp	nz, fk_t
-	ld	a, c
-	or	a
-	ld	hl, fly_new
-	ld	de, kb_rows
-	jp	z, fk_cp		; та же: прежний перевод
-	ex	de, hl			; строка И fly_keep
+	ld	hl, kb_rows		; строка И fly_keep
 	ld	de, fly_keep
 fk_k:
 	ld	a, (de)
@@ -323,9 +340,8 @@ fk_n:
 	inc	de
 	dec	b
 	jp	nz, fk_l
-	ld	hl, kb_rows		; запомнить перевод
-	ld	de, fly_new
-fk_cp:
+	ret
+fk_cp:					; 8 байт из HL в DE
 	ld	b, 8
 fk_c:
 	ld	a, (hl)

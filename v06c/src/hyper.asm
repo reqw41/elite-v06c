@@ -337,11 +337,6 @@ esl2:
 	ld	a, 70
 	ld	(QQ14), a
 	jp	BAY
-	ifdef	PCIRC
-	ifndef	RUS
-	include	"pc_col.asm"		; окружность планеты (planet.asm); в русской сборке — перед sfx_tab
-	endif
-	endif
 	ifndef	SCHED
 	include	"st_dots.asm"		; штрихи пыли при прыжке (stars.asm)
 	endif

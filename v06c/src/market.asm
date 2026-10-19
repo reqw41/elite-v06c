@@ -530,11 +530,9 @@ gn_all:
 	ld	(R_), a
 	or	a
 	ret
-gn_none:
-	call	TT26
-	xor	a
-	ld	(R_), a
-	ret
+	ifdef	RUS
+	include	"gn_none.asm"		; в английской сборке — в пустоте выравнивания (scan.asm)
+	endif
 	endif
 
 ; TT214: пробел, слово A, «(Y/N)?»: перенос 1 — ответ Y. TT221: без пробела.
