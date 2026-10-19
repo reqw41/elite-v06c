@@ -274,7 +274,11 @@ dkl4:
 dk7:
 	ifndef	SCHED
 	cp	0x65			; отладочный вход в миссии: M и K на паузе (missions.asm)
+	ifdef	SCENE
+	call	z, scn_go		; тестовая сцена: солнце и враги
+	else
 	call	z, mis_dbg_m
+	endif
 	cp	0x46
 	call	z, mis_dbg_k
 	endif

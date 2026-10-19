@@ -308,7 +308,7 @@ ss_set:
 	ret
 
 	ifndef	SCHED
-	ifdef	MERID			; сборке с меридианами не хватает места: без мелодии
+	ifdef	NOMUS			; сборке с меридианами не хватает места, тестовой сцене не нужна: без мелодии
 mus_tick:
 mus_start:
 mus_stop:
@@ -316,7 +316,7 @@ mus_stop:
 	endif
 	endif
 	ifndef	SCHED
-	ifndef	MERID
+	ifndef	NOMUS
 ; Мелодия заставки — главная тема «Голубого Дуная» в три голоса (v06c/data/danube.asm, tools/convert/danube.py):
 ; голоса записи C64 1, 2, 3 — snd_v0, snd_v1, snd_v2. mus_tick — раз в кадр из прерывания; mus_p = 0 — молчит.
 ; Заголовок: биты 0–2 — какие голоса берут новую ноту, 3–6 — задержка до следующего (mus_len); за ним высоты BBC.

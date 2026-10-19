@@ -20,6 +20,12 @@ DASH_H		equ	56
 	define	WPTOUCH
 	endif
 	endif
+	ifdef	MERID
+	define	NOMUS			; без мелодии заставки: не хватает места
+	endif
+	ifdef	SCENE
+	define	NOMUS
+	endif
 	ifndef	SCHED
 	ifndef	MERID
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
@@ -152,6 +158,9 @@ ws_clr2:
 	include	"hangar.asm"
 	include	"discmis.asm"
 	include	"newb.asm"
+	ifdef	SCENE
+	include	"scene.asm"		; тестовая сцена (elite_sun.rom)
+	endif
 
 	ifndef	SCHED
 	define	NOXX21			; обычный образ: таблица моделей — XX21X (ships_zx.asm)
@@ -373,7 +382,11 @@ IMG_END		equ	rom_end
 	ifdef	SCHED
 	savebin	"v06c/build/elite_t.rom", 0x0100, IMG_END - 0x0100
 	else
+	ifdef	SCENE
+	savebin	"v06c/build/elite_sun.rom", 0x0100, IMG_END - 0x0100
+	else
 	savebin	"v06c/build/elite.rom", 0x0100, IMG_END - 0x0100
+	endif
 	endif
 	endif
 	endif
