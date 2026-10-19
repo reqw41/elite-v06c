@@ -23,6 +23,7 @@
   корабль медленнее примерно на 0,3 %); `mis_count` — в пустоту перед `sfx_tab`; `st_mults` = `MULTS` (копия была
   байт в байт); `st_xyz` в stars.asm; `mv_neg` в move.asm; общий хвост `dv13_k` в geom.asm; сдвиг строк — ячейкой
   `pc_kv`. Свободно: обычный 1, русская 30, меридианы 463.
+- На MiSTer залит `cf9cc96`: Elite.rom `03ed03af…`, EliteRu.rom `9b1d87bf…`, EliteMerid.rom `7772b26e…`; md5 совпали.
 
 ## 19.10.2026 (вечер) — корабль быстрее; на MiSTer
 
