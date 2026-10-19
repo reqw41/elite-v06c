@@ -22,41 +22,9 @@ MJC	equ	ESCP + 3	; счётчик прибытий после прыжка (вн
 ; галактике миссий нет. Пока идёт охота на «Констриктора» или на борту планы таргоидов, счёт стоит: «Сверхновая»
 ; унесла бы в другую галактику. Только обычный образ; ставит бит 7 MISF — «пора выдавать».
 	ifndef	SCHED
-mis_count:
-	ld	a, (GCNT)
-	or	a
-	ret	z
-	ld	a, (DTP)
-	ld	c, a
-	and	3
-	dec	a
-	ret	z
-	ld	a, c
-	and	0x0C
-	cp	8
-	ret	z
-	ld	hl, MJC
-	inc	(hl)
-	ld	c, (hl)
-	ld	hl, MISF
-	ld	a, (hl)
-	ld	b, 32
-	rra
-	jp	nc, mc_t
-	ld	b, 128
-	rra
-	jp	nc, mc_t
-	ld	b, 254
-	rra
-	ret	c
-mc_t:
-	ld	a, c
-	cp	b
-	ret	c
-	ld	a, (hl)
-	or	0x80
-	ld	(hl), a
-	ret
+	ifdef	RUS
+	include	"mis_count.asm"		; в английской сборке — в пустоте выравнивания (flight.asm)
+	endif
 	ifdef	RUS
 	include	"mis_dbg.asm"		; в обычной английской сборке — в пустоте выравнивания (flight.asm)
 	endif

@@ -76,13 +76,7 @@ mv10:					; знаки разные: вычесть
 	ld	(hl), a
 	dec	hl
 	dec	hl
-	xor	a
-	sub	(hl)
-	ld	(hl), a
-	inc	hl
-	ld	a, 0
-	sbc	a, (hl)
-	ld	(hl), a
+	call	mv_neg
 	inc	hl
 	ld	a, 0
 	sbc	a, (hl)
@@ -151,13 +145,7 @@ mv50:
 	ret
 mv51:
 	dec	hl
-	xor	a
-	sub	(hl)
-	ld	(hl), a
-	inc	hl
-	ld	a, 0
-	sbc	a, (hl)
-	ld	(hl), a
+	call	mv_neg
 	ccf
 	ld	a, c
 	ret
@@ -524,13 +512,7 @@ mv43:
 	ld	(INWK + 4), a
 	jp	nc, mv44
 	ld	hl, INWK + 3
-	xor	a
-	sub	(hl)
-	ld	(hl), a
-	inc	hl
-	ld	a, 0
-	sbc	a, (hl)
-	ld	(hl), a
+	call	mv_neg
 	inc	hl
 	ld	a, (hl)
 	xor	0x80
@@ -647,5 +629,15 @@ mv_rat2:
 	or	d
 	ld	(hl), a
 	or	1			; Z = 0
+	ret
+; mv_neg: слово (HL+1 HL) = минус оно; HL — на старший байт, флаги — от вычитания старшего.
+mv_neg:
+	xor	a
+	sub	(hl)
+	ld	(hl), a
+	inc	hl
+	ld	a, 0
+	sbc	a, (hl)
+	ld	(hl), a
 	ret
 move_end:

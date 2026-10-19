@@ -86,12 +86,10 @@ dvl10:
 	rra
 	dec	c
 	jp	nz, dvl10
-	ld	(K), a
-	ld	a, (T)
-	ld	(K + 3), a
-	ret
+	jp	dv13_k
 dv13:
 	ld	a, (R_)
+dv13_k:
 	ld	(K), a
 	ld	a, (T)
 	ld	(K + 3), a

@@ -676,30 +676,9 @@ ll65:
 	ld	a, (CNT)
 	ld	l, a
 	ld	h, high XX3
+	ld	e, 128			; x экрана = 128 ± (U R)
 	ld	a, (XX15 + 2)
-	or	a
-	jp	m, ll62
-	ld	a, (R_)
-	add	a, 128
-	ld	(hl), a
-	inc	l
-	ld	a, (U)
-	adc	a, 0
-	ld	(hl), a
-	jp	ll66
-ll62:
-	ld	a, (R_)
-	ld	d, a
-	ld	a, 128
-	sub	d
-	ld	(hl), a
-	inc	l
-	ld	a, (U)
-	ld	d, a
-	ld	a, 0
-	sbc	a, d
-	ld	(hl), a
-ll66:
+	call	ll9_scr
 	push	hl
 	xor	a
 	ld	(U), a
@@ -715,30 +694,10 @@ ll67:
 	call	LL28
 ll68:
 	pop	hl
-	inc	l
+	ld	e, 96			; y экрана = 96 ∓ (U R)
 	ld	a, (XX15 + 5)
-	or	a
-	jp	m, ll70
-	ld	a, (R_)
-	ld	d, a
-	ld	a, 96
-	sub	d
-	ld	(hl), a
-	inc	l
-	ld	a, (U)
-	ld	d, a
-	ld	a, 0
-	sbc	a, d
-	ld	(hl), a
-	jp	ll50
-ll70:
-	ld	a, (R_)
-	add	a, 96
-	ld	(hl), a
-	inc	l
-	ld	a, (U)
-	adc	a, 0
-	ld	(hl), a
+	xor	0x80
+	call	ll9_scr
 ll50:
 	ld	a, (CNT)
 	add	a, 4
@@ -1233,6 +1192,32 @@ va_sub:
 	ld	a, b
 	xor	0x80
 	ld	b, a
+	ret
+; ll9_scr: (HL) = E + (U R) при бите 7 у A = 0, иначе E - (U R); слово, HL — на второй байт + 1. Портит A, BC.
+ll9_scr:
+	or	a
+	ld	a, (U)
+	ld	b, a
+	ld	a, (R_)
+	jp	m, sc_sub
+	add	a, e
+	ld	(hl), a
+	inc	l
+	ld	a, b
+	adc	a, 0
+	ld	(hl), a
+	inc	l
+	ret
+sc_sub:
+	ld	c, a
+	ld	a, e
+	sub	c
+	ld	(hl), a
+	inc	l
+	ld	a, 0
+	sbc	a, b
+	ld	(hl), a
+	inc	l
 	ret
 ; отрезок XX15(3..0) в конец списка, U += 4
 ll9_put:

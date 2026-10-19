@@ -136,19 +136,7 @@ da_l:
 	push	bc
 	push	de
 	ld	c, b
-	ld	b, 0
-	ld	hl, SX
-	add	hl, bc
-	ld	a, (hl)
-	ld	(X1), a
-	ld	hl, SY
-	add	hl, bc
-	ld	a, (hl)
-	ld	(Y1), a
-	ld	hl, SZ
-	add	hl, bc
-	ld	a, (hl)
-	ld	(ZZ), a
+	call	st_xyz
 	call	PIXEL2
 	pop	de
 	pop	bc
@@ -431,19 +419,7 @@ STARS1:
 	ld	a, (NOSTM)
 	ld	c, a
 sn_l:
-	ld	b, 0
-	ld	hl, SX
-	add	hl, bc
-	ld	a, (hl)
-	ld	(X1), a
-	ld	hl, SY
-	add	hl, bc
-	ld	a, (hl)
-	ld	(Y1), a
-	ld	hl, SZ
-	add	hl, bc
-	ld	a, (hl)
-	ld	(ZZ), a
+	call	st_xyz
 	push	af
 	call	PIXEL2			; стереть пылинку на прежнем месте
 	pop	af
@@ -673,34 +649,23 @@ sn_tab:					; 1024 / (4i + 2), i = z / 4 (расстояние меньше 16 �
 	db	5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4
 	endif
 
-; Как MULTS: (A P) = |A| · (P & 31) со знаком A. При |A| = 0: P(1 0) = 0, перенос как на входе.
-st_mults:
-	ld	b, a
-	push	af
-	and	0x80
-	ld	(T), a
-	ld	a, b
-	and	0x7F
-	jp	z, st_ms0
-	pop	de
-	ld	e, a
-	dec	a
-	ld	(T1), a
-	ld	b, a
-	ld	a, (P_)
-	and	31
-	call	mul8
-	ld	a, l
-	ld	(P_), a
-	ld	a, (T)
-	or	h
+; st_xyz: X1, Y1, ZZ = SX, SY, SZ пылинки C; B = 0.
+st_xyz:
+	ld	b, 0
+	ld	hl, SX
+	add	hl, bc
+	ld	a, (hl)
+	ld	(X1), a
+	ld	hl, SY
+	add	hl, bc
+	ld	a, (hl)
+	ld	(Y1), a
+	ld	hl, SZ
+	add	hl, bc
+	ld	a, (hl)
+	ld	(ZZ), a
 	ret
-st_ms0:
-	pop	af
-	ld	a, 0
-	ld	(P_ + 1), a
-	ld	(P_), a
-	ret
+st_mults	equ	MULTS		; прежняя копия MULTS совпадала с ней байт в байт
 
 ; STARS6: пыль в виде назад — близко к тексту BBC (знаки и порядок слагаемых иные, чем в STARS1).
 STARS6:

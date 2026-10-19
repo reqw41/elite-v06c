@@ -15,7 +15,7 @@ const ref = (X, Y, r) => { const s = new Set(), p = (x, y) => { if (x < 0 || x >
 const snap = () => { const o = new Uint8Array(0x10000); for (let a = 0; a < 0x10000; a++) o[a] = m.rd(a); return o; };
 let rs = 777; const rnd = (n) => { rs = (rs * 1103515245 + 12345) >>> 0; return (rs >>> 8) % n; };
 let n = 0, maxCyc = 0, sumCyc = 0, sumPx = 0, inside = 0, inCyc = 0, inPx = 0;
-const codeLo = L.pc_try, codeHi = L.pc_m4 + 1;
+const codeLo = L.pc_try, codeHi = L.pc_m4 + 1;   // самоизменяемый код окружности (и pc_pt — в нём правится переход)
 for (let i = 0; i < 1500; i++) {
   const r = 2 + rnd(126), Y = i < 300 ? r + rnd(Math.max(1, 192 - 2 * r)) : -64 + r + rnd(Math.max(1, 255 - r - (-64 + r) + 1)), X = i < 300 ? Math.min(255 - r, r + rnd(Math.max(1, 256 - 2 * r))) : -300 + rnd(860);
   if (Y + r > 255 || Y - r < -64 || X - r < -512) continue;
@@ -47,6 +47,27 @@ console.log(`окружностей ${n}, из них целиком в обзо
   planet(2, 0); const back = pixels(), wb = ref(m.rd16(L.pc_s), m.rd(L.pc_s + 2), m.rd(L.pc_s + 3));
   if (back.size !== wb.size || [...wb].some((k) => !back.has(k))) fail(`PLANET: после перехода с отрезков на точки на экране ${back.size}, по расчёту ${wb.size}`);
   console.log(`PLANET: первая ${c1.cycles} тактов, повтор той же ${c2.cycles}; далёкая ${far} точек, близкая (отрезками) ${near.size}, снова точками ${back.size}`);
+}
+// pc_two: пара окружностей одного радиуса и x центра — новая рисуется и прежняя стирается одним ходом (тангаж)
+{ let n2 = 0, c2 = 0, c1 = 0;
+  for (let i = 0; i < 1500; i++) {
+    const r = 2 + rnd(126), X = i < 500 ? Math.min(255 - r, r + rnd(Math.max(1, 256 - 2 * r))) : -300 + rnd(860);
+    const ok = (Y) => Y + r <= 255 && Y - r >= -64;
+    const Y1 = -64 + r + rnd(Math.max(1, 255 - r - (-64 + r) + 1)), Y2 = Y1 + (rnd(2) ? 1 : -1) * (1 + rnd(i % 3 ? 6 : 60));
+    if (!ok(Y1) || !ok(Y2) || X - r < -512 || Y1 === Y2) continue;
+    clear();
+    m.wr(L.pc_n, [X & 255, (X >> 8) & 255, Y1 & 255, r]); m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6);
+    const before = snap();
+    m.wr(L.pc_s, [X & 255, (X >> 8) & 255, Y1 & 255, r]); m.wr(L.pc_n, [X & 255, (X >> 8) & 255, Y2 & 255, r]);
+    const c = m.call('pc_two', {}, 4e6); n2++; c2 += c.cycles;
+    const got = pixels(), want = ref(X, Y2, r);
+    if (got.size !== want.size || [...want].some((k) => !got.has(k))) fail(`pc_two X ${X}, r ${r}, Y ${Y1} -> ${Y2}: точек ${got.size}, по расчёту ${want.size}`);
+    const after = snap();
+    for (let a = 0x100; a < 0x10000; a++) if (after[a] !== before[a] && !(a >= VIEW && a < VIEW + 0x2000 && (a & 255) >= 64) && !(a >= codeLo && a < codeHi) && !(a >= L.pc_kv && a <= L.pc_kv) && !(a >= ((m.cpu.sp - 16) & 0xffff) && a <= (m.cpu.sp & 0xffff))) { fail(`pc_two X ${X}, r ${r}: изменён байт ${a.toString(16)}`); break; }
+    if (m.rd(L.pc_g1) !== 0xC3 || m.rd(L.pc_g0) !== 0xC9) fail('pc_two: код не возвращён к одной окружности');
+    clear(); m.wr(L.pc_n, [X & 255, (X >> 8) & 255, Y1 & 255, r]); c1 += m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6).cycles;
+  }
+  console.log(`pc_two: пар ${n2}, тактов на пару ${(c2 / n2).toFixed(0)} против двух окружностей ${(2 * c1 / n2).toFixed(0)}`);
 }
 console.log(bad ? `ПРОВАЛ: ${bad}` : 'PCIRC: всё совпало');
 process.exit(bad ? 1 : 0);

@@ -584,6 +584,22 @@ pc_cmp:
 	jp	nz, pc_cmp
 	ret				; та же окружность
 pc_chg:
+	ld	hl, (pc_n)		; тот же x центра и радиус — одним ходом (pc_two)
+	ex	de, hl
+	ld	hl, (pc_s)
+	ld	a, l
+	cp	e
+	jp	nz, pc_chg2
+	ld	a, h
+	cp	d
+	jp	nz, pc_chg2
+	ld	a, (pc_n + 3)
+	ld	hl, pc_s + 3
+	cp	(hl)
+	jp	nz, pc_chg2
+	call	pc_two
+	jp	pc_keep
+pc_chg2:
 	ld	hl, pc_n
 	call	pcirc			; новая, затем стереть прежнюю — без мерцания
 	ld	hl, pc_s
@@ -615,8 +631,10 @@ pc_erase:
 	call	pcirc
 	jp	WP1
 ; pc_col и pc_pt лежат в flight.asm — в пустоте выравнивания перед sfx_tab.
-; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску.
-	macro	PCPAIR msk, dlt
+; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску. gj — метка перехода, который в паре
+; окружностей (pc_two) заменён на ld a,(nn): тогда те же две точки ставятся ещё и на pc_kv строк дальше — это точки
+; прежней окружности того же радиуса и столбца центра (при тангаже планета сдвигается только по вертикали).
+	macro	PCPAIR msk, dlt, gj
 	ld	a, h
 	sub	high SCR_VIEW
 	cp	32
@@ -632,12 +650,55 @@ pc_erase:
 	add	a, dlt
 	ld	l, a
 	cp	64
+	jp	c, gj
+	ld	a, msk
+	xor	(hl)
+	ld	(hl), a
+gj:
+	jp	.e			; pc_two: ld a,(nn)
+	ld	a, (pc_kv)
+	add	a, l
+	ld	l, a
+	cp	64
+	jp	c, .h
+	ld	a, msk
+	xor	(hl)
+	ld	(hl), a
+.h:
+	ld	a, l
+	sub	dlt
+	ld	l, a
+	cp	64
 	jp	c, .e
 	ld	a, msk
 	xor	(hl)
 	ld	(hl), a
 .e:
 	endm
+; pc_two: новая окружность pc_n и стирание прежней pc_s (тот же радиус и x центра, другой y) — одним ходом
+; алгоритма: точки прежней — на pc_kv = y новой - y прежней строк дальше (строка — 255 - y).
+pc_two:
+	ld	a, (pc_n + 2)
+	ld	hl, pc_s + 2
+	sub	(hl)
+	ld	c, a
+	ld	a, 0x3A			; ld a,(nn) — пройти в продолжение
+	call	pc_gs
+	ld	hl, pc_n
+	call	pcirc
+	ld	a, 0xC3			; jp — обычная окружность
+	ld	c, 0
+pc_gs:
+	ld	(pc_g1), a
+	ld	(pc_g2), a
+	ld	(pc_g3), a
+	ld	(pc_g4), a
+	sub	0xC3 - 0xC9		; C3 -> C9 (ret), 3A -> 40 — в pc_pt: ret или ld b,b
+	ld	(pc_g0), a
+	ld	a, c
+	ld	(pc_kv), a
+	ld	(pc_g0 + 3), a
+	ret
 ; pcirc: окружность исключающим ИЛИ. HL -> x центра (слово), y центра (байт), радиус (2..127).
 ; В цикле: B = 2y, C = 2x, D и E — маски точек в столбцах X + x и X - x; адреса — в командах. Строка y — байт
 ; адреса 255 - y; строки вне 0..191 дают байт меньше 64. Портит всё.
@@ -766,22 +827,22 @@ pc_noy:
 	ld	hl, (pc_p1 + 1)
 pc_h2:
 	ld	h, 0			; (X - x, Y ± y)
-	PCPAIR	e, b
+	PCPAIR	e, b, pc_g2
 	ld	a, b
 	cp	c
 	ret	z			; x = y: вторая четвёрка совпала бы с первой
 pc_p3:
 	ld	hl, 0			; (X + y, Y ± x)
-	PCPAIR	(pc_m3), c
+	PCPAIR	(pc_m3), c, pc_g3
 	ld	hl, (pc_p3 + 1)
 pc_h4:
 	ld	h, 0			; (X - y, Y ± x)
-	PCPAIR	(pc_m4), c
+	PCPAIR	(pc_m4), c, pc_g4
 	jp	pc_loop
 pc_pair1:
 pc_p1:
 	ld	hl, 0
-	PCPAIR	d, b
+	PCPAIR	d, b, pc_g1
 	ret
 ; переменные — в рабочих областях (elite.asm, WS + 03CEh)
 	endif

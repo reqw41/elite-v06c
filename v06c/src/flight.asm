@@ -747,6 +747,7 @@ wa_zx:
 	include	"st_cy.asm"		; в пустоту выравнивания (штрихи пыли, st_dots.asm)
 	ifndef	RUS
 	include	"mis_dbg.asm"		; в пустоту выравнивания (отладочный вход миссий, missions.asm)
+	include	"mis_count.asm"		; в пустоту выравнивания (счётчик прибытий, missions.asm)
 	endif
 	endif
 	align	64
