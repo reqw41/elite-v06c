@@ -125,9 +125,13 @@ db_s2:
 	dec	b
 	jp	nz, db_s
 	call	WP1			; окружности планеты нет
-	ld	a, (LSX)		; солнце — те же строки LSO
+	ld	a, (FRIN + 1)		; солнце — те же строки LSO. LSO (= LSX) — и буфер отрезков станции, как на BBC:
+	cp	129			; без солнца в месте 1 там отрезки станции, не строки солнца
+	jp	nz, db_ns
+	ld	a, (LSX)
 	inc	a
 	call	nz, db_sun
+db_ns:
 	ld	a, (NOSTM)		; пыль — на прежних местах
 	ld	b, a
 	ld	e, 0
