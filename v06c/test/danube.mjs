@@ -6,6 +6,7 @@ import { createVector } from '../tools/v06c.mjs';
 const name = process.argv[2] || 'elite';
 const m = createVector(name), L = m.L;
 let bad = 0; const ok = (c, s) => { if (!c) bad++; console.log(`${c ? 'OK  ' : 'FAIL'} ${s}`); };
+if (L.mus_dat === undefined) { console.log('DANUBE: мелодии в этом образе нет (NOMUS) — пропуск'); process.exit(0); }
 // слова, которые печатает ex (строки заставок): вызов мелодии в TITLE не должен портить номер строки
 const exs = []; { const ins = m.cpu.instruction.bind(m.cpu); m.cpu.instruction = () => { if ((m.cpu.pc & 0xffff) === L.ex) exs.push(m.cpu.regs[7]); return ins(); }; }
 // заголовки и ноты: [маска, задержка, [высоты]]

@@ -23,8 +23,8 @@ DASH_H		equ	56
 	ifdef	MERID
 	define	NOMUS			; без мелодии заставки: не хватает места
 	endif
-	ifdef	SCENE
-	define	NOMUS
+	ifndef	NOMUS
+	define	NOMUS			; мелодия заставки временно убрана (20.10.2026): место — под пару окружностей планеты
 	endif
 	ifdef	DBUF
 	ifndef	NOMUS
@@ -307,13 +307,10 @@ sp_last:	ds	2		; кадр последней проверки появления
 pc_s:		ds	4		; быстрая окружность на экране: x (слово), y, радиус
 pc_n:		ds	4		; новая
 pc_d:		ds	2
-pc_m3:		ds	1
-pc_m4:		ds	1
 st_j:		ds	1		; штрихи пыли: нарисовать след в конце ближайшего STARS (ставит wa_zx)
 st_fx:		ds	1		; след прыжка на экране (сразу за st_j)
 sun_r:		ds	2		; солнце (planet.asm): остаток K² - V² - q² для полуширины q
 sun_rp:		ds	2		; солнце: указатель на «случайные» байты бахромы
-pc_kv:		ds	1		; планета (planet.asm, pc_two): сдвиг строк прежней окружности
 sun_t:		ds	1		; солнце (sun_red): кадр (младший байт v_frames), когда рисовалось
 	endif
 	assert	$ <= WS + 0x0400
@@ -393,6 +390,10 @@ li_cp:
 	include	"init_sq.asm"
 	include	"init_cls.asm"
 	assert	$ <= WS + 0x08E0		; стек запуска — не ниже B8ECh (с прерыванием кадра в sat_wait)
+WP_NA		equ	34		; шагов угла у окружности планеты (CNT 0..64, STP 2) — с запасом
+WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков после каждого шага угла. Низ страницы стека за
+	assert	WP_ANG >= jt_end	; js_tick: после запуска там пусто (код запуска), стек игры — не ниже B8D6h
+	assert	WP_ANG + WP_NA <= WS + 0x08B0
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
 dials2:

@@ -27,7 +27,7 @@ dt_l:
 db_sites:
 	dw	col_p1 + 1, col_p2 + 1, col_p3 + 1, col_p4 + 1, tt_col + 1
 	ifdef	PCIRC
-	dw	pc_cs + 1, pc_ps + 1, pc_s1 + 1, pc_s2 + 1, pc_s3 + 1, pc_s4 + 1
+	dw	pc_cs + 1, pc_ps + 1, pa.s1 + 1, pa.s2 + 1, pa.s3 + 1, pa.s4 + 1
 	endif
 DB_NS		equ	($ - db_sites) / 2
 

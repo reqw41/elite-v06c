@@ -163,6 +163,11 @@ pl37:
 pl38:
 	or	a			; перенос 0
 	call	BLINE
+	ifdef	PCIRC
+	ifndef	DBUF
+	call	wp_ang			; планета: прежняя окружность стирается до того же угла
+	endif
+	endif
 	cp	65
 	jp	c, pll3
 	or	a

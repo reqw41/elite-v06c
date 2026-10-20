@@ -204,9 +204,13 @@ pl82:
 	ifdef	PCIRC
 	call	pc_try			; окружность рисуется точками (pcirc)
 	ret	z
-	call	wp_begin		; не подошла (радиус от 128): отрезками; сначала вся новая, потом вся прежняя
-	call	CIRCLE			; (wp_finish): тёмными на миг остаются только общие точки
+	ifdef	DBUF
+	call	wp_begin		; не подошла (радиус от 128): отрезками
+	call	CIRCLE
 	jp	wp_finish
+	else
+	jp	pl_circ			; не подошла (радиус от 128): отрезками, прежняя стирается по углу (wp_ang)
+	endif
 	else
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
@@ -453,6 +457,71 @@ pl_sin:					; A = Q = синус угла A
 	endif
 	endif			; PCIRC
 
+	ifdef	PCIRC
+	ifndef	DBUF
+; pl_circ: окружность планеты отрезками (CIRCLE); прежняя (копия списка, wp_begin) стирается не после всей новой,
+; а по ходу: после каждого шага угла новой — до того же угла прежней (wp_ang). Шаг угла (STP) у большой планеты
+; один и тот же, поэтому записи прежнего списка по углам известны: WP_ANG[k] — длина списка после шага k (пишется
+; в том же проходе для следующего). Остаток — wp_finish; от порядка итог не зависит (исключающее ИЛИ).
+; Быстрая окружность (точками), если была на экране, стирается после новой: на миг две, но не ни одной.
+pl_circ:
+	ld	a, (LSX2)
+	dec	a
+	push	af			; Z — на экране быстрая окружность pc_s
+	call	wp_begin		; (списка отрезков тогда нет)
+	xor	a
+	ld	(wp_k), a
+	inc	a
+	ld	(wp_on), a
+	call	CIRCLE
+	xor	a
+	ld	(wp_on), a
+	call	wp_finish
+	pop	af
+	ret	nz
+	ld	hl, pc_s
+	jp	pcirc
+; wp_ang: из CIRCLE2 после каждого BLINE (A = CNT — сохраняется). Портит BC, DE, HL.
+wp_ang:
+	push	af
+	ld	a, (wp_on)
+	or	a
+	jp	z, wa_x
+	ld	a, (wp_k)
+	cp	WP_NA
+	jp	nc, wa_x
+	ld	e, a
+	inc	a
+	ld	(wp_k), a
+	ld	d, 0
+	ld	hl, WP_ANG
+	add	hl, de
+	push	hl
+	ld	b, (hl)			; B — длина прежнего списка после этого шага
+wa_l:
+	ld	a, (wp_n)
+	ld	c, a
+	ld	a, (wp_i)
+	cp	c
+	jp	nc, wa_r		; прежний список кончился
+	cp	b
+	jp	nc, wa_r		; прежняя стёрта до этого угла
+	push	bc
+	call	wp_step
+	pop	bc
+	jp	wa_l
+wa_r:
+	pop	hl
+	ld	a, (LSP)
+	ld	(hl), a
+wa_x:
+	pop	af
+	ret
+wp_k:	db	0			; шаг угла новой окружности
+wp_on:	db	0			; <> 0 — идёт pl_circ
+	endif
+	endif
+
 ; Солнце в полёте — вторым цветом (на карте звёзды рисует та же SUN, но белым).
 sun_red:
 	ifndef	SCHED
@@ -638,20 +707,11 @@ pc_cmp:
 	jp	nz, pc_cmp
 	ret				; та же окружность
 pc_chg:
-	ld	hl, (pc_n)		; тот же x центра и радиус — одним ходом (pc_two)
-	ex	de, hl
-	ld	hl, (pc_s)
-	ld	a, l
-	cp	e
-	jp	nz, pc_chg2
-	ld	a, h
-	cp	d
-	jp	nz, pc_chg2
-	ld	a, (pc_n + 3)
-	ld	hl, pc_s + 3
+	ld	a, (pc_n + 3)		; тот же радиус (крен, тангаж, рыскание) — новая и прежняя одним ходом: точки
+	ld	hl, pc_s + 3		; меняются вперемешку, без мига двух окружностей сразу (pc_pr2)
 	cp	(hl)
 	jp	nz, pc_chg2
-	call	pc_two
+	call	pc_pr2
 	jp	pc_keep
 pc_chg2:
 	ld	hl, pc_n
@@ -676,8 +736,10 @@ pc_new:
 	jp	pc_keep
 	endif
 pc_old:
+	ifdef	DBUF
 	call	pc_erase
-	or	1
+	endif
+	or	1			; обычный образ: быструю окружность сотрёт pl_circ — после новой
 	ret
 ; pc_erase: стереть быструю окружность, если она на экране.
 pc_erase:
@@ -687,13 +749,11 @@ pc_erase:
 	ld	hl, pc_s
 	call	pcirc
 	jp	WP1
-; pc_col и pc_pt лежат в flight.asm — в пустоте выравнивания перед sfx_tab.
-; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску. gj — метка перехода, который в паре
-; окружностей (pc_two) заменён на ld a,(nn): тогда те же две точки ставятся ещё и на pc_kv строк дальше — это точки
-; прежней окружности того же радиуса и столбца центра (при тангаже планета сдвигается только по вертикали).
-	macro	PCPAIR msk, dlt, gj, sv
+; pc_col и pc_pt лежат в пустотах выравнивания (dials.asm, flight.asm, scan.asm).
+; Две точки одного столбца: HL и на dlt байт дальше (строки Y - k и Y + k), маска — msk.
+	macro	PCPAIR msk, dlt, sv
 	ld	a, h
-sv:	sub	high SCR_VIEW
+sv:	sub	high SCR_VIEW			; DBUF: плоскость рисования (db_tog)
 	cp	32
 	jp	nc, .e			; столбец за краем
 	ld	a, l
@@ -707,141 +767,51 @@ sv:	sub	high SCR_VIEW
 	add	a, dlt
 	ld	l, a
 	cp	64
-	jp	c, gj
-	ld	a, msk
-	xor	(hl)
-	ld	(hl), a
-gj:
-	ifndef	DBUF
-	jp	.e			; pc_two: ld a,(nn)
-	ld	a, (pc_kv)
-	add	a, l
-	ld	l, a
-	cp	64
-	jp	c, .h
-	ld	a, msk
-	xor	(hl)
-	ld	(hl), a
-.h:
-	ld	a, l
-	sub	dlt
-	ld	l, a
-	cp	64
 	jp	c, .e
 	ld	a, msk
 	xor	(hl)
 	ld	(hl), a
-	endif
 .e:
 	endm
-; pc_two: новая окружность pc_n и стирание прежней pc_s (тот же радиус и x центра, другой y) — одним ходом
-; алгоритма: точки прежней — на pc_kv = y новой - y прежней строк дальше (строка — 255 - y).
-	ifndef	DBUF
-pc_two:
-	ld	a, (pc_n + 2)
-	ld	hl, pc_s + 2
-	sub	(hl)
-	ld	c, a
-	ld	a, 0x3A			; ld a,(nn) — пройти в продолжение
-	call	pc_gs
+; Окружность — одна (pcirc) или пара одного радиуса (pc_pr2: новая и стирание прежней одним ходом). Шаги алгоритма
+; (x, y, d) у пары общие, у каждой окружности свои адреса и маски точек — в командах набора pa (первая) и pb
+; (вторая) — pc_set.asm.
+; Строка y — байт адреса 255 - y; строки вне 0..191 дают байт меньше 64.
+	define	PCREG			; первый набор: маски X ± x — в регистрах D и E
+	module	pa
+	include	"pc_set.asm"
+	endmodule
+	undefine PCREG
+	ifndef	DBUF			; чёрно-белой сборке пара не нужна: плоскость каждый проход чистая
+	module	pb
+	include	"pc_set.asm"
+	endmodule
+; pc_pr2: новая окружность pc_n и стирание прежней pc_s (радиус тот же) — одним ходом.
+pc_pr2:
+	ld	hl, pc_s
+	call	pb.init
 	ld	hl, pc_n
-	call	pcirc
-	ld	a, 0xC3			; jp — обычная окружность
-	ld	c, 0
-pc_gs:
-	ld	(pc_g1), a
-	ld	(pc_g2), a
-	ld	(pc_g3), a
-	ld	(pc_g4), a
-	sub	0xC3 - 0xC9		; C3 -> C9 (ret), 3A -> 40 — в pc_pt: ret или ld b,b
-	ld	(pc_g0), a
-	ld	a, c
-	ld	(pc_kv), a
-	ld	(pc_g0 + 3), a
-	ret
+	call	pa.init
+	ld	a, 0xCD			; call — шаги и точки второго набора
+	jp	pc_go
 	endif
-; pcirc: окружность исключающим ИЛИ. HL -> x центра (слово), y центра (байт), радиус (2..127).
-; В цикле: B = 2y, C = 2x, D и E — маски точек в столбцах X + x и X - x; адреса — в командах. Строка y — байт
-; адреса 255 - y; строки вне 0..191 дают байт меньше 64. Портит всё.
+; pcirc: окружность исключающим ИЛИ. HL -> x центра (слово), y центра (байт), радиус (2..127). Портит всё.
 pcirc:
-	ld	e, (hl)
-	inc	hl
-	ld	d, (hl)
-	inc	hl
-	ld	c, (hl)
-	inc	hl
-	ld	b, (hl)			; DE = X, C = Y, B = r
-	push	de
-	ld	l, b
-	ld	h, 0
-	add	hl, de
-	call	pc_col			; столбец X + r
-	ld	(pc_m3), a
-	ld	a, d
-	ld	(pc_p3 + 2), a
-	pop	de
-	push	de
-	ld	a, e
-	sub	b
-	ld	l, a
-	ld	a, d
-	sbc	a, 0
-	ld	h, a
-	call	pc_col			; столбец X - r
-	ld	(pc_m4), a
-	ld	a, d
-	ld	(pc_h4 + 1), a
-	ld	a, c
-	cpl
-	ld	(pc_p3 + 1), a		; строка Y
-	sub	b
-	ld	(pc_p1 + 1), a		; строка Y + r
-	ld	hl, (pc_p3 + 1)
-	ld	a, (pc_m3)
-	call	pc_pt			; (X + r, Y)
-	ld	hl, (pc_p3 + 1)
-	ld	a, (pc_h4 + 1)
-	ld	h, a
-	ld	a, (pc_m4)
-	call	pc_pt			; (X - r, Y)
-	pop	hl
-	call	pc_col			; столбец X
-	ld	e, a
-	ld	a, d
-	ld	(pc_p1 + 2), a
-	ld	(pc_h2 + 1), a
-	ld	d, e
-	ld	a, b
-	cpl
-	ld	l, a
-	ld	h, 0xFF
-	inc	hl
-	inc	hl
-	ld	(pc_d), hl		; d = 1 - r
-	ld	a, b
-	add	a, a
-	ld	b, a			; B = 2y
-	ld	c, 0			; C = 2x
-	call	pc_pair1		; (X, Y + r), (X, Y - r)
+	call	pa.init
+	ifndef	DBUF
+	ld	a, 0x21			; ld hl,nn вместо call: второго набора нет
+pc_go:
+	ld	(pc_c1), a
+	ld	(pc_c2), a
+	ld	(pc_c3), a
+	endif
 pc_loop:
 	inc	c
-	inc	c			; x + 1: столбец X + x вправо, X - x влево, строка Y + x дальше
-	ld	a, d
-	rrca
-	ld	d, a
-	jp	nc, pc_1
-	ld	hl, pc_p1 + 2
-	inc	(hl)
-pc_1:
-	ld	a, e
-	rlca
-	ld	e, a
-	jp	nc, pc_2
-	ld	hl, pc_h2 + 1
-	dec	(hl)
-pc_2:
-	ld	hl, pc_p3 + 1
-	dec	(hl)
+	inc	c
+	call	pa.xs
+	ifndef	DBUF
+pc_c1:	call	pb.xs
+	endif
 	ld	hl, (pc_d)
 	ld	a, h
 	or	a
@@ -854,24 +824,10 @@ pc_2:
 	jp	nc, $ + 4
 	dec	h
 	push	hl
-	ld	hl, pc_p1 + 1		; строка Y + y ближе к центру
-	inc	(hl)
-	ld	hl, pc_m3		; столбец X + y влево
-	ld	a, (hl)
-	rlca
-	ld	(hl), a
-	jp	nc, pc_3
-	ld	hl, pc_p3 + 2
-	dec	(hl)
-pc_3:
-	ld	hl, pc_m4		; столбец X - y вправо
-	ld	a, (hl)
-	rrca
-	ld	(hl), a
-	jp	nc, pc_4
-	ld	hl, pc_h4 + 1
-	inc	(hl)
-pc_4:
+	call	pa.ys
+	ifndef	DBUF
+pc_c2:	call	pb.ys
+	endif
 	pop	hl
 pc_noy:
 	ld	a, c			; d += 2x + 1
@@ -884,27 +840,12 @@ pc_noy:
 	ld	a, b
 	cp	c
 	ret	c			; x > y — конец
-	call	pc_pair1		; (X + x, Y ± y)
-	ld	hl, (pc_p1 + 1)
-pc_h2:
-	ld	h, 0			; (X - x, Y ± y)
-	PCPAIR	e, b, pc_g2, pc_s2
-	ld	a, b
-	cp	c
-	ret	z			; x = y: вторая четвёрка совпала бы с первой
-pc_p3:
-	ld	hl, 0			; (X + y, Y ± x)
-	PCPAIR	(pc_m3), c, pc_g3, pc_s3
-	ld	hl, (pc_p3 + 1)
-pc_h4:
-	ld	h, 0			; (X - y, Y ± x)
-	PCPAIR	(pc_m4), c, pc_g4, pc_s4
+	call	pa.pl
+	ifndef	DBUF
+pc_c3:	call	pb.pl
+	endif
 	jp	pc_loop
-pc_pair1:
-pc_p1:
-	ld	hl, 0
-	PCPAIR	d, b, pc_g1, pc_s1
-	ret
+pc_end:
 ; переменные — в рабочих областях (elite.asm, WS + 03CEh)
 	endif
 	ifdef	SCHED
