@@ -358,11 +358,12 @@ li_cp:
 	jp	nz, li_cp
 	ret
 	assert	$ <= SQLO + 0x0400
-	org	WS + 0x0800		; код, нужный один раз при запуске, — в низу страницы стека (стек идёт сверху)
-	include	"init_div.asm"
+	org	WS + 0x0800		; низ страницы стека (стек идёт сверху): js_tick — насовсем (стек игры опускается
+	include	"js_tick.asm"		; до B8D6h, запуска — до B8ECh: замер 20.10.2026), за ним код, нужный один раз
+	include	"init_div.asm"		; при запуске
 	include	"init_sq.asm"
 	include	"init_cls.asm"
-	assert	$ <= WS + 0x08A0
+	assert	$ <= WS + 0x08E0		; стек запуска — не ниже B8ECh (с прерыванием кадра в sat_wait)
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
 dials2:

@@ -197,7 +197,7 @@ u_l:
 	ld	c, a
 	ret
 
-; DOKEY: опрос клавиш полёта в журнал KL, крен и тангаж JSTX, JSTY по клавишам, нажатая клавиша в KL.
+; DOKEY: опрос клавиш полёта в журнал KL, крен и тангаж JSTX, JSTY по клавишам (js_upd), нажатая клавиша в KL.
 ; Пауза — в DK4 (FREEZE). Джойстик — этап P6.
 DOKEY:
 	call	U_
@@ -206,41 +206,13 @@ dkl2:
 	call	DKS1
 	dec	c
 	jp	nz, dkl2
-	ifndef	SCHED
-	ld	a, (auto)		; автопилот стыковки дисковой версии «нажимает» клавиши
-	or	a
+	ifdef	SCHED
+	call	js_upd			; крен и тангаж по клавишам (dockit.asm)
+	else
+	ld	a, (auto)		; автопилот стыковки дисковой версии «нажимает» клавиши; dk_auto кончается js_upd.
+	or	a			; Без автопилота крен и тангаж ведёт обработчик кадра (js_tick) — каждый кадр
 	call	nz, dk_auto
 	endif
-	ld	a, (JSTX)
-	ld	b, a
-	ld	a, 7
-	ld	hl, KL + 3
-	inc	(hl)
-	dec	(hl)
-	call	nz, BUMP2
-	ld	hl, KL + 4
-	inc	(hl)
-	dec	(hl)
-	call	nz, REDU2
-	ld	d, a
-	ld	a, b
-	ld	(JSTX), a
-	ld	a, d
-	add	a, a
-	ld	d, a
-	ld	a, (JSTY)
-	ld	b, a
-	ld	a, d
-	ld	hl, KL + 5
-	inc	(hl)
-	dec	(hl)
-	call	nz, REDU2
-	ld	hl, KL + 6
-	inc	(hl)
-	dec	(hl)
-	call	nz, BUMP2
-	ld	a, b
-	ld	(JSTY), a
 DK4:
 	call	RDKEY
 	ld	a, b

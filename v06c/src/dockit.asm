@@ -63,8 +63,42 @@ dk12x:
 	inc	hl
 dk13a:
 	ld	(hl), a
-	ret
+	jp	js_upd
 dk13:
+	ld	(JSTY), a
+
+; js_upd: крен и тангаж JSTX, JSTY по клавишам KL+3..KL+6 (кусок DOKEY BBC). Портит A, B, D, HL и T. Зовут DOKEY
+; (в образе стенда; в обычном — после dk_auto, при автопилоте) и обработчик кадра (js_tick).
+js_upd:
+	ld	a, (JSTX)
+	ld	b, a
+	ld	a, 7
+	ld	hl, KL + 3
+	inc	(hl)
+	dec	(hl)
+	call	nz, BUMP2
+	ld	hl, KL + 4
+	inc	(hl)
+	dec	(hl)
+	call	nz, REDU2
+	ld	d, a
+	ld	a, b
+	ld	(JSTX), a
+	ld	a, d
+	add	a, a
+	ld	d, a
+	ld	a, (JSTY)
+	ld	b, a
+	ld	a, d
+	ld	hl, KL + 5
+	inc	(hl)
+	dec	(hl)
+	call	nz, REDU2
+	ld	hl, KL + 6
+	inc	(hl)
+	dec	(hl)
+	call	nz, BUMP2
+	ld	a, b
 	ld	(JSTY), a
 	ret
 
