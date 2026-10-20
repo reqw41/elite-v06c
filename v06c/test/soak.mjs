@@ -18,7 +18,10 @@ g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'
 key('FAST', true); g.frame(1500); key('FAST', false);                   // разгон: уйти из зоны станции
 if (g.rd(L.QQ12) !== 0) { console.log('ПРОВАЛ: взлёт не состоялся'); process.exit(1); }
 g.wr(L.LASER, [0x97, 0x97, 0x97, 0x97]); g.wr(L.FIST, [0xFF]);
-const skip = (x, y) => y < 16 || y > 183 || x < 2 || x > 253 || (Math.abs(x - 128) < 3 && Math.abs(y - 96) < 28) || (Math.abs(y - 96) < 3 && Math.abs(x - 128) < 28);
+// чёрно-белая сборка: луч непрерывного огня рисуется заново в каждом кадре — начала его отрезков у нижнего края
+// (x = 32, 224, 48, 208) горят всё время огня; в обычной сборке их гасит исключающее ИЛИ старого и нового луча
+const DB = L.db_sph !== undefined, beam = (x, y) => DB && y > 167 && [32, 224, 48, 208].some((x0) => Math.abs(x - x0) <= 191 - y + 2);
+const skip = (x, y) => y < 16 || y > 183 || x < 2 || x > 253 || (Math.abs(x - 128) < 3 && Math.abs(y - 96) < 28) || (Math.abs(y - 96) < 3 && Math.abs(x - 128) < 28) || beam(x, y);
 const streak = new Uint16Array(256 * 192), worst = new Uint16Array(256 * 192);
 let types = new Set(), kills0 = g.rd(L.TALLY) | (g.rd(L.TALLY + 1) << 8), deaths = 0, maxShips = 0, samples = 0, bad = 0, blown = 0;
 let rs = 2024; const rnd = (n) => { rs = (rs * 1103515245 + 12345) >>> 0; return (rs >>> 16) % n; };

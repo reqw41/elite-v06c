@@ -7,6 +7,17 @@ isr:
 	push	bc
 	push	de
 	push	hl
+	ifdef	DBUF			; двойной буфер: палитра меняется каждый проход — писать её первой, пока луч в
+	ld	a, (pal_dirty)		; гашении: позже запись видна полосами в верхнем бордюре (регистр выбирается
+	or	a			; цветом бордюра). Палитру готовит db_show; db_sph — что теперь показано
+	jp	z, isr_np
+	xor	a
+	ld	(pal_dirty), a
+	call	pal_write
+	ld	a, (db_vph)
+	ld	(db_sph), a
+isr_np:
+	endif
 	ifndef	SCHED
 	ld	a, (v_frames)		; клавиатура и джойстик — через кадр (игра читает их раз в проход; опрос — 1,2 тыс.
 	rrca				; тактов)
@@ -117,21 +128,14 @@ isr_ps:
 	call	pal_set
 isr_na:
 	endif
-	ifdef	DBUF			; двойной буфер: показать плоскость, которую главный цикл дорисовал
-	ld	a, (db_vph)
-	ld	hl, db_sph
-	cp	(hl)
-	jp	z, isr_dv
-	ld	(hl), a
-	call	db_pal
-isr_dv:
-	endif
+	ifndef	DBUF
 	ld	a, (pal_dirty)
 	or	a
 	jp	z, isr_cnt
 	xor	a
 	ld	(pal_dirty), a
 	call	pal_write
+	endif
 isr_cnt:
 	ifndef	SCHED
 	call	mus_tick		; мелодия заставки

@@ -1232,8 +1232,7 @@ ma66:
 	ifdef	DBUF
 	call	STARS
 	ld	a, (db_ph)		; кадр готов: показать его
-	ld	(db_vph), a
-	ret
+	jp	db_show
 	else
 	jp	STARS
 	endif

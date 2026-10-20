@@ -74,6 +74,13 @@ ws_clr:
 	jp	nz, ws_clr
 	call	sq_init
 	call	cls_all
+	ifdef	DBUF			; переменные буфера (их область обнуляется только после заставки): рисовать и
+	xor	a			; показывать C000h — иначе палитра показала бы не ту плоскость и Сатурна не видно
+	ld	(db_ph), a
+	ld	(db_vph), a
+	ld	(db_sph), a
+	ld	(db_off), a
+	endif
 	ld	hl, pal_flight
 	call	pal_set
 	ifndef	SCHED
