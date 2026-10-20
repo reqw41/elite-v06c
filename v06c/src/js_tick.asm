@@ -46,3 +46,4 @@ jt_md:
 	cp	1
 	sbc	a, a
 	ret
+jt_end:
