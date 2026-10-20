@@ -296,6 +296,7 @@ st_fx:		ds	1		; след прыжка на экране (сразу за st_j)
 sun_r:		ds	2		; солнце (planet.asm): остаток K² - V² - q² для полуширины q
 sun_rp:		ds	2		; солнце: указатель на «случайные» байты бахромы
 pc_kv:		ds	1		; планета (planet.asm, pc_two): сдвиг строк прежней окружности
+sun_t:		ds	1		; солнце (sun_red): кадр (младший байт v_frames), когда рисовалось
 	endif
 	assert	$ <= WS + 0x0400
 	org	WS + 0x0F51
@@ -315,6 +316,9 @@ low_a:
 	jp	isr			; вектор RST 7 — прерывание кадра
 	include	"wp_a.asm"
 	include	"fk_bit.asm"
+	ifndef	SCHED
+sun_ck:	ds	5			; солнце на экране (sun_red): x, y по слову, радиус
+	endif
 	assert	$ <= 0x0100
 	ent
 low_b:

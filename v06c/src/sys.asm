@@ -39,6 +39,9 @@ isr_row:
 	rlca
 	ld	c, a
 	jp	c, isr_row		; восемь строк: ноль выходит из бита 7 последним
+	ifdef	AUTO
+	call	auto_k			; отладка на железе: клавиши по расписанию до сцены
+	endif
 	ifndef	SCHED
 	ld	(hl), b			; kb_chg
 	inc	hl

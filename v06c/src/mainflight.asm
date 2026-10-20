@@ -63,6 +63,91 @@ GOIN:
 
 ; TT100: проход главного цикла в полёте: M%, счётчик сообщения, раз в 256 проходов — новые корабли.
 TT100:
+	ifdef	PASSCNT			; отладка на железе: счётчик проходов точками в обзоре (x 8..23, y 3)
+	push	hl
+	ld	hl, (dbg_np)
+	inc	hl
+	ld	(dbg_np), hl
+	ld	a, l
+	ld	(0xC1FC), a
+	ld	a, h
+	ld	(0xC2FC), a
+	pop	hl
+	jp	dbg_n1
+dbg_np:	dw	0
+dbg_n1:
+	endif
+	ifdef	AUTO
+	jp	auto_e
+; auto_k: в опросе клавиатуры (раз в два кадра) добавляет в fly_raw клавишу по таблице auto_t: строка таблицы —
+; номер опроса, строка матрицы, маска; клавиша нажата 10 опросов. B (изменившиеся биты) — FFh при нажатии.
+auto_k:
+	push	hl
+	push	bc
+	ld	hl, (auto_n)
+	inc	hl
+	ld	(auto_n), hl
+	ex	de, hl
+	ld	hl, auto_t
+auto_l:
+	ld	c, (hl)
+	inc	hl
+	ld	b, (hl)
+	inc	hl
+	ld	a, b
+	inc	a
+	jp	z, auto_x
+	ld	a, e
+	sub	c
+	ld	c, a
+	ld	a, d
+	sbc	a, b
+	jp	nz, auto_s
+	ld	a, c
+	cp	10
+	jp	nc, auto_s
+	ld	c, (hl)
+	ld	b, 0
+	inc	hl
+	ld	a, (hl)
+	ld	hl, fly_raw
+	add	hl, bc
+	or	(hl)
+	ld	(hl), a
+	pop	bc
+	ld	b, 0xFF
+	pop	hl
+	ret
+auto_s:
+	inc	hl
+	inc	hl
+	jp	auto_l
+auto_x:
+	pop	bc
+	pop	hl
+	ret
+auto_n:	dw	0
+auto_t:	dw	150
+	db	5, 0x40			; N
+	dw	265
+	db	7, 0x80			; пробел
+	dw	380
+	db	1, 0x08			; F1 (несколько раз: на железе экран станции бывает готов позже)
+	dw	430
+	db	1, 0x08
+	dw	480
+	db	1, 0x08
+	dw	530
+	db	1, 0x08
+	dw	900
+	db	1, 0x02			; СТР
+	dw	925
+	db	5, 0x20			; M
+	dw	950
+	db	0, 0x08			; ЗБ
+	dw	0xFFFF
+auto_e:
+	endif
 	call	M_
 	call	mis_fly			; миссии: сохраняет A и флаги
 	ld	hl, DLY

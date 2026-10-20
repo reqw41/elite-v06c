@@ -193,7 +193,7 @@ node v06c/tools/shot.mjs                      # снимок кадра в work/
 ```sh
 sh v06c/build.sh && sh v06c/build.sh -DSCHED
 for s in equip save launch trade fight jump voyage; do node v06c/test/t27.mjs $s | grep "T27\|FAIL"; done
-for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis market texts discsmall newb mischain saturn score pcirc straight dust zxrules soak; do node v06c/test/$t.mjs | tail -1; done
+for t in t04 t05 t06 t07 t08 t09 t10 t14 t15 t17 t19 t20 t21 t23 t24 t25 t26 t30 t31 t36 q4 q5 t18 snd tape joy zxships mis pdesc dockit hangar discmis market texts discsmall newb mischain saturn score pcirc straight dust zxrules mvs4 rukeys rudesc zxjump danube sun suncache soak; do node v06c/test/$t.mjs | tail -1; done
 ```
 
 Заливка на MiSTer — см. память `mister-deploy` и `elite-v06c` (ключи scp: только пароль). Рабочие каталоги

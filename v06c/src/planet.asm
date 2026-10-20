@@ -455,6 +455,35 @@ pl_sin:					; A = Q = синус угла A
 
 ; Солнце в полёте — вторым цветом (на карте звёзды рисует та же SUN, но белым).
 sun_red:
+	ifndef	SCHED
+SUN_FR		equ	16		; бахрома неподвижного солнца — раз в столько кадров
+; Обычный образ: солнце с тем же x, y и радиусом, что на экране, не перерисовывается; бахрома при этом
+; обновляется раз в SUN_FR кадров. sun_ck — x, y (по слову) и радиус прошлого рисования.
+	ld	hl, sun_ck
+	ld	de, K3
+	ld	bc, 0x0200		; B — байт, C — накопленная разница
+	call	sk_cmp
+	ld	de, K4
+	ld	b, 2
+	call	sk_cmp
+	ld	de, K
+	inc	b
+	call	sk_cmp
+	ld	hl, sun_t
+	ld	a, (LSX)		; FFh — солнца на экране нет (стёрто, очищено)
+	inc	a
+	jp	z, sk_go
+	ld	a, c
+	or	a
+	jp	nz, sk_go
+	ld	a, (v_frames)
+	sub	(hl)
+	cp	SUN_FR
+	ret	c
+sk_go:
+	ld	a, (v_frames)
+	ld	(hl), a
+	endif
 	call	col_red
 	call	SUN
 	jp	col_white
@@ -462,6 +491,20 @@ wpls_red:
 	call	col_red
 	call	WPLS
 	jp	col_white
+	ifndef	SCHED
+sk_cmp:					; B байт из DE в HL; C |= разница
+	ld	a, (de)
+	xor	(hl)
+	or	c
+	ld	c, a
+	ld	a, (de)
+	ld	(hl), a
+	inc	hl
+	inc	de
+	dec	b
+	jp	nz, sk_cmp
+	ret
+	endif
 
 ; WPLS2: стереть окружность планеты по списку LSX2, LSY2. WP1: список пуст.
 ; HL → LSY2, DE → LSX2: без пересчёта адреса на каждую точку.
