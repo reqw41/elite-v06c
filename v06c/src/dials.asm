@@ -10,6 +10,9 @@ dash_put:
 	push	bc
 	push	de
 	push	hl
+	ifdef	DBUF
+	call	db_mono
+	endif
 	ld	c, a
 	ld	a, h
 	sub	0x78
@@ -62,6 +65,9 @@ dash_eor:
 	push	bc
 	push	de
 	push	hl
+	ifdef	DBUF
+	call	db_mono
+	endif
 	ld	c, a
 	ld	a, h
 	sub	0x78
@@ -114,6 +120,27 @@ dash_eor:
 	pop	af
 	ret
 
+	ifdef	DBUF
+; db_mono: цвет байта режима 5 (старшая тетрада — бит 1, младшая — бит 0) — в чёрно-белый: обе тетрады = их ИЛИ.
+; Портит флаги.
+db_mono:
+	push	bc
+	ld	c, a
+	rrca
+	rrca
+	rrca
+	rrca
+	or	c
+	and	0x0F
+	ld	c, a
+	add	a, a
+	add	a, a
+	add	a, a
+	add	a, a
+	or	c
+	pop	bc
+	ret
+	endif
 ; PZW: цвета полоски: X = F0h (цвет 2), A = 0Fh (цвет 1) или F0h — когда включено мигание (FLH) и идёт его фаза.
 PZW:
 	ld	b, 0xF0
@@ -151,6 +178,9 @@ DIL:
 dl30:
 	ld	a, (K)
 dl31:
+	ifdef	DBUF
+	call	db_mono
+	endif
 	ld	(COL), a
 	ld	c, a
 	ld	h, high dp_nib		; цвет — в маски двух плоскостей (в команды AND ниже)
@@ -244,6 +274,9 @@ dll11:
 	ld	d, a
 	xor	a
 dll12:
+	ifdef	DBUF
+	ld	e, a			; чёрно-белая сборка: та же чёрточка и во второй плоскости
+	endif
 	ld	(hl), a			; четыре строки: чёрточка в плоскости SCR_VIEW, вторая плоскость гасится
 	dec	l
 	ld	(hl), a
@@ -254,7 +287,11 @@ dll12:
 	ld	a, h
 	add	a, high (SCR_2 - SCR_VIEW)
 	ld	h, a
+	ifdef	DBUF
+	ld	a, e
+	else
 	xor	a
+	endif
 	ld	(hl), a
 	inc	l
 	ld	(hl), a

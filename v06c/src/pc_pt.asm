@@ -2,7 +2,7 @@
 pc_pt:
 	ld	e, a
 	ld	a, h
-	sub	high SCR_VIEW
+pc_ps:	sub	high SCR_VIEW
 	cp	32
 	ret	nc
 	ld	a, l
@@ -13,6 +13,7 @@ pc_pt:
 	ld	(hl), a
 pc_g0:
 	ret				; pc_two: ld b,b — точка и на pc_k строк дальше
+	ifndef	DBUF
 	ld	a, l
 	add	a, 0			; pc_k
 	ld	l, a
@@ -22,3 +23,4 @@ pc_g0:
 	xor	(hl)
 	ld	(hl), a
 	ret
+	endif

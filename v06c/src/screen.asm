@@ -7,6 +7,9 @@
 TT66:
 	ld	(QQ11), a
 TTX66:
+	ifdef	DBUF
+	call	db_c0			; экран без буфера: рисовать в C000h и показывать её
+	endif
 	ld	a, 0x80
 	ld	(QQ17), a
 	xor	a
@@ -45,7 +48,13 @@ BOX:					; рамка (и название вида); второй вызов с
 	ld	(YC), a
 	ld	a, (QQ11)
 	or	a
+	ifdef	DBUF
+	call	z, box_t
+	jp	tt66
+box_t:					; название вида (db_begin печатает его каждый проход)
+	else
 	jp	nz, tt66
+	endif
 	ld	a, 11
 	ld	(XC), a
 	ld	a, (VIEW)
@@ -53,7 +62,12 @@ BOX:					; рамка (и название вида); второй вызов с
 	call	TT27
 	call	TT162
 	ld	a, 175
+	ifdef	DBUF
 	call	TT27
+	jp	db_tsave
+	else
+	call	TT27
+	endif
 tt66:
 	xor	a
 	ld	(X1), a

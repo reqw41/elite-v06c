@@ -49,7 +49,7 @@ tt_chr:
 	ld	a, (XC)
 	ld	b, a
 	and	31			; на BBC XC·8 берётся по модулю 256
-	or	high SCR_VIEW
+tt_col:	or	high SCR_VIEW		; DBUF: плоскость рисования (db_tog)
 	ld	h, a			; столбец экрана
 	ld	a, c
 	cp	127
@@ -58,13 +58,16 @@ tt_chr:
 	inc	a
 	ld	(XC), a
 	ifndef	SCHED
+	ifndef	DBUF
 	ld	a, (txt_g)
 	ld	c, a
+	endif
 	endif
 	ld	a, (YC)
 	cp	24
 	jp	nc, tt_cls
-	ifndef	SCHED			; зелёным (и во второй плоскости) — строка заголовка (YC = 1) и помеченное txt_g
+	ifndef	SCHED
+	ifndef	DBUF			; зелёным (и во второй плоскости) — строка заголовка (YC = 1) и помеченное txt_g
 	cp	1
 	jp	nz, tt_m
 	ld	c, 0xFF
@@ -74,6 +77,7 @@ tt_m:
 	ld	(tt_mask), a
 	ld	a, b
 	endif
+	endif
 	add	a, a
 	add	a, a
 	add	a, a
@@ -82,7 +86,8 @@ tt_m:
 	ld	b, 8
 tt_row:
 	ld	a, (de)
-	ifndef	SCHED			; во второй плоскости — по маске tt_mask (зелёный — цвет 3; решение владельца 17.10.2026)
+	ifndef	SCHED
+	ifndef	DBUF			; во второй плоскости — по маске tt_mask (зелёный — цвет 3; решение владельца 17.10.2026)
 	ld	c, a
 	xor	(hl)
 	ld	(hl), a
@@ -100,11 +105,16 @@ tt_row:
 	xor	(hl)
 	ld	(hl), a
 	endif
+	else
+	xor	(hl)
+	ld	(hl), a
+	endif
 	inc	de
 	dec	l
 	dec	b
 	jp	nz, tt_row
-	ifndef	SCHED			; «:» на текстовом экране — всё левее на этой строке становится зелёным (подпись),
+	ifndef	SCHED
+	ifndef	DBUF			; «:» на текстовом экране — всё левее на этой строке становится зелёным (подпись),
 	ld	a, (K3)			; значение после двоеточия остаётся бежевым (как у ZX: подписи и значения разным цветом)
 	cp	':'
 	jp	nz, tt_ret
@@ -138,6 +148,7 @@ tc_row:
 	inc	h
 	dec	d
 	jp	nz, tc_col
+	endif
 	endif
 tt_ret:
 	pop	hl

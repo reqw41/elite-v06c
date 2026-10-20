@@ -997,6 +997,7 @@ lf_l:
 	ld	(ll_nn), a
 	jp	z, lf_last
 	ifndef	SCHED
+	ifndef	DBUF			; чёрно-белая сборка: в проходе прежних отрезков на экране нет (db_begin)
 	ld	a, (ll_on)		; прежний отрезок тот же, что новый, — оба исключающих ИЛИ не нужны: линия остаётся
 	or	a
 	jp	z, lf_nw
@@ -1018,6 +1019,7 @@ lf_cp:
 	ld	hl, ll_on
 	dec	(hl)
 	jp	lf_l
+	endif
 	endif
 lf_nw:
 	ld	hl, (ll_np)

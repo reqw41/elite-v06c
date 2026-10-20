@@ -5,6 +5,21 @@
 
 ; b = маска, HL — адрес в SCR_VIEW: исключающее ИЛИ в плоскости по COL. Сохраняет BC, DE, HL.
 dash_xor:
+	ifdef	DBUF			; чёрно-белая сборка: в обе плоскости
+	ld	a, (hl)
+	xor	b
+	ld	(hl), a
+	ld	a, h
+	add	a, high (SCR_2 - SCR_VIEW)
+	ld	h, a
+	ld	a, (hl)
+	xor	b
+	ld	(hl), a
+	ld	a, h
+	sub	high (SCR_2 - SCR_VIEW)
+	ld	h, a
+	ret
+	endif
 	ld	a, (COL)
 	and	0xF0
 	jp	z, dx_2

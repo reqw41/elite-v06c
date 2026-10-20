@@ -624,6 +624,9 @@ ma68:
 	rra
 	ld	l, a
 	ld	(DELT4), hl
+	ifdef	DBUF
+	call	db_begin		; двойной буфер: дальше проход рисует в чистую скрытую плоскость
+	endif
 	ld	a, (LASCT)
 	or	a
 	jp	nz, ma3
@@ -1199,7 +1202,9 @@ ma23:
 	ld	a, (LASCT)
 	cp	8
 	jp	nc, ma16
+	ifndef	DBUF			; чёрно-белая сборка: луч остаётся в этом кадре, следующий кадр рисуется с чистой плоскости
 	call	LASLI2
+	endif
 	xor	a
 	ld	(LAS2), a
 ma16:
@@ -1224,7 +1229,14 @@ ma66:
 	ifndef	SCHED
 	call	dust_adj		; пылинок тем меньше, чем больше объектов рядом
 	endif
+	ifdef	DBUF
+	call	STARS
+	ld	a, (db_ph)		; кадр готов: показать его
+	ld	(db_vph), a
+	ret
+	else
 	jp	STARS
+	endif
 
 ; Появление кораблей по правилам дисковой версии (только обычный образ; случайные числа свои — mis_rnd):
 ; ds_lone — одиночный охотник: Cobra (пират), Asp, Python, Fer-de-Lance поровну;

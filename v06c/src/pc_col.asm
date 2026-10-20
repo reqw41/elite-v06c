@@ -13,7 +13,7 @@ pc_col:
 	add	hl, hl
 	ld	e, a
 	ld	a, h
-	add	a, high SCR_VIEW
+pc_cs:	add	a, high SCR_VIEW
 	ld	d, a
 	ld	a, e
 	ret

@@ -4,11 +4,11 @@
 // (полиция нападает), щиты и энергия пополняются; корабли появляются чаще обычного и время от времени взрываются. Всё, что нарисовано в обзоре, при этом движется; точка, которая
 // горит на одном месте много проверок подряд, — мусор, оставшийся от нестёртого отрезка.
 // Не считаются: рамка, строка названия вида и сообщений, перекрестие прицела.
-// node v06c/test/soak.mjs [кадров = 60000]
+// node v06c/test/soak.mjs [кадров = 60000]; IMG=elite_db — чёрно-белая сборка с двойным буфером: смотрится показанная плоскость
 import path from 'node:path';
 import { createVector, savePng, ROOT } from '../tools/v06c.mjs';
 const FRAMES = +(process.argv[2] || 60000), STEP = 20, STUCK = 60;      // 60 проверок подряд = 24 с на одном месте
-const g = createVector('elite'), L = g.L;
+const g = createVector(process.env.IMG || 'elite'), L = g.L;
 // клавиши Вектора; в полёте — русская раскладка (docs/CONTROLS.md): стрелки — крен и тангаж, Пробел — огонь, Я — разгон, П — прыжок
 const K = { SPACE: [7, 0x80], N: [5, 0x40], F1: [1, 0x08], FIRE: [7, 0x80], UP: [0, 0x20], DOWN: [0, 0x80], LT: [0, 0x10], GT: [0, 0x40],
   FAST: [6, 0x02], JUMP: [6, 0x01] };
@@ -41,8 +41,9 @@ for (let f = 0; f < FRAMES; f += STEP) {
   if (g.rd(L.QQ11) !== 0 || g.rd(L.MJ) !== 0) { streak.fill(0); continue; }
   const fr = Array.from({ length: 13 }, (_, i) => g.rd(L.FRIN + i)); fr.forEach((t) => { if (t && t < 128) types.add(t); });
   maxShips = Math.max(maxShips, fr.filter((t) => t && t < 128).length); samples++;
+  const shown = L.db_sph === undefined ? null : (g.rd(L.db_sph) ? 0xE000 : 0xC000);
   for (let col = 0; col < 32; col++) for (let y = 16; y < 184; y++) {
-    const v = g.rd(0xC000 + col * 256 + 255 - y) | g.rd(0xE000 + col * 256 + 255 - y);
+    const v = shown ? g.rd(shown + col * 256 + 255 - y) : g.rd(0xC000 + col * 256 + 255 - y) | g.rd(0xE000 + col * 256 + 255 - y);
     for (let b = 0; b < 8; b++) { const x = col * 8 + b, i = y * 256 + x;
       if ((v >> (7 - b)) & 1 && !skip(x, y)) { if (++streak[i] > worst[i]) worst[i] = streak[i]; } else streak[i] = 0; } }
 }

@@ -18,6 +18,12 @@ DEATH:
 	ld	a, 6
 	call	TT66
 	call	BOX			; рамка рисуется второй раз — исчезает
+	ifdef	DBUF
+	push	af
+	ld	a, 1
+	ld	(db_off), a		; дальше без двойного буфера
+	pop	af
+	endif
 	or	a
 	call	nWq
 	ld	a, 12

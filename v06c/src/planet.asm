@@ -456,7 +456,11 @@ pl_sin:					; A = Q = синус угла A
 ; Солнце в полёте — вторым цветом (на карте звёзды рисует та же SUN, но белым).
 sun_red:
 	ifndef	SCHED
+	ifdef	DBUF
+SUN_FR		equ	50		; проход дольше: иначе солнце рисовалось бы заново каждый проход
+	else
 SUN_FR		equ	16		; бахрома неподвижного солнца — раз в столько кадров
+	endif
 ; Обычный образ: солнце с тем же x, y и радиусом, что на экране, не перерисовывается; бахрома при этом
 ; обновляется раз в SUN_FR кадров. sun_ck — x, y (по слову) и радиус прошлого рисования.
 	ld	hl, sun_ck
@@ -611,6 +615,13 @@ pc_try:
 	ld	l, a
 	ld	h, b
 	ld	(pc_n + 2), hl
+	ifdef	DBUF			; чёрно-белая сборка: плоскость каждый проход чистая (db_begin) — только новая
+	ld	hl, pc_n
+	call	pcirc
+	ld	a, 1
+	ld	(LSX2), a
+	jp	pc_keep
+	else
 	ld	a, (LSX2)
 	dec	a
 	jp	nz, pc_new		; на экране не быстрая окружность
@@ -647,6 +658,7 @@ pc_chg2:
 	call	pcirc			; новая, затем стереть прежнюю — без мерцания
 	ld	hl, pc_s
 	call	pcirc
+	endif
 pc_keep:
 	ld	hl, (pc_n)
 	ld	(pc_s), hl
@@ -654,6 +666,7 @@ pc_keep:
 	ld	(pc_s + 2), hl
 	xor	a
 	ret
+	ifndef	DBUF
 pc_new:
 	ld	hl, pc_n
 	call	pcirc
@@ -661,6 +674,7 @@ pc_new:
 	ld	a, 1
 	ld	(LSX2), a
 	jp	pc_keep
+	endif
 pc_old:
 	call	pc_erase
 	or	1
@@ -677,9 +691,9 @@ pc_erase:
 ; Две точки одного столбца: HL и на dlt байт дальше; msk — откуда взять маску. gj — метка перехода, который в паре
 ; окружностей (pc_two) заменён на ld a,(nn): тогда те же две точки ставятся ещё и на pc_kv строк дальше — это точки
 ; прежней окружности того же радиуса и столбца центра (при тангаже планета сдвигается только по вертикали).
-	macro	PCPAIR msk, dlt, gj
+	macro	PCPAIR msk, dlt, gj, sv
 	ld	a, h
-	sub	high SCR_VIEW
+sv:	sub	high SCR_VIEW
 	cp	32
 	jp	nc, .e			; столбец за краем
 	ld	a, l
@@ -698,6 +712,7 @@ pc_erase:
 	xor	(hl)
 	ld	(hl), a
 gj:
+	ifndef	DBUF
 	jp	.e			; pc_two: ld a,(nn)
 	ld	a, (pc_kv)
 	add	a, l
@@ -716,10 +731,12 @@ gj:
 	ld	a, msk
 	xor	(hl)
 	ld	(hl), a
+	endif
 .e:
 	endm
 ; pc_two: новая окружность pc_n и стирание прежней pc_s (тот же радиус и x центра, другой y) — одним ходом
 ; алгоритма: точки прежней — на pc_kv = y новой - y прежней строк дальше (строка — 255 - y).
+	ifndef	DBUF
 pc_two:
 	ld	a, (pc_n + 2)
 	ld	hl, pc_s + 2
@@ -742,6 +759,7 @@ pc_gs:
 	ld	(pc_kv), a
 	ld	(pc_g0 + 3), a
 	ret
+	endif
 ; pcirc: окружность исключающим ИЛИ. HL -> x центра (слово), y центра (байт), радиус (2..127).
 ; В цикле: B = 2y, C = 2x, D и E — маски точек в столбцах X + x и X - x; адреса — в командах. Строка y — байт
 ; адреса 255 - y; строки вне 0..191 дают байт меньше 64. Портит всё.
@@ -870,22 +888,22 @@ pc_noy:
 	ld	hl, (pc_p1 + 1)
 pc_h2:
 	ld	h, 0			; (X - x, Y ± y)
-	PCPAIR	e, b, pc_g2
+	PCPAIR	e, b, pc_g2, pc_s2
 	ld	a, b
 	cp	c
 	ret	z			; x = y: вторая четвёрка совпала бы с первой
 pc_p3:
 	ld	hl, 0			; (X + y, Y ± x)
-	PCPAIR	(pc_m3), c, pc_g3
+	PCPAIR	(pc_m3), c, pc_g3, pc_s3
 	ld	hl, (pc_p3 + 1)
 pc_h4:
 	ld	h, 0			; (X - y, Y ± x)
-	PCPAIR	(pc_m4), c, pc_g4
+	PCPAIR	(pc_m4), c, pc_g4, pc_s4
 	jp	pc_loop
 pc_pair1:
 pc_p1:
 	ld	hl, 0
-	PCPAIR	d, b, pc_g1
+	PCPAIR	d, b, pc_g1, pc_s1
 	ret
 ; переменные — в рабочих областях (elite.asm, WS + 03CEh)
 	endif

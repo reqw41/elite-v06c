@@ -117,6 +117,15 @@ isr_ps:
 	call	pal_set
 isr_na:
 	endif
+	ifdef	DBUF			; двойной буфер: показать плоскость, которую главный цикл дорисовал
+	ld	a, (db_vph)
+	ld	hl, db_sph
+	cp	(hl)
+	jp	z, isr_dv
+	ld	(hl), a
+	call	db_pal
+isr_dv:
+	endif
 	ld	a, (pal_dirty)
 	or	a
 	jp	z, isr_cnt
@@ -239,6 +248,15 @@ kt_ok:
 ; Номер регистра = биты плоскостей 8000h, A000h, C000h, E000h; в двух старших лежит программа, поэтому
 ; регистр i получает цвет i & 3. Запись — в ближайшем прерывании кадра.
 pal_set:
+	ifdef	DBUF			; чёрно-белая сборка: фон — цвет 0, точки — цвет 2 (db_pal)
+	ld	a, (hl)
+	ld	(pal_bg), a
+	inc	hl
+	inc	hl
+	ld	a, (hl)
+	ld	(pal_fg), a
+	jp	db_pal
+	endif
 	ex	de, hl			; DE -> 4 цвета
 	ld	hl, pal_regs
 	ld	b, 4
@@ -401,7 +419,11 @@ pal_bomb:
 pal_hit:
 	db	0x00, C_RED, C_RED, C_GREEN
 pal_alert:
+	ifdef	DBUF
+	db	0x00, C_RED, 0x3F, 0x3F		; тревога: всё жёлтым
+	else
 	db	0x00, C_RED, C_WHITE, 0x3F	; тревога: зелёное — жёлтым
+	endif
 flash_cnt:
 	db	0
 sat_skip:

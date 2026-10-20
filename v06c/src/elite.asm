@@ -26,6 +26,11 @@ DASH_H		equ	56
 	ifdef	SCENE
 	define	NOMUS
 	endif
+	ifdef	DBUF
+	ifndef	NOMUS
+	define	NOMUS			; чёрно-белая сборка с двойным буфером (db.asm): место под буфер
+	endif
+	endif
 	ifndef	SCHED
 	ifndef	MERID
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
@@ -78,6 +83,9 @@ ws_clr:
 	call	z, sat_show
 	endif
 	call	dash_show
+	ifdef	DBUF
+	call	dash_mono
+	endif
 	call	div_init		; таблица наклонов строится на месте уже распакованной картинки панели
 	ifndef	SCHED
 	ld	a, (sat_skip)
@@ -158,6 +166,9 @@ ws_clr2:
 	include	"hangar.asm"
 	include	"discmis.asm"
 	include	"newb.asm"
+	ifdef	DBUF
+	include	"db.asm"
+	endif
 	ifdef	SCENE
 	include	"scene.asm"		; тестовая сцена (elite_sun.rom)
 	endif
@@ -299,6 +310,17 @@ pc_kv:		ds	1		; планета (planet.asm, pc_two): сдвиг строк пр�
 sun_t:		ds	1		; солнце (sun_red): кадр (младший байт v_frames), когда рисовалось
 	endif
 	assert	$ <= WS + 0x0400
+	ifdef	DBUF
+	org	WS + 0x0F34		; свободно до настроек (COMC, BBC &0F48)
+db_ph:		ds	1		; плоскость рисования: 0 — C000h, 20h — E000h (db.asm)
+db_vph:		ds	1		; какую плоскость показать
+db_sph:		ds	1		; какая показана (ставит прерывание кадра)
+pal_bg:		ds	1		; цвет фона и цвет точек (pal_set)
+pal_fg:		ds	1
+db_sp:		ds	2		; стек главного цикла на время очистки (db_cls)
+db_off:		ds	1		; <> 0 — без буфера (гибель)
+	assert	$ <= WS + 0x0F48
+	endif
 	org	WS + 0x0F51
 wp_sx:		ds	80		; копия прежней окружности планеты
 wp_sy:		ds	80
@@ -367,12 +389,44 @@ li_cp:
 	include	"saturn.asm"
 dials2:
 	incbin	"dials1.rle"		; плоскость бита 1 панели: после распаковки обнуляется вместе с заставкой
+	ifdef	DBUF
+; dash_mono: чёрно-белая сборка — в обеих плоскостях панели точки обеих (ИЛИ). Один раз при запуске.
+dash_mono:
+	ld	h, high SCR_VIEW
+dm_c:
+	ld	l, 255 - DASH_Y
+	ld	b, DASH_H
+dm_b:
+	ld	a, h
+	xor	0x20
+	ld	d, a
+	ld	e, l
+	ld	a, (de)
+	or	(hl)
+	ld	(hl), a
+	ld	(de), a
+	dec	l
+	dec	b
+	jp	nz, dm_b
+	inc	h
+	ld	a, h
+	cp	high SCR_VIEW + 32
+	jp	nz, dm_c
+	ret
+	endif
 	assert	$ <= WS + 0x1000
 IMG_END		equ	$
 	else
 IMG_END		equ	rom_end
 	endif
 
+	ifdef	DBUF
+	ifdef	SCENE
+	savebin	"v06c/build/elite_db_sun.rom", 0x0100, IMG_END - 0x0100
+	else
+	savebin	"v06c/build/elite_db.rom", 0x0100, IMG_END - 0x0100
+	endif
+	else
 	ifdef	RUS
 	savebin	"v06c/build/elite_ru.rom", 0x0100, IMG_END - 0x0100
 	else
@@ -390,6 +444,7 @@ IMG_END		equ	rom_end
 	savebin	"v06c/build/elite_sun.rom", 0x0100, IMG_END - 0x0100
 	else
 	savebin	"v06c/build/elite.rom", 0x0100, IMG_END - 0x0100
+	endif
 	endif
 	endif
 	endif
