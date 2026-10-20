@@ -996,6 +996,30 @@ lf_l:
 	dec	a
 	ld	(ll_nn), a
 	jp	z, lf_last
+	ifndef	SCHED
+	ld	a, (ll_on)		; прежний отрезок тот же, что новый, — оба исключающих ИЛИ не нужны: линия остаётся
+	or	a
+	jp	z, lf_nw
+	ld	hl, (ll_op)
+	ex	de, hl
+	ld	hl, (ll_np)
+	ld	b, 4
+lf_cp:
+	ld	a, (de)
+	cp	(hl)
+	jp	nz, lf_nw
+	inc	hl
+	inc	de
+	dec	b
+	jp	nz, lf_cp
+	ld	(ll_np), hl
+	ex	de, hl
+	ld	(ll_op), hl
+	ld	hl, ll_on
+	dec	(hl)
+	jp	lf_l
+	endif
+lf_nw:
 	ld	hl, (ll_np)
 	call	lf_draw
 	ld	(ll_np), hl

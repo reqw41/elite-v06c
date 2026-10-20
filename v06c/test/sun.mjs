@@ -5,7 +5,7 @@
 import { createVector } from '../tools/v06c.mjs';
 const N = +(process.argv[2] || 3000);
 let bad = 0; const fail = (s) => { if (++bad <= 10) console.log('FAIL ' + s); };
-const m = createVector('elite'), L = m.L; m.frame(60);
+const m = createVector(process.env.IMG || 'elite'), L = m.L; m.frame(60);
 const VIEW = 0xC000, ROWS = 192;
 for (let a = VIEW; a < VIEW + 0x2000; a++) if ((a & 255) >= 64) m.wr(a, [0]);
 m.wr(L.LSO, new Array(191).fill(0)); m.wr(L.LSX, [0xFF]);

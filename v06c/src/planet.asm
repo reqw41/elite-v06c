@@ -943,30 +943,46 @@ HLOIN2:
 	jp	HLOIN
 
 	else
-; sr_wipe: стереть строку C прежнего солнца (LSO, SUNX), LSO+C = 0. Портит A, B, DE, HL.
-sr_wipe:
-	call	sun_lso
+; sr_wps: стереть строки прежнего солнца (LSO, SUNX) от C вниз до D (её — нет), LSO = 0; пустые строки — в коротком
+; цикле (их за проход больше сотни). На выходе C = D. Портит A, B, HL.
+sr_wps:
+	ld	hl, LSO
+	ld	b, 0
+	add	hl, bc
+sw_l:
+	ld	a, c
+	cp	d
 	ret	z
+	ld	a, (hl)
+	or	a
+	jp	nz, sw_w
+sw_n:
+	dec	hl
+	dec	c
+	jp	sw_l
+sw_w:
 	ld	(hl), 0
 	ld	b, a
+	push	hl
+	push	de
 	ld	hl, (SUNX)
 	ex	de, hl
 	call	sun_e
-	ret	c
+	jp	c, sw_p
 	ld	a, h
 	ld	(X2), a
 	ld	h, c
 	ld	(X1), hl
-	jp	HLOIN
+	call	HLOIN
+sw_p:
+	pop	de
+	pop	hl
+	jp	sw_n
 	endif
-; строка C прежнего солнца — стереть
+; строка C прежнего солнца — стереть (стенд)
 	macro	SUNWIPE
-	ifdef	SCHED
 	call	sun_lso
 	call	nz, HLOIN2
-	else
-	call	sr_wipe
-	endif
 	endm
 
 ; WPLS: стереть солнце по списку строк LSO.
@@ -979,14 +995,20 @@ WPLS:
 	ld	(YY), hl
 	endif
 	ld	c, DASH_Y - 1
+	ifdef	SCHED
 wpl2:
 	SUNWIPE
 	dec	c
 	jp	nz, wpl2
+	else
+	ld	d, 0
+	call	sr_wps
+	endif
 	dec	c
 	ld	a, c
 	ld	(LSX), a
 	ret
+	ifdef	SCHED
 sun_lso:				; A = LSO+Y, Z — ноль
 	ld	hl, LSO
 	ld	b, 0
@@ -994,6 +1016,7 @@ sun_lso:				; A = LSO+Y, Z — ноль
 	ld	a, (hl)
 	or	a
 	ret
+	endif
 
 	ifdef	SCHED
 ; sun_sqrt: Q = целый корень из (R Q), как LL5, но не побитовым счётом: соседние строки круга отличаются мало,
@@ -1147,11 +1170,16 @@ plf5:
 	endif
 plfl2:					; стереть прежние строки ниже нового солнца
 	ld	a, (TGT)
+	ifdef	SCHED
 	cp	c
 	jp	z, plfl
 	SUNWIPE
 	dec	c
 	jp	nz, plfl2
+	else
+	ld	d, a
+	call	sr_wps			; дальше — plfl
+	endif
 	ifdef	SCHED
 plfl:
 	ld	a, (V)			; полуширина строки: корень из K^2 - V^2 плюс случайная бахрома
@@ -1480,9 +1508,14 @@ se_no:
 sr_end:
 	endif
 plfl3:					; стереть прежние строки выше нового солнца
+	ifdef	SCHED
 	SUNWIPE
 	dec	c
 	jp	nz, plfl3
+	else
+	ld	d, 0
+	call	sr_wps
+	endif
 plf8:
 	ld	hl, (K3)
 	ld	(SUNX), hl
