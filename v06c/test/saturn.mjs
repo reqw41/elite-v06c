@@ -25,14 +25,16 @@ const bbcPix = (x, y) => (mem[0x6000 + (y >> 3) * 256 + (x >> 3) * 8 + (y & 7)] 
 // --- Вектор: запуск без заставки до заставки игры, затем sat_draw на чистом экране
 const m = createVector('elite'), L = m.L;
 ok(L.sat_show >= 0xB900 && L.sat_end <= 0xBF51 && L.rom_end <= 0xB000, `код заставки лежит в рабочих областях: ${L.sat_show.toString(16)}…${(L.sat_end - 1).toString(16)} (${L.sat_end - L.sat_show} Б), игра кончается на ${(L.rom_end - 1).toString(16)}`);
-m.runTo('sq_init', 5e7); m.runTo('cls_all', 5e7); m.runTo('pal_set', 5e7);        // таблица квадратов готова, экран чист
+m.runTo('cls_all', 5e7); m.runTo('sq_init', 5e7); m.runTo('pal_set', 5e7);        // таблица квадратов готова (панель уже нарисована)
 for (let a = 0xC000; a < 0x10000; a++) m.wr(a, [0]);
 m.wr(L.RAND, rand0); m.wr(L.sat_t, [0]); m.wr(L.sat_c, [0]);
 const r = m.call('sat_draw', {}, 6e7);
 const vecPix = (x, y) => (m.rd(0xC000 + (x >> 3) * 256 + 255 - y) >> (7 - (x & 7))) & 1;
 let diff = 0, first = null, dots = 0;
-for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) { const a = bbcPix(x, y), b = vecPix(x, y); dots += a; if (a !== b) { diff++; first = first || [x, y, a, b]; } }
-ok(diff === 0 && dots > 1000, `Сатурн: точек на BBC ${dots}, различий с Вектором ${diff}${first ? ` (первое: x=${first[0]} y=${first[1]} BBC ${first[2]} Вектор ${first[3]})` : ''}`);
+// строки 0–191 — точка в точку с BBC; ниже (там панель, её рисуют до заставки) Сатурн не рисует ничего
+let below = 0;
+for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) { const a = bbcPix(x, y), b = vecPix(x, y); if (y >= 192) { below += b; continue; } dots += a; if (a !== b) { diff++; first = first || [x, y, a, b]; } }
+ok(diff === 0 && dots > 1000 && below === 0, `Сатурн: точек на BBC в обзоре ${dots}, различий с Вектором ${diff}${first ? ` (первое: x=${first[0]} y=${first[1]} BBC ${first[2]} Вектор ${first[3]})` : ''}; ниже обзора на Векторе ${below}`);
 const randV = [0, 1, 2, 3].map((i) => m.rd(L.RAND + i)), randB = Array.from(mem.subarray(0x2264, 0x2268));
 // на BBC после последней точки исполнение проваливается в DORND ещё раз: прежние RAND, RAND+1 уходят в RAND+2, RAND+3
 ok(randV[0] === randB[2] && randV[1] === randB[3], `генератор после рисования: Вектор ${randV}, BBC (на шаг дальше) ${randB}; обращений к «таймеру» на BBC ${reads}`);

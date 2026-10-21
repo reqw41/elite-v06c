@@ -1,6 +1,6 @@
 // Джойстик: нажатия на портах 06h («Джойстик П») и 0Eh становятся нажатиями клавиш в kb_rows.
 // В эмуляторе порт 06h отдаёт защёлку PB2, порт 0Eh — стрелки и пробел его клавиатуры; тест подменяет чтение портов.
-// Порты опрашиваются через кадр (с 19.10), поэтому после смены состояния — два кадра. node v06c/test/joy.mjs
+// Порты опрашиваются через кадр (с 19.10), поэтому после смены состояния — несколько кадров. node v06c/test/joy.mjs
 import { createVector } from '../tools/v06c.mjs';
 const m = createVector('elite'); m.frame(30);
 const L = m.L, WS = L.WS;
@@ -21,7 +21,7 @@ for (const [port, name] of [[6, 'порт 06h, нажатие нулём'], [6, 
       const active = name.includes('единицей') ? rest6 | bit : (port === 6 ? rest6 : restE) ^ bit;
       if (port === 6) { p6 = active; pE = restE; } else { pE = active; p6 = rest6; }
       if (name.includes('единицей') && (rest6 & bit)) continue;         // в покое уже единица — случай покрыт первым проходом
-      m.frame(2); m.wr('QQ11', [view]);
+      for (let f = 0; f < 4; f++) { m.wr('QQ11', [view]); m.frame(1); }   // заставка игры сама пишет QQ11 — ставим перед каждым кадром
       check(`${name}, ${view ? 'экран с текстом' : 'полёт'}, бит ${bit.toString(16)}`, [view ? scr : fly]);
     }
   }

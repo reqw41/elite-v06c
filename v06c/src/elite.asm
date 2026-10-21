@@ -20,12 +20,6 @@ DASH_H		equ	56
 	define	WPTOUCH
 	endif
 	endif
-	ifdef	MERID
-	define	NOMUS			; без мелодии заставки: не хватает места
-	endif
-	ifndef	NOMUS
-	define	NOMUS			; мелодия заставки временно убрана (20.10.2026): место — под пару окружностей планеты
-	endif
 	ifndef	SCHED
 	ifndef	MERID
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
@@ -58,7 +52,7 @@ entry:
 	ifdef	SCHED
 	ld	bc, 0x0900		; сначала до блоков кораблей — в них в образе лежит заставка с Сатурном
 	else
-	ld	bc, 0x0800		; обычный образ: и до страницы стека — в ней лежит код запуска (init_*.asm)
+	ld	bc, 0x0400		; обычный образ: до SQLO — там, до sq_init, лежит вторая плоскость панели (dials2)
 	endif
 ws_clr:
 	ld	(hl), 0
@@ -67,8 +61,14 @@ ws_clr:
 	ld	a, b
 	or	c
 	jp	nz, ws_clr
-	call	sq_init
+	ifndef	SCHED
 	call	cls_all
+	call	dash_show		; панель — первой: её вторая плоскость (dials2) лежит на месте таблицы SQLO
+	endif
+	call	sq_init
+	ifdef	SCHED
+	call	cls_all
+	endif
 	ld	hl, pal_flight
 	call	pal_set
 	ifndef	SCHED
@@ -76,19 +76,28 @@ ws_clr:
 	ld	a, (sat_skip)		; заставка загрузчика BBC: надписи и Сатурн (saturn.asm); стенд её пропускает
 	or	a
 	call	z, sat_show
-	endif
+	else
 	call	dash_show
+	endif
 	call	div_init		; таблица наклонов строится на месте уже распакованной картинки панели
 	ifndef	SCHED
 	ld	a, (sat_skip)
 	or	a
 	jp	nz, sat_done
+	ifdef	NOMUS
 	dec	a
 	ld	(ENERGY), a		; чтобы обработчик кадра не включил цвет тревоги
+	else
+	inc	a			; то же — признаком скрывающего устройства: ENERGY лежит под нотами мелодии (mus.asm),
+	ld	(cloak_on), a		; mus_off его снимет
+	endif
 	ei
 	call	sat_wait		; до клавиши
 	di
 sat_done:
+	ifndef	NOMUS
+	call	mus_off			; мелодия была только на этой заставке (и при её пропуске — переходы в RET)
+	endif
 	endif
 	ld	hl, WS + 0x0900		; остаток рабочих областей — вместе с кодом заставки и второй плоскостью панели
 	ld	bc, 0x0700
@@ -354,6 +363,8 @@ li_cp:
 	or	c
 	jp	nz, li_cp
 	ret
+dials2:
+	incbin	"dials1.rle"		; плоскость бита 1 панели: распаковывается до sq_init, потом здесь таблица SQLO
 	assert	$ <= SQLO + 0x0400
 	org	WS + 0x0800		; низ страницы стека (стек идёт сверху): js_tick — насовсем (стек игры опускается
 	include	"js_tick.asm"		; до B8D6h, запуска — до B8ECh: замер 20.10.2026), за ним код, нужный один раз
@@ -367,8 +378,9 @@ WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков по
 	assert	WP_ANG + WP_NA <= WS + 0x08B0
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
-dials2:
-	incbin	"dials1.rle"		; плоскость бита 1 панели: после распаковки обнуляется вместе с заставкой
+	ifndef	NOMUS
+	include	"mus.asm"		; мелодия — только на этой заставке
+	endif
 	assert	$ <= WS + 0x1000
 IMG_END		equ	$
 	else
