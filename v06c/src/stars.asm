@@ -12,8 +12,10 @@ PIX1:
 	add	hl, de
 	ld	(hl), b
 	ifndef	SCHED
+	ifndef	DBUF
 	ld	a, 2			; стереть прежнюю пылинку (только если была нарисована)
 	ld	(px_md), a
+	endif
 	endif
 ; PIXEL2: точка пыли по смещению от центра экрана: X1, Y1 — модуль и знак в бите 7; расстояние ZZ.
 ; За пределами |Y1| >= 96 не рисуется.
@@ -116,7 +118,13 @@ st_idx:
 	ret
 
 ; STARS: шаг пыли по виду: 0 — STARS1, 1 — STARS6, 2/3 — STARS2 (B = VIEW−1: 1 влево, 2 вправо).
-; dust_adj (число пылинок по нагрузке) и режимы точки пыли (px_ent) — в dust.asm.
+; dust_adj (число пылинок по нагрузке) и режимы точки пыли (px_ent) — в dust.asm (в чёрно-белой сборке dust_adj —
+; здесь, на прежнем месте: за ним пустота выравнивания).
+	ifndef	SCHED
+	ifdef	DBUF
+	include	"dust_adj.asm"
+	endif
+	endif
 STARS:
 	ld	a, (VIEW)
 	ld	b, a
