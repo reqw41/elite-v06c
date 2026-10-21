@@ -749,6 +749,9 @@ wa_zx:
 	include	"mis_dbg.asm"		; в пустоту выравнивания (отладочный вход миссий, missions.asm)
 	include	"mis_count.asm"		; в пустоту выравнивания (счётчик прибытий, missions.asm)
 	endif
+	ifdef	DBUF
+	include	"jt_kick.asm"		; в пустоту выравнивания (крен в обработчике кадра, js_tick.asm)
+	endif
 	endif
 	align	64
 sfx_tab:

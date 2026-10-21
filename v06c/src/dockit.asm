@@ -102,35 +102,9 @@ js_upd:
 	ld	(JSTY), a
 	ret
 	ifndef	SCHED
-; jt_md: A = FFh, если вид из корабля (QQ11 = 0), иначе 0 — для обработчика кадра (kb_md).
-jt_md:
-	ld	a, (QQ11)
-	cp	1
-	sbc	a, a
-	ret
-; jt_kick (js_tick): клавиша крена нажата, а ручка ещё у середины — сразу на 9 от середины: с шагом 7 первый же
-; кадр даёт заметный крен (у BBC отклонение меньше 8 крена не даёт — до двух кадров задержки).
-jt_kick:
-	ld	hl, JSTX
-	ld	a, (KL + 3)
-	or	a
-	jp	z, jk_r
-	ld	a, (hl)
-	sub	128
-	cp	9
-	ret	nc
-	ld	(hl), 128 + 9
-	ret
-jk_r:
-	ld	a, (KL + 4)
-	or	a
-	ret	z
-	ld	a, (hl)
-	sub	120
-	cp	9
-	ret	nc
-	ld	(hl), 128 - 9
-	ret
+	ifndef	DBUF
+	include	"jt_kick.asm"		; в чёрно-белой сборке — в пустоте выравнивания (flight.asm)
+	endif
 	endif
 
 ; DOCKIT: корабль в INWK летит к станции и входит в щель; TYPE с битом 7 — это мы сами.
