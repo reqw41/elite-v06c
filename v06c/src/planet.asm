@@ -786,10 +786,56 @@ sv:	sub	high SCR_VIEW			; DBUF: плоскость рисования (db_tog)
 	module	pb
 	include	"pc_set.asm"
 	endmodule
+; pc_ppb, pc_ppc: пара точек второго набора (как PCPAIR): HL, маска A; вторая точка — на B (C) байт дальше.
+pc_ppb:
+	ld	(pp_m + 1), a
+	ld	a, b
+	jp	pp_0
+pc_ppc:
+	ld	(pp_m + 1), a
+	ld	a, c
+pp_0:
+	ld	(pp_d + 1), a
+	ld	a, h
+	sub	high SCR_VIEW
+	cp	32
+	ret	nc			; столбец за краем
+	ld	a, l
+	cp	64
+	jp	c, pp_1			; строка за краем
+pp_m:
+	ld	a, 0
+	xor	(hl)
+	ld	(hl), a
+pp_1:
+	ld	a, l
+pp_d:
+	add	a, 0
+	ld	l, a
+	cp	64
+	ret	c
+	ld	a, (pp_m + 1)
+	xor	(hl)
+	ld	(hl), a
+	ret
 ; pc_pr2: новая окружность pc_n и стирание прежней pc_s (радиус тот же) — одним ходом.
 pc_pr2:
-	ld	hl, pc_s
-	call	pb.init
+	ld	hl, pc_s		; прежняя — первым набором, затем его адреса и маски — во второй
+	call	pa.init
+	ld	hl, (pa.p1 + 1)
+	ld	(pb.p1 + 1), hl
+	ld	hl, (pa.p3 + 1)
+	ld	(pb.p3 + 1), hl
+	ld	a, (pa.h2 + 1)
+	ld	(pb.h2 + 1), a
+	ld	a, (pa.h4 + 1)
+	ld	(pb.h4 + 1), a
+	ld	hl, (pa.m3)		; m3, m4 — соседние
+	ld	(pb.m3), hl
+	ld	a, d
+	ld	(pb.m1), a
+	ld	a, e
+	ld	(pb.m2), a
 	ld	hl, pc_n
 	call	pa.init
 	ld	a, 0xCD			; call — шаги и точки второго набора

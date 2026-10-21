@@ -11,6 +11,12 @@ PIX1:
 	ld	e, c
 	add	hl, de
 	ld	(hl), b
+	ifndef	SCHED
+	ifndef	DBUF
+	ld	a, 2			; стереть прежнюю пылинку (только если была нарисована)
+	ld	(px_md), a
+	endif
+	endif
 ; PIXEL2: точка пыли по смещению от центра экрана: X1, Y1 — модуль и знак в бите 7; расстояние ZZ.
 ; За пределами |Y1| >= 96 не рисуется.
 PIXEL2:
@@ -39,13 +45,21 @@ px1:
 	dec	a
 px2_s:
 	sub	e
+	ifdef	SCHED
 	jp	PIXEL
+	else
+	jp	px_ent			; пыль: режим точки (dockit.asm)
+	endif
 px2_p:
 	ld	(T), a
 	ld	e, a
 	ld	a, 96
 	sub	e
+	ifdef	SCHED
 	jp	PIXEL
+	else
+	jp	px_ent			; пыль: режим точки (dockit.asm)
+	endif
 
 ; NWSTARS: новая пыль (только в виде из корабля), затем WPSHPS. nWq: то же без проверки вида.
 NWSTARS:
@@ -78,7 +92,11 @@ sal4:
 	call	st_sy
 	ld	(hl), a
 	ld	(Y1), a
-	call	PIXEL2			; перенос после неё идёт в следующий DORND
+	ifdef	SCHED
+	call	PIXEL2
+	else
+	call	px2_d
+	endif			; перенос после неё идёт в следующий DORND
 	dec	c
 	jp	nz, sal4
 	jp	WPSHPS
@@ -100,51 +118,12 @@ st_idx:
 	ret
 
 ; STARS: шаг пыли по виду: 0 — STARS1, 1 — STARS6, 2/3 — STARS2 (B = VIEW−1: 1 влево, 2 вправо).
+; dust_adj (число пылинок по нагрузке) и режимы точки пыли (px_ent) — в dust.asm (в чёрно-белой сборке dust_adj —
+; здесь, на прежнем месте: за ним пустота выравнивания).
 	ifndef	SCHED
-; dust_adj: число пылинок по нагрузке — 18 без объектов рядом, на 2 меньше за каждый объект (корабль, мусор),
-; не меньше 10. В подпространстве число задаёт игра. Пылинки между прежним и новым числом переключаются на экране
-; (рисуются исключающим ИЛИ): лишние стираются, вернувшиеся появляются на прежних местах.
-dust_adj:
-	ld	a, (MJ)
-	or	a
-	ret	nz
-	ld	hl, FRIN + 2
-	ld	d, NOST
-da_1:
-	ld	a, (hl)
-	or	a
-	jp	z, da_2
-	inc	hl
-	dec	d
-	dec	d
-	ld	a, d
-	cp	10
-	jp	nz, da_1
-da_2:
-	ld	a, (NOSTM)
-	cp	d
-	ret	z
-	ld	b, a			; B — большее из двух чисел, E — меньшее
-	ld	e, d
-	jp	nc, da_3
-	ld	b, d
-	ld	e, a
-da_3:
-	ld	a, d
-	ld	(NOSTM), a
-da_l:
-	push	bc
-	push	de
-	ld	c, b
-	call	st_xyz
-	call	PIXEL2
-	pop	de
-	pop	bc
-	dec	b
-	ld	a, b
-	cp	e
-	jp	nz, da_l
-	ret
+	ifdef	DBUF
+	include	"dust_adj.asm"
+	endif
 	endif
 STARS:
 	ld	a, (VIEW)
@@ -421,7 +400,7 @@ STARS1:
 sn_l:
 	call	st_xyz
 	push	af
-	call	PIXEL2			; стереть пылинку на прежнем месте
+	call	px2_e			; стереть пылинку на прежнем месте
 	pop	af
 	rrca				; Q = DELTA · sn_tab[z / 4] / 16 — примерно 64 · DELTA / z
 	rrca
@@ -534,7 +513,7 @@ sn_back:
 	add	hl, bc
 	ld	(hl), e
 sn_draw:
-	call	PIXEL2
+	call	px2_d
 	dec	c
 	jp	nz, sn_l
 	jp	st_end			; после прыжка — след (st_ends.asm)
@@ -827,7 +806,11 @@ stl6:
 	jp	nc, kill6		; z >= 160; на BBC BCS → C=1
 	ld	(ZZ), a
 stc6:
+	ifdef	SCHED
 	call	PIXEL2
+	else
+	call	px2_d
+	endif
 	dec	c
 	ret	z
 	jp	stl6
@@ -1011,7 +994,11 @@ stl2:
 	cp	116
 	jp	nc, st2_y
 stc2:
+	ifdef	SCHED
 	call	PIXEL2
+	else
+	call	px2_d
+	endif
 	dec	c
 	jp	z, ST2
 	jp	stl2

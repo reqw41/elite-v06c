@@ -1,5 +1,6 @@
 ; Набор адресов и масок одной окружности (planet.asm: module pa — первая, module pb — вторая окружность пары).
-; xs/ys — сдвиг на шаг по x и по y, pl — точки шага, pr1 — пара (X, Y ± y), in — начало (см. planet.asm).
+; xs/ys — сдвиг на шаг по x и по y, pl — точки шага, pr1 — пара (X, Y ± y), init — начало (только у первого набора:
+; второй получает адреса копией, pc_pr2). Во втором наборе пары точек — подпрограммой (pc_ppb, pc_ppc).
 xs:					; x + 1: столбец X + x вправо, X - x влево, строка Y + x дальше
 	ifdef	PCREG
 	ld	a, d
@@ -59,28 +60,41 @@ h2:
 	ifdef	PCREG
 	PCPAIR	e, b, s2
 	else
-	PCPAIR	(m2), b, s2
+	ld	a, (m2)
+	call	@pc_ppb
 	endif
 	ld	a, b
 	cp	c
 	ret	z			; x = y: вторая четвёрка совпала бы с первой
 p3:
 	ld	hl, 0			; (X + y, Y ± x)
+	ifdef	PCREG
 	PCPAIR	(m3), c, s3
+	else
+	ld	a, (m3)
+	call	@pc_ppc
+	endif
 	ld	hl, (p3 + 1)
 h4:
 	ld	h, 0			; (X - y, Y ± x)
+	ifdef	PCREG
 	PCPAIR	(m4), c, s4
 	ret
+	else
+	ld	a, (m4)
+	jp	@pc_ppc
+	endif
 pr1:
 p1:
 	ld	hl, 0
 	ifdef	PCREG
 	PCPAIR	d, b, s1
-	else
-	PCPAIR	(m1), b, s1
-	endif
 	ret
+	else
+	ld	a, (m1)
+	jp	@pc_ppb
+	endif
+	ifdef	PCREG
 ; in: HL -> x центра (слово), y центра (байт), радиус (2..127): адреса и маски набора; точки (X ± r, Y), (X, Y ± r).
 ; На выходе B = 2r, C = 0, pc_d = 1 - r. Портит всё.
 init:
@@ -126,18 +140,11 @@ init:
 	call	@pc_pt			; (X - r, Y)
 	pop	hl
 	call	@pc_col			; столбец X
-	ifdef	PCREG
-	ld	e, a
-	else
-	ld	(m1), a
-	ld	(m2), a			; маски X ± x — в D и E (второй набор их не трогает)
-	endif
+	ld	e, a			; маски X ± x — в D и E (второй набор их не трогает)
 	ld	a, d
 	ld	(p1 + 2), a
 	ld	(h2 + 1), a
-	ifdef	PCREG
 	ld	d, e
-	endif
 	ld	a, b
 	cpl
 	ld	l, a
@@ -150,6 +157,7 @@ init:
 	ld	b, a			; B = 2y
 	ld	c, 0			; C = 2x
 	jp	pr1			; (X, Y + r), (X, Y - r)
+	endif
 	ifndef	PCREG
 m1:	db	0			; маски точек: X + x, X - x (в первом наборе — в D, E), X + y, X - y
 m2:	db	0
