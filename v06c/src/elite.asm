@@ -364,11 +364,7 @@ li_cp:
 WP_NA		equ	34		; шагов угла у окружности планеты (CNT 0..64, STP 2) — с запасом
 WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков после каждого шага угла. Низ страницы стека за
 	assert	WP_ANG >= jt_end	; js_tick: после запуска там пусто (код запуска), стек игры — не ниже B8D6h
-	assert	WP_ANG + WP_NA <= WS + 0x0880
-DUSTF		equ	WS + 0x0880	; пыль: признак «пылинка C нарисована» (C = 1..NOST), px_mode
-px_md		equ	DUSTF + NOST + 1	; режим точки пыли для PIXEL (0 — обычная)
-da_md		equ	px_md + 1	; режим для da_l
-	assert	da_md < WS + 0x08B0 && high DUSTF == high (DUSTF + NOST)
+	assert	WP_ANG + WP_NA <= WS + 0x08B0
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
 dials2:

@@ -102,9 +102,6 @@ js_upd:
 	ld	(JSTY), a
 	ret
 	ifndef	SCHED
-	include	"dust.asm"		; пыль: режимы точки и число пылинок
-	endif
-	ifndef	SCHED
 	ifndef	DBUF
 	include	"jt_kick.asm"		; в чёрно-белой сборке — в пустоте выравнивания (flight.asm)
 	endif
