@@ -14,7 +14,7 @@ mkdir -p v06c/build
 NAME=elite
 for a in "$@"; do [ "$a" = "-DMERID" ] && NAME=${NAME}_merid; [ "$a" = "-DRUS" ] && NAME=${NAME}_ru; [ "$a" = "-DSCENE" ] && NAME=${NAME}_sun; done
 for a in "$@"; do [ "$a" = "-DSCHED" ] && NAME=${NAME}_t; done
-out=$("$ROOT/tools/bin/sjasmplus" --i8080 --fullpath -i v06c/src -i v06c/data "$@" \
+out=$("${SJASMPLUS:-$ROOT/tools/bin/sjasmplus}" --i8080 --fullpath -i v06c/src -i v06c/data "$@" \
 	--lst=v06c/build/$NAME.lst --sym=v06c/build/$NAME.sym v06c/src/elite.asm 2>&1) || {
 	echo "$out"
 	echo "СБОРКА ПРОВАЛЕНА"
