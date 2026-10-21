@@ -12,17 +12,18 @@ db_tog:
 	xor	0x20
 	ld	(db_ph), a
 	ld	hl, db_sites
-	ld	b, DB_NS
-dt_l:
+	ld	bc, (DB_NS << 8) | 0x20
+; dt_x: байт по каждому адресу из таблицы HL (B адресов) — исключающим ИЛИ с C.
+dt_x:
 	ld	e, (hl)
 	inc	hl
 	ld	d, (hl)
 	inc	hl
 	ld	a, (de)
-	xor	0x20
+	xor	c
 	ld	(de), a
 	dec	b
-	jp	nz, dt_l
+	jp	nz, dt_x
 	ret
 db_sites:
 	dw	col_p1 + 1, col_p2 + 1, col_p3 + 1, col_p4 + 1, tt_col + 1
@@ -31,6 +32,37 @@ db_sites:
 	endif
 DB_NS		equ	($ - db_sites) / 2
 
+; db_lo, db_lx: корабль в кадре с буфером рисуется наложением (or вместо xor в точках отрезка, LOIN): плоскость
+; чистая, стирать корабль не нужно, и рёбра маленького корабля больше не гасят друг друга. Корабль на фоне солнца
+; (первая вершина — в строке солнца) — по-старому, исключающим ИЛИ: на солнце он виден тёмными линиями.
+; Коды xor n / or n и xor c / or c различаются на 18h.
+db_lo:
+	ld	a, (db_act)
+	or	a
+	ret	z			; не кадр с буфером (заставка, станция, гибель): корабль стирается — исключающим ИЛИ
+	ld	hl, (XX19)		; без солнца LSO пуст (у станции там её отрезки — тогда иногда по-старому, не страшно)
+	inc	hl
+	inc	hl
+	ld	e, (hl)			; y первой вершины
+	ld	d, 0
+	ld	hl, LSO
+	add	hl, de
+	ld	a, (hl)
+	or	a
+	ret	nz
+dl_t:
+	ld	hl, db_ors
+	ld	bc, (DB_NO << 8) | 0x18
+	jp	dt_x
+db_lx:
+	ld	a, (lxu_p0 + 1)
+	cp	0xF6			; or n — вернуть xor
+	ret	nz
+	jp	dl_t
+db_ors:
+	dw	lxu_p0 + 1, lxu_p1 + 1, lxu_p2 + 1, lxu_p3 + 1, lxu_p4 + 1, lxu_p5 + 1, lxu_p6 + 1, lxu_p7 + 1, ly_loop + 1
+DB_NO		equ	($ - db_ors) / 2
+
 ; db_c0: рисовать в C000h и показать её (экран очищается, TTX66).
 db_c0:
 	ld	a, (db_ph)
@@ -38,6 +70,7 @@ db_c0:
 	call	nz, db_tog
 	xor	a
 	ld	(db_off), a
+	ld	(db_act), a
 ; db_show: показать плоскость A (0 — C000h, 20h — E000h): палитра для неё — в pal_regs, запишет прерывание кадра.
 ; Сначала pal_dirty = 0: прерывание посреди расчёта не запишет наполовину готовую палитру.
 db_show:
@@ -95,7 +128,10 @@ db_begin:
 	ld	a, (QQ11)
 	ld	hl, db_off		; гибель: экран без буфера (рамки нет, надпись)
 	or	(hl)
+	ld	hl, db_act		; кадр с буфером — корабли наложением (db_lo)
+	ld	(hl), 0
 	ret	nz
+	inc	(hl)
 	ld	hl, db_vph
 dbw:
 	ld	a, (db_sph)		; прошлый кадр ещё не показан — в его плоскости рисовать нельзя
@@ -225,10 +261,15 @@ dc_p:
 	ld	sp, hl
 	ld	h, a
 	ld	l, 0x5D
-	dup	30
+	ld	d, 6			; 30 байт: 6 раз по 5 (D — снова E: в DE узор столбца)
+dc_t:
+	dup	5
 	ld	(hl), e
 	dec	l
 	edup
+	dec	d
+	jp	nz, dc_t
+	ld	d, e
 	inc	a
 	ret
 

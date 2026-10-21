@@ -895,7 +895,13 @@ ll81:
 	ld	a, (U)
 	ld	hl, (XX19)
 	ld	(hl), a
+	ifdef	DBUF			; чёрно-белая сборка: корабль — наложением (db_lo), без гашения своих же точек
+	call	db_lo
+	call	ll155_ff
+	jp	db_lx
+	else
 	jp	ll155_ff
+	endif
 LL81_2:
 	ld	hl, (XX19)
 	ld	(hl), a

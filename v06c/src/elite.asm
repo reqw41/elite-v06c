@@ -323,6 +323,7 @@ pal_bg:		ds	1		; цвет фона и цвет точек (pal_set)
 pal_fg:		ds	1
 db_sp:		ds	2		; стек главного цикла на время очистки (db_cls)
 db_off:		ds	1		; <> 0 — без буфера (гибель)
+db_act:		ds	1		; <> 0 — идёт кадр с буфером (db_begin; db_c0 — 0)
 	assert	$ <= WS + 0x0F48
 	endif
 	org	WS + 0x0F51
