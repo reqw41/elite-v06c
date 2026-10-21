@@ -574,7 +574,11 @@ fll1:
 	call	st_sz
 	ld	a, (hl)
 	ld	(ZZ), a
+	ifdef	SCHED
 	call	PIXEL2
+	else
+	call	px2_d			; экран только что очищен — нарисовать (признак пылинки)
+	endif
 	dec	c
 	jp	nz, fll1
 	ret
