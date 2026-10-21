@@ -15,20 +15,12 @@ DASH_H		equ	56
 	ifdef	SCHED
 	define	WPTOUCH			; BLINE отмечает, что новая окружность писала X1..Y2 (wp_touch): равенство с BBC
 	endif
+	ifdef	DBUF
+	define	NOMUS			; чёрно-белая сборка: без мелодии — её переменные (db_ph…db_act, WS + 0F34h) лежат
+	endif				; там, где у мелодии ноты (mus.asm), а во время заставки их пишут
 	ifdef	MERID
 	ifndef	WPTOUCH
 	define	WPTOUCH
-	endif
-	endif
-	ifdef	MERID
-	define	NOMUS			; без мелодии заставки: не хватает места
-	endif
-	ifndef	NOMUS
-	define	NOMUS			; мелодия заставки временно убрана (20.10.2026): место — под пару окружностей планеты
-	endif
-	ifdef	DBUF
-	ifndef	NOMUS
-	define	NOMUS			; чёрно-белая сборка с двойным буфером (db.asm): место под буфер
 	endif
 	endif
 	ifndef	SCHED
@@ -63,7 +55,7 @@ entry:
 	ifdef	SCHED
 	ld	bc, 0x0900		; сначала до блоков кораблей — в них в образе лежит заставка с Сатурном
 	else
-	ld	bc, 0x0800		; обычный образ: и до страницы стека — в ней лежит код запуска (init_*.asm)
+	ld	bc, 0x0400		; обычный образ: до SQLO — там, до sq_init, лежит вторая плоскость панели (dials2)
 	endif
 ws_clr:
 	ld	(hl), 0
@@ -72,7 +64,7 @@ ws_clr:
 	ld	a, b
 	or	c
 	jp	nz, ws_clr
-	call	sq_init
+	ifndef	SCHED
 	call	cls_all
 	ifdef	DBUF			; переменные буфера (их область обнуляется только после заставки): рисовать и
 	xor	a			; показывать C000h — иначе палитра показала бы не ту плоскость и Сатурна не видно
@@ -81,6 +73,15 @@ ws_clr:
 	ld	(db_sph), a
 	ld	(db_off), a
 	endif
+	call	dash_show		; панель — первой: её вторая плоскость (dials2) лежит на месте таблицы SQLO
+	ifdef	DBUF
+	call	dash_mono
+	endif
+	endif
+	call	sq_init
+	ifdef	SCHED
+	call	cls_all
+	endif
 	ld	hl, pal_flight
 	call	pal_set
 	ifndef	SCHED
@@ -88,22 +89,28 @@ ws_clr:
 	ld	a, (sat_skip)		; заставка загрузчика BBC: надписи и Сатурн (saturn.asm); стенд её пропускает
 	or	a
 	call	z, sat_show
-	endif
+	else
 	call	dash_show
-	ifdef	DBUF
-	call	dash_mono
 	endif
 	call	div_init		; таблица наклонов строится на месте уже распакованной картинки панели
 	ifndef	SCHED
 	ld	a, (sat_skip)
 	or	a
 	jp	nz, sat_done
+	ifdef	NOMUS
 	dec	a
 	ld	(ENERGY), a		; чтобы обработчик кадра не включил цвет тревоги
+	else
+	inc	a			; то же — признаком скрывающего устройства: ENERGY лежит под нотами мелодии (mus.asm),
+	ld	(cloak_on), a		; mus_off его снимет
+	endif
 	ei
 	call	sat_wait		; до клавиши
 	di
 sat_done:
+	ifndef	NOMUS
+	call	mus_off			; мелодия была только на этой заставке (и при её пропуске — переходы в RET)
+	endif
 	endif
 	ld	hl, WS + 0x0900		; остаток рабочих областей — вместе с кодом заставки и второй плоскостью панели
 	ld	bc, 0x0700
@@ -384,23 +391,10 @@ li_cp:
 	or	c
 	jp	nz, li_cp
 	ret
-	assert	$ <= SQLO + 0x0400
-	org	WS + 0x0800		; низ страницы стека (стек идёт сверху): js_tick — насовсем (стек игры опускается
-	include	"js_tick.asm"		; до B8D6h, запуска — до B8ECh: замер 20.10.2026), за ним код, нужный один раз
-	include	"init_div.asm"		; при запуске
-	include	"init_sq.asm"
-	include	"init_cls.asm"
-	assert	$ <= WS + 0x08E0		; стек запуска — не ниже B8ECh (с прерыванием кадра в sat_wait)
-WP_NA		equ	34		; шагов угла у окружности планеты (CNT 0..64, STP 2) — с запасом
-WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков после каждого шага угла. Низ страницы стека за
-	assert	WP_ANG >= jt_end	; js_tick: после запуска там пусто (код запуска), стек игры — не ниже B8D6h
-	assert	WP_ANG + WP_NA <= WS + 0x08B0
-	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
-	include	"saturn.asm"
 dials2:
-	incbin	"dials1.rle"		; плоскость бита 1 панели: после распаковки обнуляется вместе с заставкой
+	incbin	"dials1.rle"		; плоскость бита 1 панели: распаковывается до sq_init, потом здесь таблица SQLO
 	ifdef	DBUF
-; dash_mono: чёрно-белая сборка — в обеих плоскостях панели точки обеих (ИЛИ). Один раз при запуске.
+; dash_mono: чёрно-белая сборка — в обеих плоскостях панели точки обеих (ИЛИ). Один раз при запуске, до sq_init.
 dash_mono:
 	ld	h, high SCR_VIEW
 dm_c:
@@ -423,6 +417,22 @@ dm_b:
 	cp	high SCR_VIEW + 32
 	jp	nz, dm_c
 	ret
+	endif
+	assert	$ <= SQLO + 0x0400
+	org	WS + 0x0800		; низ страницы стека (стек идёт сверху): js_tick — насовсем (стек игры опускается
+	include	"js_tick.asm"		; до B8D6h, запуска — до B8ECh: замер 20.10.2026), за ним код, нужный один раз
+	include	"init_div.asm"		; при запуске
+	include	"init_sq.asm"
+	include	"init_cls.asm"
+	assert	$ <= WS + 0x08E0		; стек запуска — не ниже B8ECh (с прерыванием кадра в sat_wait)
+WP_NA		equ	34		; шагов угла у окружности планеты (CNT 0..64, STP 2) — с запасом
+WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков после каждого шага угла. Низ страницы стека за
+	assert	WP_ANG >= jt_end	; js_tick: после запуска там пусто (код запуска), стек игры — не ниже B8D6h
+	assert	WP_ANG + WP_NA <= WS + 0x08B0
+	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
+	include	"saturn.asm"
+	ifndef	NOMUS
+	include	"mus.asm"		; мелодия — только на этой заставке
 	endif
 	assert	$ <= WS + 0x1000
 IMG_END		equ	$

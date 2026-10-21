@@ -1,10 +1,11 @@
-// Мелодия заставки («Голубой Дунай» в три голоса, v06c/data/danube.asm, mus_tick в snd.asm): по кадрам на заставке —
-// моменты через задержки mus_len, высоты нот в голосах snd_v0–v2, голос глушится до своей следующей ноты, после
-// конца — снова с начала; со второй заставки мелодия не начинается заново, при входе в игру — молчит; заставки печатают
-// свои строки. node v06c/test/danube.mjs [образ = elite]
+// Мелодия заставки с Сатурном («Голубой Дунай» в три голоса, v06c/data/danube.asm, проигрыватель mus.asm — в области
+// заставки): по кадрам, пока Сатурн ждёт клавишу, — моменты через задержки mus_len, высоты нот в голосах snd_v0–v2,
+// голос глушится до своей следующей ноты, после конца — снова с начала; по клавише мелодия замолкает, переходы
+// mus_tick, mus_start, mus_stop становятся RET, область обнуляется; на заставках игры и в игре — тишина; заставки
+// печатают свои строки. node v06c/test/danube.mjs [образ = elite]
 import { createVector } from '../tools/v06c.mjs';
 const name = process.argv[2] || 'elite';
-const m = createVector(name), L = m.L;
+const m = createVector(name, { saturn: true }), L = m.L;
 let bad = 0; const ok = (c, s) => { if (!c) bad++; console.log(`${c ? 'OK  ' : 'FAIL'} ${s}`); };
 if (L.mus_dat === undefined) { console.log('DANUBE: мелодии в этом образе нет (NOMUS) — пропуск'); process.exit(0); }
 // слова, которые печатает ex (строки заставок): вызов мелодии в TITLE не должен портить номер строки
@@ -16,7 +17,7 @@ const rw = (a) => m.rd(a) | (m.rd(a + 1) << 8);
 const V = [L.snd_v0, L.snd_v1, L.snd_v2];
 // ждём первый заголовок
 let f = 0; while ((rw(L.mus_p) === 0 || rw(L.mus_p) === L.mus_dat) && f < 400) { m.frame(1); f++; }   // первый момент разобран
-ok(rw(L.mus_p) > L.mus_dat, `мелодия начинается на заставке (кадр ${f})`);
+ok(rw(L.mus_p) > L.mus_dat, `мелодия начинается на заставке с Сатурном (кадр ${f})`);
 let k = 0, wrong = 0, first = '', notes = 0;
 const fail1 = (s) => { if (!wrong++) first = s; };
 const check = () => {
@@ -42,12 +43,15 @@ for (let i = 1; i < total; ) {
   if (since > 200) { fail1('мелодия встала'); break; }
 }
 ok(!wrong, `${total} моментов подряд (две мелодии по ${hdr.length}, нот ${notes}): задержки, высоты, раздельность${wrong ? ' — ' + first : ''}`);
-// N — вторая заставка: мелодия не начинается заново; пробел — игра: молчит
-let mid = L.mus_dat; for (let i = 0; i < 30; i++) { const h = m.rd(mid); mid += 1 + (h & 1) + ((h >> 1) & 1) + ((h >> 2) & 1); }                              // середина мелодии: после N она должна идти дальше, а не с начала
-m.wr(L.mus_p, [mid & 255, mid >> 8]); m.wr(L.mus_t, [60]);
-m.key(5, 0x40, true); m.frame(20); m.key(5, 0x40, false); m.frame(60);
-const after = rw(L.mus_p);
-ok(after >= mid && after < mid + 40, `вторая заставка: мелодия продолжается с середины (байт ${mid - L.mus_dat} → ${after - L.mus_dat})`);
+// пробел — конец заставки с Сатурном: мелодия убрана; дальше заставки игры и игра — без неё
+m.key(7, 0x80, true); m.frame(20); m.key(7, 0x80, false); m.frame(100);
+const rets = ['mus_tick', 'mus_start', 'mus_stop'].every((n) => m.rd(L[n]) === 0xC9);
+let loud = 0; for (const v of V) loud += m.rd(v);
+ok(rets && rw(L.mus_p) === 0 && loud === 0, `после Сатурна: переходы — RET ${rets}, указатель ${rw(L.mus_p)}, голоса молчат (${loud})`);
+let z = 0; for (let a = L.mt_go; a < L.mus_off + 16; a++) z += m.rd(a); ok(z === 0, `проигрыватель и ноты обнулены вместе с заставкой (сумма байт ${z})`);
+m.frame(200); let tick = 0; for (let i = 0; i < 300; i++) { m.frame(1); for (const v of V) tick += m.rd(v); }
+ok(tick === 0, `заставка игры без мелодии (звучало кадро-голосов ${tick})`);
+m.key(5, 0x40, true); m.frame(20); m.key(5, 0x40, false); m.frame(100);
 m.key(7, 0x80, true); m.frame(20); m.key(7, 0x80, false); m.frame(200);
 ok(rw(L.mus_p) === 0, `в игре мелодия молчит (указатель ${rw(L.mus_p)})`);
 const t1 = exs.indexOf(128), t2 = exs.indexOf(147);

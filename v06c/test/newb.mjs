@@ -77,7 +77,8 @@ for (const WAIT of [400, 440, 500, 700]) { const g = createVector('elite'), G = 
   g.frame(300); press('N'); g.frame(200); press('SPACE'); g.frame(200); press('F1'); g.frame(400);
   const fr = () => Array.from({ length: 13 }, (_, i) => g.rd(G.FRIN + i));
   g.wr(G.K_ + 36 + 32, [g.rd(G.K_ + 36 + 32) | 0x80]); g.wr(G.FIST, [0]);
-  let f = 0; while (fr().filter((t) => t === 2).length < 2 && f < 3000) { g.frame(10); f += 10; g.wr(G.ENERGY, [255]); }
+  let f = 0; while (fr().filter((t) => t === 2).length < 2 && f < 3000) { g.frame(10); f += 10; g.wr(G.ENERGY, [255]);
+    if (fr()[1] === 8) g.wr(G.K_ + 36 + 32, [g.rd(G.K_ + 36 + 32) | 0x80]); }   // вылет мог ещё не кончиться: блок станции создаётся заново
   const cops = fr().map((t, i) => (t === 2 ? g.rd(G.newb + i) : -1)).filter((v) => v >= 0);
   ok(cops.length >= 2 && cops.every((v) => v & 4) && g.rd(G.FIST) === 0 && !fr().some((t) => t === 29 || t === 30), `в игре: злая станция за ${f} кадров выпустила полицию, флаги ${cops.map((v) => v.toString(16)).join(', ')} — враждебна при чистом статусе игрока`); }
 // 7 и 8. в игре: капсула — только у кораблей с её признаком (диск, E% бит 7); в розыск — за корабль с признаком полиции
