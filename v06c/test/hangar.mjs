@@ -1,7 +1,7 @@
 // Ангар станции дисковой версии: HALL на Векторе против HALL кода стоянки дисковой BBC (tools/oracle/disc.js).
 // Обе стороны получают одно и то же число RAND; на BBC таблица кораблей ангара подменена моделями Вектора (те же
 // семь видов в том же порядке), очистка экрана TT66 и переключение печати на ИЛИ (UNWISE) перехвачены — отрезки
-// рисуются исключающим ИЛИ, как на Векторе. Сверяется обзор до точки и RAND после вызова (на Векторе — прежний).
+// рисуются исключающим ИЛИ, как на Векторе (в обычном образе с ORAND UNWISE не перехвачен: корабли наложением с обеих сторон). Сверяется обзор до точки и RAND после вызова (на Векторе — прежний).
 // sh v06c/build.sh && node v06c/test/hangar.mjs [случаев = 300]
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -24,7 +24,7 @@ for (let i = 0; i < N; i++) {
   const rand = [rnd(), rnd(), rnd(), rnd()];
   d.reset();
   let at = 0x8000; TYPES.forEach((t, k) => { const b = model(t); d.poke(at, b); d.poke(d.lab.XX21 + 2 * (SLOT[k] - 1), [at & 255, at >> 8]); at += b.length; });
-  d.hooks.set(d.lab.TT66, (o) => { o.cpu.p &= ~1; return true; }); d.hooks.set(d.lab.UNWISE, () => true);
+  d.hooks.set(d.lab.TT66, (o) => { o.cpu.p &= ~1; return true; }); if (!m.L.lm_xor) d.hooks.set(d.lab.UNWISE, () => true);   // обычный образ (ORAND): корабли наложением, как на BBC
   d.poke('RAND', rand);
   d.call('HALL', {}, 4e7);
   blank(); m.wr('RAND', rand);

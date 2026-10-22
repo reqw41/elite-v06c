@@ -1,5 +1,9 @@
 // T25: планета и солнце — парные тесты 6502 ↔ i8080. node v06c/test/t25.mjs [случаев = 600]
 import { makePair } from '../tools/pair.mjs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { ROOT } from '../tools/v06c.mjs';
+import { bbcView } from '../tools/screen.mjs';
 const N = +(process.argv[2] || 600);
 const MER = !!process.env.MERID;                          // MERID=1 — сборка с меридианами и кратером (elite_merid.rom)
 const P = makePair(MER ? 'elite_merid' : 'elite_t'), { B, bbc } = P;
@@ -23,8 +27,19 @@ const body = (r, fresh, sun) => {
   const w = [...sm24(r, side), ...sm24(r, side), z & 255, (z >> 8) & 255, ((z >> 16) & 127) | (r(12) ? 0 : 0x80), ...rot(r), 0, 0, 0, 0, 0, 0, 0, 0, 0];
   const mem = { INWK: w, TYPE: type, RAND: [r(256), r(256), r(256), r(256)] };
   if (fresh) Object.assign(mem, { [B.LSX2]: 0xFF, [B.LSY2]: 0xFF, LSP: 1, [B.LSO]: [0xFF, ...new Array(191).fill(0)], SUNX: w16(128) });
-  return { mem };
+  const vmem = {};   // меридианы: прежний список забыт — и его точки на экране Вектора тоже (эталон рисуется на чистом)
+  if (fresh && MER) for (let c = 0; c < 32; c++) vmem[0xC000 + c * 256 + 64] = new Array(192).fill(0);
+  return { mem, vmem };
 };
+// Сборка с меридианами — обычный образ (ORAND): отрезки планеты рисуются наложением, пересечения дуг не гаснут. Эталон
+// обзора для PLANET — текущий список отрезков эталона (LSX2, LSY2), нарисованный его же LOIN, но с ORA вместо EOR,
+// на чистом экране второй машины.
+let orRef;
+if (MER) { const { BBC } = createRequire(import.meta.url)(path.join(ROOT, 'tools/oracle/bbc.js')), bor = new BBC({ sched: true }), L2 = bor.lab;
+  const eor = []; for (let a = L2.LOIN; a < L2.HLOIN; a++) if (bor.mem[a] === 0x51) eor.push(a);   // EOR (SC),Y — четыре места точки
+  if (eor.length !== 4) throw new Error(`LOIN эталона: мест EOR (SC),Y ${eor.length}, ждали 4`);
+  orRef = () => { bor.mem.set(bbc.mem.subarray(0, 0x6000)); bor.mem.fill(0, 0x6000, 0x7800); for (const a of eor) bor.mem[a] = 0x11;
+    bor.call('WPLS2', {}, 2e7); return bbcView(bor.mem); }; }
 // таблицы синуса и арктангенса в образе — как в эталоне
 for (const [t, n] of MER ? [['SNE', 32], ['ACT', 32]] : [['SNE', 32]]) for (let i = 0; i < n; i++) if (P.m.rd(P.m.L[t] + i) !== bbc.mem[B[t] + i]) throw new Error(`таблица ${t}: элемент ${i}: Вектор ${P.m.rd(P.m.L[t] + i)}, BBC ${bbc.mem[B[t] + i]}`);
 const SPECS = [
@@ -35,7 +50,7 @@ const SPECS = [
   { name: 'PLS5', noreg: 'ac', gen: (r, b) => ({ x: [15, 21][r(2)], mem: { INWK: body(r, false).mem.INWK } }) },
   { name: 'EDGES', noreg: 'x', gen: (r, b) => ({ a: b(), y: 1 + r(191), mem: { YY: w16(r(4) ? r(256) : r(700) - 220), [B.LSO + 1]: arr(() => r(60), 191) } }) },
   { name: 'HLOIN2', noreg: 'axyc', skip: DRAW_H, screen: 'view', gen: (r, b) => ({ a: 1 + r(120), y: 1 + r(191), mem: { YY: w16(r(4) ? r(256) : r(700) - 220) } }) },
-  { name: 'PLANET', noreg: 'axyc', skip: DRAW_ADD, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, false) },
+  { name: 'PLANET', noreg: 'axyc', skip: DRAW_ADD, screen: 'view', viewRef: orRef, gen: (r, b, i) => body(r, i % 6 === 0, false) },
   { name: 'PLANET (солнце)', entry: 'PLANET', ventry: 'PLANET', noreg: 'axyc', skip: DRAW_ADD, screen: 'view', gen: (r, b, i) => body(r, i % 6 === 0, true) },
 ];
 // покрытие ветвей эталона в сериях PLANET

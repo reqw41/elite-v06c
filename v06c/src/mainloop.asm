@@ -119,7 +119,11 @@ tt107:
 	ld	a, (QQ22 + 1)
 	dec	a
 	ld	b, a
+	ifdef	ORAND
+	call	ee3e			; прежнее число стереть — очисткой
+	else
 	call	ee3
+	endif
 	ld	a, 5
 	ld	(QQ22), a
 	ld	a, (QQ22 + 1)

@@ -745,6 +745,7 @@ wa_zx:
 	endif
 	ifndef	SCHED
 	include	"st_cy.asm"		; в пустоту выравнивания (штрихи пыли, st_dots.asm)
+	include	"tm.asm"		; в пустоту выравнивания (стирание надписей, text.asm)
 	ifndef	RUS
 	include	"mis_dbg.asm"		; в пустоту выравнивания (отладочный вход миссий, missions.asm)
 	include	"mis_count.asm"		; в пустоту выравнивания (счётчик прибытий, missions.asm)
@@ -753,7 +754,16 @@ wa_zx:
 	include	"jt_kick.asm"		; в пустоту выравнивания (крен в обработчике кадра, js_tick.asm)
 	endif
 	endif
+	ifdef	ORAND
+	ifndef	AUTO			; с AUTO обработчик кадра длиннее на 3 байта, пустоты сдвигаются — px_a и px_o в хвосте (ov_fix.asm)
+	include	"px_a.asm"		; в пустоту выравнивания (точки пыли: очистка)
+	endif
+	endif
+	ifdef	ORAND
+	PAGEFIT	40			; sfx_tab: 10 блоков по 4 байта
+	else
 	align	64
+	endif
 sfx_tab:
 	db	0x12, 0x01, 0x00, 0x10	; 0: наш лазер
 	db	0x12, 0x02, 0x2C, 0x08	; 8: по нам попали

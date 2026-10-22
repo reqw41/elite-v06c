@@ -131,7 +131,11 @@ me1:
 	ld	(DLY), a
 	push	de
 	ld	a, (MCH)
+	ifdef	ORAND
+	call	mes9e			; стереть прежнее — очисткой
+	else
 	call	mes9
+	endif
 	xor	a
 	ld	(mch_x), a
 	pop	de

@@ -1,7 +1,7 @@
 // T09: отсечение и печать корабля — парные тесты 6502 ↔ i8080. node v06c/test/t09.mjs [случаев = 3000]
 import { makePair } from '../tools/pair.mjs';
 const N = +(process.argv[2] || 3000);
-const P = makePair(), { B, m, bbc } = P;
+const P = makePair('elite_t'), { B, m, bbc } = P;   // образ стенда: в обычном корабли рисуются наложением (ORAND)
 const WS = m.L.WS, w16 = (v) => [v & 255, (v >> 8) & 255];
 const DRAW = ['P', 'Q', 'R', 'S', 'SWAP', 'YSAV', 'SC', 'SCH'];      // рабочие ячейки LOIN на BBC
 const PTRS = [['V', 2], ['XX0', 2], ['XX19', 2], ['INF', 2]];

@@ -25,6 +25,18 @@ DASH_H		equ	56
 	define	PCIRC			; окружность планеты точками (pcirc в planet.asm)
 	endif
 	endif
+	ifndef	SCHED
+	ifndef	DBUF
+	define	ORAND
+; PAGEFIT n (вместо align n в обычном образе): таблицы n байт адресуются add a, low — им нужна только одна страница.
+; align n оставлял до n - 1 байт пустоты и при росте кода перед ним прыгал сразу на n байт.
+	macro	PAGEFIT n
+	if	(($ & 0xFF) + n) > 256
+	align	256
+	endif
+	endm			; обзор: корабли, пыль, планета, надписи — рисуются наложением или исключающим ИЛИ,
+	endif				; стираются очисткой (and): точки чужих объектов не зажигаются
+	endif
 
 	include	"bbc_vars.inc"
 
@@ -165,7 +177,15 @@ ws_clr2:
 	include	"hyper.asm"
 	include	"snd.asm"
 	include	"save.asm"
+	ifdef	SCENE			; тестовая сцена — без магнитофона (не хватает места): запись не идёт, чтение — отказ
+tp_save:
+	ret
+tp_load:
+	scf
+	ret
+	else
 	include	"tape.asm"
+	endif
 	include	"missions.asm"
 	include	"find.asm"
 	include	"pdesc.asm"
@@ -242,6 +262,9 @@ mus_p:		ds	2		; мелодия заставки: следующая нота (0 
 mus_t:		ds	1		; кадров до следующей ноты
 txt_g:		ds	1		; FFh — текст зелёным (шапка рынка)
 tt_mask:	ds	1		; маска знака во второй плоскости: FFh — зелёный, 0 — бежевый
+	ifdef	ORAND
+tt_wmk:		ds	1		; маска знака в плоскости обзора: 0 — заголовок в полёте (только красным)
+	endif
 joy_bits:	ds	1		; нажатое на джойстике (isr)
 fly_on:		ds	1		; <> 0 — главный цикл в полёте (DOKEY), не пауза: fly_keys переводит клавиши
 kb_md:		ds	1		; FFh — kb_rows переведена для полёта, 0 — как есть
@@ -378,10 +401,6 @@ dials2:
 	include	"init_sq.asm"
 	include	"init_cls.asm"
 	assert	$ <= WS + 0x08E0		; стек запуска — не ниже B8ECh (с прерыванием кадра в sat_wait)
-WP_NA		equ	34		; шагов угла у окружности планеты (CNT 0..64, STP 2) — с запасом
-WP_ANG		equ	WS + 0x0858	; pl_circ: длина списка отрезков после каждого шага угла. Низ страницы стека за
-	assert	WP_ANG >= jt_end	; js_tick: после запуска там пусто (код запуска), стек игры — не ниже B8D6h
-	assert	WP_ANG + WP_NA <= WS + 0x08B0
 	org	WS + 0x0900		; заставка загрузчика: в образе есть, после показа обнуляется
 	include	"saturn.asm"
 	ifndef	NOMUS

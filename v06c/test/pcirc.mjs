@@ -5,10 +5,13 @@
 import { createVector } from '../tools/v06c.mjs';
 let bad = 0; const fail = (s) => { if (++bad <= 10) console.log('FAIL ' + s); };
 const m = createVector('elite'), L = m.L; m.frame(60);
+if (L.lm_xor) m.call('lm_xor', {}, 1e5);   // кадры могли остановиться посреди печати корабля (режим отрезка — наложение)
 const VIEW = 0xC000;
 const clear = () => { for (let a = VIEW; a < VIEW + 0x2000; a++) if ((a & 255) >= 64) m.wr(a, [0]); };
-const pixels = () => { const s = new Set(); for (let col = 0; col < 32; col++) for (let y = 0; y < 192; y++) { const v = m.rd(VIEW + col * 256 + 255 - y); if (v) for (let b = 0; b < 8; b++) if ((v >> (7 - b)) & 1) s.add((col * 8 + b) + y * 256); } return s; };
-const ref = (X, Y, r) => { const s = new Set(), p = (x, y) => { if (x < 0 || x > 255 || y < 0 || y > 191) return; const k = x + y * 256; if (s.has(k)) s.delete(k); else s.add(k); };
+const pixels = () => { const s = new Set(); for (let col = 0; col < 32; col++) for (let y = OR ? 1 : 0; y < 192; y++) { /* ORAND: строка 0 — рамка, pa_or её заливает (of_t0) */ const v = m.rd(VIEW + col * 256 + 255 - y); if (v) for (let b = 0; b < 8; b++) if ((v >> (7 - b)) & 1) s.add((col * 8 + b) + y * 256); } return s; };
+// ORAND (обычный образ): первый набор рисует наложением (pa_or) или стирает очисткой (pa_and) — точки окружности как множество
+const OR = L.pa_or !== undefined, mode = (k) => { if (OR) m.call(k, {}, 1e5); };
+const ref = (X, Y, r) => { const s = new Set(), p = (x, y) => { if (x < 0 || x > 255 || y < (OR ? 1 : 0) || y > 191) return; const k = x + y * 256; if (s.has(k) && !OR) s.delete(k); else s.add(k); };
   let x = 0, y = r, d = 1 - r; p(X, Y + r); p(X, Y - r); p(X + r, Y); p(X - r, Y);
   for (;;) { x++; if (d < 0) d += 2 * x + 1; else { y--; d += 2 * x - 2 * y + 1; } if (x > y) break;
     p(X + x, Y + y); p(X + x, Y - y); p(X - x, Y + y); p(X - x, Y - y); if (x === y) break; p(X + y, Y + x); p(X + y, Y - x); p(X - y, Y + x); p(X - y, Y - x); } return s; };
@@ -19,7 +22,7 @@ const codeLo = L.pc_try, codeHi = L.pc_end;   // самоизменяемый к
 for (let i = 0; i < 1500; i++) {
   const r = 2 + rnd(126), Y = i < 300 ? r + rnd(Math.max(1, 192 - 2 * r)) : -64 + r + rnd(Math.max(1, 255 - r - (-64 + r) + 1)), X = i < 300 ? Math.min(255 - r, r + rnd(Math.max(1, 256 - 2 * r))) : -300 + rnd(860);
   if (Y + r > 255 || Y - r < -64 || X - r < -512) continue;
-  clear(); const before = snap();
+  clear(); mode('pa_or'); const before = snap();
   m.wr(L.pc_n, [X & 255, (X >> 8) & 255, Y & 255, r]);
   const c = m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6);
   const got = pixels(), want = ref(X, Y, r); n++;
@@ -28,7 +31,7 @@ for (let i = 0; i < 1500; i++) {
   for (let a = 0; a < 0x10000; a++) if (after[a] !== before[a] && !(a >= VIEW && a < VIEW + 0x2000 && (a & 255) >= 64) && !(a >= codeLo && a < codeHi) && !(a >= L.pc_s && a < L.pc_n + 4) && !(a >= L.pc_d && a < L.pc_d + 2) && a >= 0x100 && !(a >= ((m.cpu.sp - 16) & 0xffff) && a <= (m.cpu.sp & 0xffff))) { fail(`X ${X}, Y ${Y}, r ${r}: изменён байт ${a.toString(16)}`); break; }
   if (want.size) { maxCyc = Math.max(maxCyc, c.cycles); sumCyc += c.cycles; sumPx += want.size; }
   if (X - r >= 0 && X + r <= 255 && Y - r >= 0 && Y + r <= 191) { inside++; inCyc += c.cycles; inPx += want.size; }
-  m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6);
+  mode('pa_and'); m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6);
   if (pixels().size) fail(`X ${X}, Y ${Y}, r ${r}: повтор не стёр окружность`);
 }
 console.log(`окружностей ${n}, из них целиком в обзоре ${inside}; тактов на точку: целиком в обзоре ${(inCyc / inPx).toFixed(0)}, по всем ${(sumCyc / sumPx).toFixed(0)}; самая долгая ${maxCyc} тактов (${(maxCyc / 3000).toFixed(1)} мс)`);
@@ -55,11 +58,12 @@ console.log(`окружностей ${n}, из них целиком в обзо
     const X1 = i < 500 ? Math.min(255 - r, r + rnd(Math.max(1, 256 - 2 * r))) : -300 + rnd(860), Y1 = -64 + r + rnd(Math.max(1, 255 - r - (-64 + r) + 1));
     const big = i % 3 === 0, X2 = X1 + (rnd(2) ? 1 : -1) * rnd(big ? 80 : 8), Y2 = Y1 + (rnd(2) ? 1 : -1) * rnd(big ? 60 : 6);
     if (!ok(X1, Y1) || !ok(X2, Y2) || (X1 === X2 && Y1 === Y2)) continue;
-    clear();
+    clear(); mode('pa_or');
     m.wr(L.pc_n, [X1 & 255, (X1 >> 8) & 255, Y1 & 255, r]); m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6);
     const before = snap();
     m.wr(L.pc_s, [X1 & 255, (X1 >> 8) & 255, Y1 & 255, r]); m.wr(L.pc_n, [X2 & 255, (X2 >> 8) & 255, Y2 & 255, r]);
     const c = m.call('pc_pr2', {}, 4e6); n2++; c2 += c.cycles;
+    if (OR) c2 += m.call('pcirc', { h: L.pc_n >> 8, l: L.pc_n & 255 }, 2e6).cycles;   // новая ещё раз (pc_rep): очистка прежней могла задеть её точки
     const got = pixels(), want = ref(X2, Y2, r);
     if (got.size !== want.size || [...want].some((k) => !got.has(k))) fail(`pc_pr2 r ${r}: (${X1}, ${Y1}) -> (${X2}, ${Y2}): точек ${got.size}, по расчёту ${want.size}`);
     const after = snap();

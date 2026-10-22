@@ -58,7 +58,7 @@ pl:
 h2:
 	ld	h, 0			; (X - x, Y ± y)
 	ifdef	PCREG
-	PCPAIR	e, b
+	PCPAIR	e, b, x1, x2
 	else
 	ld	a, (m2)
 	call	@pc_ppb
@@ -69,7 +69,7 @@ h2:
 p3:
 	ld	hl, 0			; (X + y, Y ± x)
 	ifdef	PCREG
-	PCPAIR	(m3), c
+	PCPAIR	(m3), c, x3, x4
 	else
 	ld	a, (m3)
 	call	@pc_ppc
@@ -78,7 +78,7 @@ p3:
 h4:
 	ld	h, 0			; (X - y, Y ± x)
 	ifdef	PCREG
-	PCPAIR	(m4), c
+	PCPAIR	(m4), c, x5, x6
 	ret
 	else
 	ld	a, (m4)
@@ -88,7 +88,7 @@ pr1:
 p1:
 	ld	hl, 0
 	ifdef	PCREG
-	PCPAIR	d, b
+	PCPAIR	d, b, x7, x8
 	ret
 	else
 	ld	a, (m1)

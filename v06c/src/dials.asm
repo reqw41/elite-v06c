@@ -616,8 +616,18 @@ sal8:
 	include	"pc_col.asm"		; окружность планеты (planet.asm), в пустоту выравнивания; в русской сборке — перед sfx_tab
 	endif
 	endif
+	ifdef	ORAND
+	include	"ov_v.asm"		; в пустоту выравнивания (дорисовка прицела, ov_fix.asm)
+	ifndef	AUTO			; см. flight.asm
+	include	"px_o.asm"		; в пустоту выравнивания (точки пыли: наложение)
+	endif
+	endif
 
+	ifdef	ORAND
+	PAGEFIT	24			; dp_nib, dil2_m, dl_cap
+	else
 	align	32
+	endif
 dp_nib:	db	0x00, 0x03, 0x0C, 0x0F, 0x30, 0x33, 0x3C, 0x3F, 0xC0, 0xC3, 0xCC, 0xCF, 0xF0, 0xF3, 0xFC, 0xFF
 dil2_m:	db	0xC0, 0x30, 0x0C, 0x03	; чёрточка шириной в точку режима 5 в четырёх положениях
 dl_cap:	db	0x00, 0xC0, 0xF0, 0xFC	; 0–3 левые точки режима 5

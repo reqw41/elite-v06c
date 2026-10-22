@@ -183,8 +183,15 @@ sc_dn:
 	include	"gn_none.asm"		; в пустоту выравнивания (ввод количества, market.asm)
 	endif
 	endif
+	ifdef	ORAND
+	include	"of_s.asm"		; в пустоту выравнивания (полосы рамки, ov_fix.asm)
+	endif
 
+	ifdef	ORAND
+	PAGEFIT	12			; ctw4, sc_stick
+	else
 	align	16
+	endif
 ctw4:	db	0xF0, 0x00, 0x3C, 0x00, 0x0F, 0x00, 0x03, 0xC0	; четыре точки с x & 6 = 0, 2, 4, 6: байт и следующий
 sc_stick:
 	db	0xC0, 0x30, 0x0C, 0x03

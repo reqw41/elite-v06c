@@ -12,7 +12,14 @@ EE51:
 	ret	z
 	xor	(hl)
 	ld	(hl), a
+	ifdef	SCHED
 	jp	LL155
+	else
+	ld	a, LM_AND		; стереть очисткой (корабль нарисован наложением, ll155_ff)
+	call	lm_set
+	call	LL155
+	jp	lm_xor
+	endif
 
 ; SHPPT: корабль далеко — две чёрточки по четыре точки.
 SHPPT:
@@ -37,7 +44,13 @@ SHPPT:
 	or	0x08
 	ld	(hl), a
 	ld	a, 8
+	ifdef	SCHED
 	jp	LL81_2
+	else
+	ld	hl, (XX19)
+	ld	(hl), a
+	jp	lf_new			; наложением
+	endif
 nono:
 	ld	hl, XX1 + 31
 	ld	a, (hl)
@@ -725,8 +738,10 @@ ll72:
 ee31:					; на BBC здесь прежние отрезки стираются (LL155) — и корабля нет на экране,
 	xor	a			; пока считаются новые. Здесь прежний список копируется в сторону, а стирается
 	ld	(ll_on), a		; в конце, по отрезку вслед за новым (ll155_ff): без мерцания, итог тот же
+	ifdef	SCHED			; XX15 как после стирания на BBC — только стенду
 	ld	(ll_edge), a
 	ld	(ll_lp), a
+	endif
 	ld	a, (XX1 + 31)
 	and	0x08
 	jp	z, ll74
@@ -771,7 +786,9 @@ ll74:
 	ld	h, high XX3
 	ld	a, (hl)
 	ld	(XX15), a
+	ifdef	SCHED
 	ld	(ll_lx), a
+	endif
 	inc	a
 	jp	z, ll_lab1		; вершины нет: в XX15 записан только x
 	inc	l
@@ -785,8 +802,10 @@ ll74:
 	inc	l
 	ld	a, (hl)
 	ld	(XX15 + 3), a
+	ifdef	SCHED
 	ld	a, 1
 	ld	(ll_edge), a		; XX15 переписаны целиком
+	endif
 	xor	a
 	ld	(XX15 + 4), a
 	ld	(XX15 + 5), a
@@ -802,6 +821,7 @@ ll9_las:
 	call	LL145
 	call	nc, ll9_put
 	jp	ll170
+	ifdef	SCHED
 ll_lab1:
 	ld	a, 1
 	ld	(ll_lp), a
@@ -809,6 +829,10 @@ ll_lab1:
 ll_lab2:
 	ld	a, 2
 	ld	(ll_lp), a
+	else
+ll_lab1:
+ll_lab2:
+	endif
 ll170:
 	ld	hl, (XX0)		; V -> рёбра
 	ld	de, 3
@@ -842,8 +866,10 @@ ll75:
 	ld	a, (hl)
 	ld	(Q), a
 	ld	d, a			; вторая вершина
+	ifdef	SCHED
 	ld	a, 1
 	ld	(ll_edge), a		; с этого места XX15 пишут рёбра (см. ll155_ff)
+	endif
 	ld	h, high XX3
 	ld	l, e
 	ld	a, (hl)
@@ -943,6 +969,86 @@ ll27_last:				; последний отрезок — через ячейки: �
 	call	ll9_cp
 	jp	LOIN
 
+	ifndef	SCHED
+; ll155_ff (обычный образ): корабль рисуется наложением (or), прежний стирается очисткой (and) — рёбра далёкого
+; корабля больше не гасят друг друга (на BBC и в образе стенда — исключающее ИЛИ). Два прохода: прежние отрезки,
+; которых в новом списке на том же месте нет (and), — все новые (or, LL155): очистка прежних не оставляет дыр
+; в новых. Третий проход впереди (новые, которых не было, — or) мерцание по flicker.mjs почти не убирал, а стоил
+; 6–9 % скорости (журнал, 22.10). XX15 в конце — концы последнего нового
+; отрезка (после стирания без новых рёбер — не как на BBC: в обычном образе XX15 перед чтением пересчитывают).
+ll155_ff:
+lf_mix:
+	ld	a, 0xC9			; концы — в регистрах, ячейки X1..Y2 не трогать
+	ld	(lo_swhook), a
+	ld	a, LM_AND
+	call	lm_set
+	ld	hl, (XX19)
+	ld	a, (hl)
+	inc	hl
+	ld	c, 0
+	cp	4
+	jp	c, lf_n0
+	add	a, 2
+	rra
+	or	a
+	rra
+	ld	c, a			; C — новых отрезков
+lf_n0:
+	ld	a, (ll_on)
+	ld	b, a			; B — прежних
+	ex	de, hl
+	ld	hl, ll_sh + 1
+	call	lf_dif			; прежние, которых нет
+lf_new:					; все новые — наложением, затем снова исключающее ИЛИ
+	ld	a, LM_OR
+	call	lm_set
+	call	LL155
+	jp	lm_xor
+; lf_dif: отрезки списка HL (B штук), которых нет на том же месте списка DE (C штук), — нарисовать в текущем
+; режиме. lo_swhook — RET.
+lf_dif:
+	ld	a, b
+	or	a
+	ret	z
+	dec	b
+	ld	a, c
+	sub	1
+	jp	c, lfd_d		; в списке DE отрезки кончились
+	ld	c, a
+	push	bc
+	push	hl
+	push	de
+	ld	b, 4
+lfd_c:
+	ld	a, (de)
+	cp	(hl)
+	jp	nz, lfd_ne
+	inc	hl
+	inc	de
+	dec	b
+	jp	nz, lfd_c
+	pop	de			; тот же отрезок: HL уже за ним
+	pop	af
+	jp	lfd_x
+lfd_ne:
+	pop	de
+	pop	hl
+	push	de
+	call	lf_draw
+	pop	de
+lfd_x:
+	inc	de
+	inc	de
+	inc	de
+	inc	de
+	pop	bc
+	jp	lf_dif
+lfd_d:
+	push	bc
+	call	lf_draw
+	pop	bc
+	jp	lf_dif
+	else
 ; ll155_ff: печать корабля без мерцания: новые отрезки (список XX19) рисуются, а прежние (копия ll_sh) стираются
 ; вперемежку — один новый, один прежний. Рисование — исключающее ИЛИ, от порядка итог не зависит: экран и
 ; рабочие области — как после «стереть всё, нарисовать всё» на BBC. Ячейки XX15 в конце — концы последнего
@@ -1051,6 +1157,7 @@ lf_last:				; последний новый отрезок — через яче
 	ld	a, 0xC9
 	ld	(lo_swhook), a
 	jp	lf_old
+	endif
 lf_draw:				; отрезок по адресу HL; на выходе HL — за ним
 	ld	e, (hl)
 	inc	hl
@@ -1267,3 +1374,6 @@ ll9_put:
 	ld	(hl), d
 	ret
 ship_end:
+	ifdef	ORAND
+	include	"ov_fix.asm"
+	endif

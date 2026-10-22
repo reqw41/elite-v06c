@@ -9,7 +9,8 @@ import { createVector, savePng, ROOT } from '../tools/v06c.mjs';
 import { bbcView, vecView, bbcDash, vecDash, firstDiff, VIEW, PLANE2 } from '../tools/screen.mjs';
 const { BBC } = createRequire(import.meta.url)(path.join(ROOT, 'tools/oracle/bbc.js'));
 const N1 = +(process.argv[2] || 300), N2 = +(process.argv[3] || 150);
-const ROM = process.env.ROM || 'elite', FREE = !!process.env.FREE;   // FREE=1 — без сверки (быстрая сборка расходится с кассетой намеренно)
+const ROM = process.env.ROM || 'elite_t',   // образ стенда: в обычном корабль заставки рисуется наложением (ORAND)
+      FREE = !!process.env.FREE;   // FREE=1 — без сверки (быстрая сборка расходится с кассетой намеренно)
 const m = createVector(ROM), L = m.L, WS = L.WS, bbc = new BBC({ sched: true }), B = bbc.lab;
 m.frame(30);
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);   // эталон печатает текст нашим шрифтом (на BBC он в ПЗУ)

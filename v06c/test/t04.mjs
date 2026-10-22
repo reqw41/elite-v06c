@@ -49,6 +49,7 @@ ok([...Array(9)].every((_, i) => m.rd(L.kb_rows + i) === 0), 'после отп�
 bbc.mem.set(fs.readFileSync(path.join(ROOT, 'v06c/data/font.bin')), 0xC000);
 let seed = 12345; const rnd = (n) => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return (((t ^ (t >>> 14)) >>> 0) % n); };
 let chars = 0, runs = 0, fail = null;
+if (m.L.tt_wmk !== undefined) m.wr('QQ11', [1]);   // ORAND: в полёте (QQ11 = 0) строка 1 — только во второй плоскости; тут — не полёт
 for (let run = 0; run < 300 && !fail; run++) {
   bbc.mem.fill(0, 0x6000, 0x7800);
   for (let c = 0; c < 32; c++) m.wr(VIEW + c * 256 + 64, new Uint8Array(192));

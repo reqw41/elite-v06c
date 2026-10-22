@@ -10,6 +10,12 @@
 PIXEL:
 	cpl
 	ld	l, a			; 255 - y
+	ifdef	ORAND
+	ld	a, b			; x = 253…255, 0, 1 — точка может задеть рамку (ov_fix)
+	add	a, 3
+	cp	5
+	call	c, px_edg
+	endif
 	ld	a, b
 	rrca
 	rrca
@@ -29,11 +35,14 @@ col_p1:	or	high SCR_VIEW
 	ld	e, a
 	ld	a, (de)
 	ld	d, a
+	ifndef	SCHED
+px_c1:	nop
+	endif
 	xor	(hl)
 	ld	(hl), a
 	ld	a, (ZZ)
 	cp	80
-	jp	nc, px_c1
+	jp	nc, px_cy
 	ld	a, l
 	and	7
 	cp	7			; y кратно 8?
@@ -43,6 +52,9 @@ col_p1:	or	high SCR_VIEW
 px_dn:
 	dec	l
 	ld	a, d
+	ifndef	SCHED
+px_c2:	nop
+	endif
 	xor	(hl)
 	ld	(hl), a
 	ret
@@ -51,11 +63,15 @@ px_one:
 	add	a, low TWOS
 	ld	e, a
 	ld	a, (de)
+	ifndef	SCHED
+px_c3:	nop
+	endif
 	xor	(hl)
 	ld	(hl), a
-px_c1:
+px_cy:
 	scf
 	ret
+
 
 ; LOIN: отрезок (X1, Y1) – (X2, Y2). Один конец не рисуется (какой — как на BBC: зависит от порядка концов и
 ; направления). Концы в X1..Y2 меняются местами так же, как на BBC: при пологом отрезке слева должен быть X1,
@@ -297,6 +313,9 @@ ly_dir:
 	ld	b, e
 	inc	b
 	pop	af
+	ifndef	SCHED
+ly_cpl:	nop				; очистка (lm_set, and): маска перевёрнута — cpl
+	endif
 	ld	c, a
 	ld	e, 128
 	pop	af
@@ -335,6 +354,7 @@ lo_swst:
 	ld	(X1), hl
 	ex	de, hl
 	ret
+
 
 ; Цвет обзора. Точки, отрезки и строки рисуются в плоскость обзора (цвет 2, белый) или во вторую плоскость
 ; (цвет 1, красный): col_red и col_white подменяют старший байт адреса в четырёх местах. Вторым цветом рисуются
@@ -503,11 +523,23 @@ hl_last:
 	ret
 
 line_code_end:
+	ifdef	ORAND
+	ifdef	PCIRC
+	include	"pa_set.asm"		; в пустоту выравнивания (окружность планеты, planet.asm)
+	endif
+	endif
+	ifdef	ORAND
+	include	"px_x.asm"		; в пустоту выравнивания (точки пыли: режим)
+	endif
 	ifndef	SCHED
 	include	"st_q.asm"		; в пустоту выравнивания (штрихи пыли, stars.asm)
 	endif
 ; Маски точек — все в одной странице памяти.
+	ifdef	ORAND
+	PAGEFIT	64			; TWOS, TWOS2, TWFL, TWFR, lxu_tabp, lxu_tabs — ровно 64 байта
+	else
 	align	64
+	endif
 TWOS:	db	0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01
 TWOS2:	db	0xC0, 0x60, 0x30, 0x18, 0x0C, 0x06, 0x03, 0x03
 TWFL:	db	0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF
@@ -516,6 +548,81 @@ lxu_tabp:
 	dw	lxu_p0, lxu_p1, lxu_p2, lxu_p3, lxu_p4, lxu_p5, lxu_p6, lxu_p7
 lxu_tabs:
 	dw	lxu_s0, lxu_s1, lxu_s2, lxu_s3, lxu_s4, lxu_s5, lxu_s6, lxu_s7
+
+	ifndef	SCHED
+; lm_set: как отрезок LOIN меняет точки — A = код команды: LM_XOR (исключающее ИЛИ, как на BBC), LM_OR
+; (наложение), LM_AND (очистка: маска перевёрнута). Подменяет команду и маску в восьми местах пологого цикла,
+; команду, перестановку маски и условный переход крутого. Сохраняет BC, DE. Портит A, HL.
+LM_XOR		equ	0xEE
+LM_OR		equ	0xF6
+LM_AND		equ	0xE6
+lm_xor:
+	ld	a, LM_XOR
+lm_set:
+	ld	hl, lm_cur
+	cp	(hl)
+	ret	z
+	push	bc
+	push	de
+	ld	b, a
+	ld	a, (hl)
+	ld	(hl), b
+	xor	b			; маска меняется, если AND ровно в одном из двух: старый ^ новый = 08h или 10h
+	and	0x08 | 0x10
+	cp	0x18
+	ld	c, 0
+	jp	z, lm_m
+	ld	c, 0xFF
+lm_m:
+	ld	hl, lxu_tabp
+lm_l:
+	ld	e, (hl)
+	inc	l
+	ld	d, (hl)
+	inc	l
+	inc	de
+	ld	a, b
+	ld	(de), a
+	inc	de
+	ld	a, (de)
+	xor	c
+	ld	(de), a
+	ld	a, l
+	cp	low lxu_tabs
+	jp	nz, lm_l
+	ld	a, b
+	sub	0xEE - 0xA9		; xor n -> xor c, or n -> or c, and n -> and c
+	ld	(ly_loop + 1), a
+	ld	a, b
+	cp	LM_AND
+	ld	a, 0x2F			; cpl
+	ld	b, 0xDA			; jp c
+	ifdef	ORAND
+	ld	hl, la_r		; очистка: вход loin_r — jp la_r (рамка, ov_fix.asm)
+	ld	c, 0xC3
+	endif
+	jp	z, lm_y
+	xor	a			; nop
+	ld	b, 0xD2			; jp nc
+	ifdef	ORAND
+	ld	hl, 0x937D		; push bc; ld a, l; sub e
+	ld	c, 0xC5
+	endif
+lm_y:
+	ld	(ly_cpl), a
+	ld	a, b
+	ld	(ly_rot + 2), a
+	ifdef	ORAND
+	ld	a, c
+	ld	(loin_r), a
+	ld	(loin_r + 1), hl
+	endif
+	pop	de
+	pop	bc
+	ret
+lm_cur:	db	LM_XOR
+	endif
+
 
 	ifdef	SCHED
 	include	"init_div.asm"

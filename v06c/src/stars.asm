@@ -26,7 +26,7 @@ px1:
 	ld	d, a
 	and	0x7F
 	cp	96
-	jp	nc, px_c1		; за экраном: перенос 1, как на BBC
+	jp	nc, px_cy		; за экраном: перенос 1, как на BBC
 	ld	a, d
 	or	a
 	jp	p, px2_p
@@ -126,9 +126,11 @@ da_2:
 	ret	z
 	ld	b, a			; B — большее из двух чисел, E — меньшее
 	ld	e, d
+	call	px_and			; пылинок меньше — лишние стереть
 	jp	nc, da_3
 	ld	b, d
 	ld	e, a
+	call	px_or			; больше — нарисовать
 da_3:
 	ld	a, d
 	ld	(NOSTM), a
@@ -147,6 +149,12 @@ da_l:
 	ret
 	endif
 STARS:
+	ifndef	SCHED
+	call	st_v			; пыль в полёте: стирается очисткой, рисуется наложением
+	call	px_xor
+	jp	ov_fix			; рамка, заголовок и прицел — дорисовать (ship.asm)
+st_v:
+	endif
 	ld	a, (VIEW)
 	ld	b, a
 	or	a
@@ -419,6 +427,7 @@ STARS1:
 	ld	a, (NOSTM)
 	ld	c, a
 sn_l:
+	call	px_and
 	call	st_xyz
 	push	af
 	call	PIXEL2			; стереть пылинку на прежнем месте
@@ -534,6 +543,7 @@ sn_back:
 	add	hl, bc
 	ld	(hl), e
 sn_draw:
+	call	px_or
 	call	PIXEL2
 	dec	c
 	jp	nz, sn_l
@@ -802,6 +812,9 @@ stl6:
 	ld	(S), a
 	xor	a
 	ld	(P_), a
+	ifndef	SCHED
+	call	px_and
+	endif
 	ld	a, (BETA)
 	call	PIX1
 	ld	a, (XX + 1)
@@ -827,6 +840,9 @@ stl6:
 	jp	nc, kill6		; z >= 160; на BBC BCS → C=1
 	ld	(ZZ), a
 stc6:
+	ifndef	SCHED
+	call	px_or
+	endif
 	call	PIXEL2
 	dec	c
 	ret	z
@@ -990,6 +1006,9 @@ stl2:
 	xor	a
 	ld	(P_), a
 	pop	af
+	ifndef	SCHED
+	call	px_and
+	endif
 	ld	a, (ALPHA)
 	call	PIX1
 	ld	a, (XX + 1)
@@ -1011,6 +1030,9 @@ stl2:
 	cp	116
 	jp	nc, st2_y
 stc2:
+	ifndef	SCHED
+	call	px_or
+	endif
 	call	PIXEL2
 	dec	c
 	jp	z, ST2

@@ -6,9 +6,17 @@ pc_pt:
 	cp	32
 	ret	nc
 	ld	a, l
+	ifdef	ORAND
+	inc	a			; строка 0 — рамка, не трогать
+	cp	65
+	else
 	cp	64
+	endif
 	ret	c
 	ld	a, e
-	xor	(hl)
+pc_px:	xor	(hl)
+	ifdef	ORAND
+	nop				; как места x1..x8 первого набора (pa_or, pa_and)
+	endif
 	ld	(hl), a
 	ret

@@ -496,7 +496,11 @@ messx:
 	jp	z, mx_new
 	push	de
 	ld	a, (MCH)
+	ifdef	ORAND
+	call	mes9e
+	else
 	call	mes9
+	endif
 	pop	de
 mx_new:
 	ld	a, d

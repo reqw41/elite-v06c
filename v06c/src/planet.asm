@@ -212,13 +212,38 @@ pl82:
 	jp	pl_circ			; не подошла (радиус от 128): отрезками, прежняя стирается по углу (wp_ang)
 	endif
 	else
+	ifdef	ORAND			; меридианы: окружность и дуги — наложением, прежние — очисткой, затем новые ещё раз
+	ld	a, LM_OR
+	call	lm_set
+	call	pl_mer
+	ld	hl, (X1)		; X1..Y2 — как оставила новая планета (как на BBC)
+	push	hl
+	ld	hl, (X2)
+	push	hl
+	ld	a, LM_OR
+	call	wp_lst
+	pop	hl
+	ld	(X2), hl
+	pop	hl
+	ld	(X1), hl
+	ret
+pl_mer:
+	endif
 	call	wp_begin		; прежняя окружность стирается по отрезку вслед за новой (wp_step в BLINE) — без мерцания
 	call	CIRCLE
 	ifndef	MERID
 	jp	wp_finish		; планета — окружность, как на ZX Spectrum (решение владельца); в эталоне — RTS в PL25
 	else
 	push	af
+	ifdef	ORAND
+	ld	a, LM_AND
+	call	lm_set
+	endif
 	call	wp_finish
+	ifdef	ORAND
+	ld	a, LM_OR
+	call	lm_set
+	endif
 	pop	af
 	ret	c
 	ld	a, (K + 1)
@@ -459,65 +484,28 @@ pl_sin:					; A = Q = синус угла A
 
 	ifdef	PCIRC
 	ifndef	DBUF
-; pl_circ: окружность планеты отрезками (CIRCLE); прежняя (копия списка, wp_begin) стирается не после всей новой,
-; а по ходу: после каждого шага угла новой — до того же угла прежней (wp_ang). Шаг угла (STP) у большой планеты
-; один и тот же, поэтому записи прежнего списка по углам известны: WP_ANG[k] — длина списка после шага k (пишется
-; в том же проходе для следующего). Остаток — wp_finish; от порядка итог не зависит (исключающее ИЛИ).
-; Быстрая окружность (точками), если была на экране, стирается после новой: на миг две, но не ни одной.
+; pl_circ: окружность планеты отрезками (CIRCLE), радиус от 128. Новая — наложением; прежняя (копия списка,
+; wp_begin) и быстрая окружность, если была на экране, — очисткой; затем новая ещё раз по своему списку (wp_lst):
+; очистка прежней не оставляет в ней дыр.
 pl_circ:
 	ld	a, (LSX2)
 	dec	a
 	push	af			; Z — на экране быстрая окружность pc_s
 	call	wp_begin		; (списка отрезков тогда нет)
-	xor	a
-	ld	(wp_k), a
-	inc	a
-	ld	(wp_on), a
+	ld	a, LM_OR
+	call	lm_set
 	call	CIRCLE
-	xor	a
-	ld	(wp_on), a
+	ld	a, LM_AND
+	call	lm_set
 	call	wp_finish
 	pop	af
-	ret	nz
+	jp	nz, pl_rep
+	call	pa_and
 	ld	hl, pc_s
-	jp	pcirc
-; wp_ang: из CIRCLE2 после каждого BLINE (A = CNT — сохраняется). Портит BC, DE, HL.
-wp_ang:
-	push	af
-	ld	a, (wp_on)
-	or	a
-	jp	z, wa_x
-	ld	a, (wp_k)
-	cp	WP_NA
-	jp	nc, wa_x
-	ld	e, a
-	inc	a
-	ld	(wp_k), a
-	ld	d, 0
-	ld	hl, WP_ANG
-	add	hl, de
-	push	hl
-	ld	b, (hl)			; B — длина прежнего списка после этого шага
-wa_l:
-	ld	a, (wp_n)
-	ld	c, a
-	ld	a, (wp_i)
-	cp	c
-	jp	nc, wa_r		; прежний список кончился
-	cp	b
-	jp	nc, wa_r		; прежняя стёрта до этого угла
-	push	bc
-	call	wp_step
-	pop	bc
-	jp	wa_l
-wa_r:
-	pop	hl
-	ld	a, (LSP)
-	ld	(hl), a
-wa_x:
-	pop	af
-	ret
-wp_k:	db	0			; шаг угла новой окружности
+	call	pcirc
+pl_rep:
+	ld	a, LM_OR
+	jp	wp_lst
 wp_on:	db	0			; <> 0 — идёт pl_circ
 	endif
 	endif
@@ -581,9 +569,25 @@ WPLS2:
 	ifdef	PCIRC
 	call	pc_erase
 	endif
+	ifdef	ORAND
+	ld	a, LM_AND		; стереть очисткой
+	call	wp_lst
+	jp	WP1
+; wp_lst: отрезки планеты по списку LSX2, LSY2 (если он есть: LSX2 = 0) — LOIN в режиме A, затем снова
+; исключающее ИЛИ.
+wp_lst:
+	call	lm_set
+	call	wpl0
+	jp	lm_xor
+wpl0:
+	ld	a, (LSX2)
+	or	a
+	ret	nz
+	else
 	ld	a, (LSX2)
 	or	a
 	jp	nz, WP1
+	endif
 	ld	c, a
 	ld	hl, LSY2
 	ld	de, LSX2
@@ -592,7 +596,11 @@ wpl1:
 	ld	b, a
 	ld	a, c
 	cp	b
+	ifdef	ORAND
+	ret	nc
+	else
 	jp	nc, WP1
+	endif
 	ld	a, (hl)
 	cp	0xFF
 	jp	z, wp2
@@ -696,17 +704,33 @@ pc_cmp:
 	jp	nz, pc_cmp
 	ret				; та же окружность
 pc_chg:
+	ifdef	ORAND
+	call	pa_or			; новая — наложением, прежняя — очисткой, затем новая ещё раз: очистка прежней
+	endif				; не оставляет дыр в новой
 	ld	a, (pc_n + 3)		; тот же радиус (крен, тангаж, рыскание) — новая и прежняя одним ходом: точки
 	ld	hl, pc_s + 3		; меняются вперемешку, без мига двух окружностей сразу (pc_pr2)
 	cp	(hl)
 	jp	nz, pc_chg2
 	call	pc_pr2
+	ifdef	ORAND
+	jp	pc_rep
+	else
 	jp	pc_keep
+	endif
 pc_chg2:
 	ld	hl, pc_n
 	call	pcirc			; новая, затем стереть прежнюю — без мерцания
+	ifdef	ORAND
+	call	pa_and
+	endif
 	ld	hl, pc_s
 	call	pcirc
+	ifdef	ORAND
+pc_rep:
+	call	pa_or
+	ld	hl, pc_n
+	call	pcirc
+	endif
 pc_keep:
 	ld	hl, (pc_n)
 	ld	(pc_s), hl
@@ -715,12 +739,19 @@ pc_keep:
 	xor	a
 	ret
 pc_new:
+	ifdef	ORAND
+	call	pa_or
+	endif
 	ld	hl, pc_n
 	call	pcirc
 	call	WPLS2			; прежняя — по списку отрезков, если была
 	ld	a, 1
 	ld	(LSX2), a
+	ifdef	ORAND
+	jp	pc_rep
+	else
 	jp	pc_keep
+	endif
 pc_old:
 	ifdef	DBUF
 	call	pc_erase
@@ -732,12 +763,15 @@ pc_erase:
 	ld	a, (LSX2)
 	dec	a
 	ret	nz
+	ifdef	ORAND
+	call	pa_and
+	endif
 	ld	hl, pc_s
 	call	pcirc
 	jp	WP1
 ; pc_col и pc_pt лежат в пустотах выравнивания (dials.asm, flight.asm, scan.asm).
 ; Две точки одного столбца: HL и на dlt байт дальше (строки Y - k и Y + k), маска — msk.
-	macro	PCPAIR msk, dlt
+	macro	PCPAIR msk, dlt, sa, sb
 	ld	a, h
 	sub	high SCR_VIEW
 	cp	32
@@ -746,16 +780,27 @@ pc_erase:
 	cp	64
 	jp	c, .a			; строка за краем
 	ld	a, msk
-	xor	(hl)
+sa:	xor	(hl)
+	ifdef	ORAND
+	nop				; pa_or: or (hl); nop, pa_and: and (hl); xor (hl)
+	endif
 	ld	(hl), a
 .a:
 	ld	a, l
 	add	a, dlt
 	ld	l, a
+	ifdef	ORAND
+	inc	a			; верхняя точка на строке 0 — это рамка (ov_fix): не рисовать и не стирать
+	cp	65
+	else
 	cp	64
+	endif
 	jp	c, .e
 	ld	a, msk
-	xor	(hl)
+sb:	xor	(hl)
+	ifdef	ORAND
+	nop
+	endif
 	ld	(hl), a
 .e:
 	endm
@@ -790,6 +835,9 @@ pp_0:
 	jp	c, pp_1			; строка за краем
 pp_m:
 	ld	a, 0
+	ifdef	ORAND
+	and	(hl)			; второй набор только стирает (pc_pr2): очистка
+	endif
 	xor	(hl)
 	ld	(hl), a
 pp_1:
@@ -797,14 +845,25 @@ pp_1:
 pp_d:
 	add	a, 0
 	ld	l, a
+	ifdef	ORAND
+	inc	a			; верхняя точка на строке 0 — рамка, не трогать
+	cp	65
+	else
 	cp	64
+	endif
 	ret	c
 	ld	a, (pp_m + 1)
+	ifdef	ORAND
+	and	(hl)
+	endif
 	xor	(hl)
 	ld	(hl), a
 	ret
 ; pc_pr2: новая окружность pc_n и стирание прежней pc_s (радиус тот же) — одним ходом.
 pc_pr2:
+	ifdef	ORAND
+	call	pa_and			; точки (X ± r, Y), (X, Y ± r) прежней init стирает сам
+	endif
 	ld	hl, pc_s		; прежняя — первым набором, затем его адреса и маски — во второй
 	call	pa.init
 	ld	hl, (pa.p1 + 1)
@@ -821,6 +880,9 @@ pc_pr2:
 	ld	(pb.m1), a
 	ld	a, e
 	ld	(pb.m2), a
+	ifdef	ORAND
+	call	pa_or
+	endif
 	ld	hl, pc_n
 	call	pa.init
 	ld	a, 0xCD			; call — шаги и точки второго набора

@@ -26,7 +26,7 @@ export function makePair(rom = 'elite') {
   const stats = [];
   // spec: { name, entry (метка BBC или адрес; по умолчанию name), ventry (метка Вектора), n, gen(rnd, byte, i) →
   //   {a, x, y, c, mem: {меткаBBC: байт | [байты]}}, skip: [метки BBC или [метка, длина]] — ячейки вне сравнения,
-  //   noreg: 'axyc' — регистры вне сравнения, screen: 'dash' | 'view' — сравнивать ещё и экран;
+  //   noreg: 'axyc' — регистры вне сравнения, screen: 'dash' | 'view' — сравнивать ещё и экран (viewRef() — свой эталон обзора);
   //   long: true — долгая процедура (запас по тактам);
   //   areas: [[от, до]] — ещё области BBC для сравнения (например куча вершин XX3);
   //   gen может вернуть bmem / vmem — память только для BBC / только для Вектора (адреса и метки своей машины) }
@@ -66,7 +66,7 @@ export function makePair(rom = 'elite') {
       }
       if (spec.screen && !diff.length) {
         const vm = m.mem(), d = spec.screen === 'dash' ? firstDiff(vecDash(vm), bbcDash(bbc.mem))
-          : firstDiff(spec.screen === 'text' ? vecView(vm, VIEW) : vecView(vm), bbcView(bbc.mem));   // text: только плоскость обзора — текст обычного образа зелёный, он и во второй плоскости
+          : firstDiff(spec.screen === 'text' && !(m.L.tt_wmk !== undefined && m.rd(m.L.QQ11) === 0) ? vecView(vm, VIEW) : vecView(vm), spec.viewRef ? spec.viewRef() : bbcView(bbc.mem));   // text: только плоскость обзора — текст обычного образа зелёный, он и во второй плоскости; в полёте (QQ11 = 0, ORAND) заголовок только во второй — обе плоскости
         if (d) diff.push(spec.screen === 'dash' ? `панель: x=${d.i & 255} строка ${192 + (d.i >> 8)}: Вектор ${d.a}, BBC ${d.b}` : `обзор: столбец ${d.i % 32}, строка ${Math.floor(d.i / 32)}: Вектор ${d.a}, BBC ${d.b}`);
       }
       if (diff.length) {
